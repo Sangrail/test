@@ -1,0 +1,340 @@
+{
+  "summary": {
+    "questions": 17,
+    "scored_questions": 16,
+    "success_at_1": 0.9375,
+    "success_at_5": 1.0,
+    "mrr_at_10": 0.953125,
+    "recall_at_10": 0.8958333333333334,
+    "answer_correct": 1.0,
+    "zero_result_rate": 0.0,
+    "permission_leaks": 0,
+    "latency_p50_ms": 15.9,
+    "latency_p95_ms": 68.4
+  },
+  "questions": [
+    {
+      "id": "Q01",
+      "user": "jp",
+      "question": "What is the roof load limit?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 0.5,
+      "leaks": [],
+      "top": [
+        "project-cedar/03-roof-load.md:3",
+        "generated-projects/project-000.md:7",
+        "generated-projects/project-001.md:7"
+      ],
+      "answer_correct": true,
+      "answer": "project-cedar/03-roof-load.md:3 Maximum uniformly distributed roof load: 5 kN/m\u00b2.",
+      "latency_ms": 25.9,
+      "searched_for": "roof \u00b7 load \u00b7 limit (or allowable, capacity, max, maximum, permissible, permitted)"
+    },
+    {
+      "id": "Q02",
+      "user": "jp",
+      "question": "maximum roof load for the Northgate warehouse",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:8",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2",
+        "project-cedar/03-roof-load.md:3"
+      ],
+      "answer_correct": true,
+      "answer": "project-northgate/northgate-warehouse-structural-calculations.pdf:8 The roof is designed for an imposed load of 0.6 kN/m\u00b2.",
+      "latency_ms": 28.2,
+      "searched_for": "maximum (or allowable, capacity, limit, max, permissible, permitted) \u00b7 roof \u00b7 load \u00b7 northgate \u00b7 warehouse"
+    },
+    {
+      "id": "Q03",
+      "user": "jp",
+      "question": "pedestrian live load limit on the Riverside footbridge",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-riverside/riverside-footbridge-load-rating.pdf:7",
+        "project-riverside/riverside-footbridge-load-rating.pdf:2",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:48"
+      ],
+      "answer_correct": true,
+      "answer": "project-riverside/riverside-footbridge-load-rating.pdf:7 The maximum permitted pedestrian live load is 5.0 kN/m\u00b2.",
+      "latency_ms": 31.9,
+      "searched_for": "pedestrian (or footbridge) \u00b7 live \u00b7 load \u00b7 limit (or allowable, capacity, max, maximum, permissible, permitted) \u00b7 riverside \u00b7 footbridge (or pedestrian)"
+    },
+    {
+      "id": "Q04",
+      "user": "jp",
+      "question": "Which vehicles are prohibited on the footbridge?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-riverside/riverside-footbridge-load-rating.pdf:2",
+        "project-riverside/riverside-footbridge-load-rating.pdf:7",
+        "project-riverside/riverside-footbridge-load-rating.pdf:2"
+      ],
+      "answer_correct": true,
+      "answer": "project-riverside/riverside-footbridge-load-rating.pdf:7 Vehicles above 3.5 t gross weight are prohibited.",
+      "latency_ms": 4.7,
+      "searched_for": "vehicles \u00b7 prohibited (or banned, forbidden, restricted) \u00b7 footbridge (or pedestrian)"
+    },
+    {
+      "id": "Q05",
+      "user": "jp",
+      "question": "steel grade of the Riverside girders",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 0.5,
+      "leaks": [],
+      "top": [
+        "project-riverside/riverside-footbridge-load-rating.pdf:8",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:11",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:44"
+      ],
+      "answer_correct": true,
+      "answer": "project-riverside/riverside-footbridge-load-rating.pdf:9 Main girders: welded plate girders, steel grade S355J2+N to EN 10025-2.",
+      "latency_ms": 33.9,
+      "searched_for": "steel \u00b7 grade (or spec, specification) \u00b7 riverside \u00b7 girders"
+    },
+    {
+      "id": "Q06",
+      "user": "jp",
+      "question": "material specification for the portal frames",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:5",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:11"
+      ],
+      "answer_correct": true,
+      "answer": "project-northgate/northgate-warehouse-structural-calculations.pdf:3 Portal frames S355 hot-rolled structural steel",
+      "latency_ms": 9.6,
+      "searched_for": "material \u00b7 specification (or grade, spec) \u00b7 portal \u00b7 frames"
+    },
+    {
+      "id": "Q07",
+      "user": "jp",
+      "question": "S355",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 0.3333333333333333,
+      "leaks": [],
+      "top": [
+        "generated-projects/project-001.md:13",
+        "generated-projects/project-003.md:13",
+        "generated-projects/project-005.md:13"
+      ],
+      "answer_correct": true,
+      "answer": "generated-projects/project-001.md:13 Support material: S355 steel.",
+      "latency_ms": 3.6,
+      "searched_for": "s355*"
+    },
+    {
+      "id": "Q08",
+      "user": "jp",
+      "question": "Has building control approved the Northgate warehouse?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:1",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:5"
+      ],
+      "answer_correct": true,
+      "answer": "project-northgate/northgate-warehouse-structural-calculations.pdf:2 Building control approval status: PENDING.",
+      "latency_ms": 7.3,
+      "searched_for": "building \u00b7 control \u00b7 approved \u00b7 northgate \u00b7 warehouse"
+    },
+    {
+      "id": "Q09",
+      "user": "jp",
+      "question": "compliance approval status",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-cedar/07-compliance-approval.md:3",
+        "specifications/bridge.md:7",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2"
+      ],
+      "answer_correct": true,
+      "answer": "specifications/bridge.md:7 Compliance approval status: pending review.",
+      "latency_ms": 5.7,
+      "searched_for": "compliance \u00b7 approval \u00b7 status"
+    },
+    {
+      "id": "Q10",
+      "user": "jp",
+      "question": "Which materials were rejected?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "registers/material-approval-register.pdf:2",
+        "registers/material-approval-register.pdf:5",
+        "generated-projects/project-000.md:13"
+      ],
+      "answer_correct": true,
+      "answer": "registers/material-approval-register.pdf:2 MAR-06 was rejected because the sealant failed the UV ageing test.",
+      "latency_ms": 6.8,
+      "searched_for": "materials \u00b7 rejected (or declined, refused)"
+    },
+    {
+      "id": "Q11",
+      "user": "jp",
+      "question": "allowable bearing pressure for the foundations",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-cedar/05-foundation.md:3",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:7",
+        "project-cedar/08-environmental-review.md:3"
+      ],
+      "answer_correct": true,
+      "answer": "project-cedar/05-foundation.md:3 Foundation F-3 allowable bearing pressure: 180 kPa under sustained vertical load",
+      "latency_ms": 15.9,
+      "searched_for": "allowable (or capacity, limit, max, maximum, permissible, permitted) \u00b7 bearing \u00b7 pressure \u00b7 foundations"
+    },
+    {
+      "id": "Q12",
+      "user": "jp",
+      "question": "service bridge live load limit",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 4,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "public-fhwa/fhwa-steel-bridge-handbook-vol18-load-rating.pdf:16",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:29",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:13"
+      ],
+      "answer_correct": true,
+      "answer": "project-cedar/09-bridge-load.md:3 Service bridge BR-2 live load limit: 4 kN/m\u00b2, pedestrian use only.",
+      "latency_ms": 43.8,
+      "searched_for": "service \u00b7 bridge \u00b7 live \u00b7 load \u00b7 limit (or allowable, capacity, max, maximum, permissible, permitted)"
+    },
+    {
+      "id": "Q13",
+      "user": "jp",
+      "question": "What steel grade is used in the FHWA design example girders?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:11",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:44",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:32"
+      ],
+      "answer_correct": true,
+      "answer": "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:11 Structural Steel: AASHTO M 270 Grade HPS 70W (ASTM A 709 Grade HPS 70W) uncoated",
+      "latency_ms": 91.9,
+      "searched_for": "steel \u00b7 grade (or spec, specification) \u00b7 fhwa \u00b7 design \u00b7 example \u00b7 girders"
+    },
+    {
+      "id": "Q14",
+      "user": "jp",
+      "question": "HL-93 inventory and operating rating",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "public-fhwa/fhwa-steel-bridge-handbook-vol18-load-rating.pdf:12",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol18-load-rating.pdf:17",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol18-load-rating.pdf:6"
+      ],
+      "answer_correct": true,
+      "answer": "public-fhwa/fhwa-steel-bridge-handbook-vol18-load-rating.pdf:17 Bridges that pass HL-93 screening only at the Operating level will have adequate",
+      "latency_ms": 11.6,
+      "searched_for": "hl \u00b7 93* \u00b7 inventory \u00b7 operating \u00b7 rating"
+    },
+    {
+      "id": "Q15",
+      "user": "jp",
+      "question": "Is the proposed 7 kN/m\u00b2 roof load approved?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "specifications/roof-load-draft.md:7",
+        "generated-projects/project-006.md:7",
+        "generated-projects/project-015.md:7"
+      ],
+      "answer_correct": true,
+      "answer": "specifications/roof-load-draft.md:7 The proposed maximum roof load is 7 kN/m\u00b2 under static, dry conditions. Approval",
+      "latency_ms": 68.4,
+      "searched_for": "proposed \u00b7 7* \u00b7 kn \u00b7 m\u00b2* \u00b7 roof \u00b7 load \u00b7 approved"
+    },
+    {
+      "id": "Q16",
+      "user": "kamal",
+      "question": "What is the roof load limit?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-cedar/03-roof-load.md:3",
+        "generated-projects/project-000.md:7",
+        "generated-projects/project-001.md:7"
+      ],
+      "answer_correct": true,
+      "answer": "project-cedar/03-roof-load.md:3 Maximum uniformly distributed roof load: 5 kN/m\u00b2.",
+      "latency_ms": 24.3,
+      "searched_for": "roof \u00b7 load \u00b7 limit (or allowable, capacity, max, maximum, permissible, permitted)"
+    },
+    {
+      "id": "Q17",
+      "user": "kamal",
+      "question": "compliance approval status",
+      "scored": false,
+      "results": 10,
+      "first_relevant_rank": null,
+      "recall": null,
+      "leaks": [],
+      "top": [
+        "project-riverside/riverside-footbridge-load-rating.pdf:2",
+        "generated-projects/project-000.md:7",
+        "generated-projects/project-003.md:7"
+      ],
+      "answer_correct": false,
+      "answer": "project-riverside/riverside-footbridge-load-rating.pdf:2 Approval status: APPROVED by the Riverside Bridge Authority on 14 May 2024, refe",
+      "latency_ms": 5.8,
+      "searched_for": "compliance \u00b7 approval \u00b7 status"
+    }
+  ]
+}

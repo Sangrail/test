@@ -1,0 +1,247 @@
+{
+  "summary": {
+    "questions": 17,
+    "scored_questions": 16,
+    "success_at_1": 0.1875,
+    "success_at_5": 0.25,
+    "mrr_at_10": 0.21875,
+    "recall_at_10": 0.21875,
+    "zero_result_rate": 0.7647058823529411,
+    "permission_leaks": 0,
+    "latency_p50_ms": 3.5,
+    "latency_p95_ms": 4.0
+  },
+  "questions": [
+    {
+      "id": "Q01",
+      "user": "jp",
+      "question": "What is the roof load limit?",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.9,
+      "searched_for": null
+    },
+    {
+      "id": "Q02",
+      "user": "jp",
+      "question": "maximum roof load for the Northgate warehouse",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.1,
+      "searched_for": null
+    },
+    {
+      "id": "Q03",
+      "user": "jp",
+      "question": "pedestrian live load limit on the Riverside footbridge",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.0,
+      "searched_for": null
+    },
+    {
+      "id": "Q04",
+      "user": "jp",
+      "question": "Which vehicles are prohibited on the footbridge?",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.5,
+      "searched_for": null
+    },
+    {
+      "id": "Q05",
+      "user": "jp",
+      "question": "steel grade of the Riverside girders",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.8,
+      "searched_for": null
+    },
+    {
+      "id": "Q06",
+      "user": "jp",
+      "question": "material specification for the portal frames",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.0,
+      "searched_for": null
+    },
+    {
+      "id": "Q07",
+      "user": "jp",
+      "question": "S355",
+      "scored": true,
+      "results": 2,
+      "first_relevant_rank": 1,
+      "recall": 0.5,
+      "leaks": [],
+      "top": [
+        "project-cedar/04-beam-capacity.md:3",
+        "specifications/roof-load.md:13"
+      ],
+      "latency_ms": 3.3,
+      "searched_for": null
+    },
+    {
+      "id": "Q08",
+      "user": "jp",
+      "question": "Has building control approved the Northgate warehouse?",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.3,
+      "searched_for": null
+    },
+    {
+      "id": "Q09",
+      "user": "jp",
+      "question": "compliance approval status",
+      "scored": true,
+      "results": 2,
+      "first_relevant_rank": 2,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "specifications/bridge.md:7",
+        "project-cedar/07-compliance-approval.md:3"
+      ],
+      "latency_ms": 3.5,
+      "searched_for": null
+    },
+    {
+      "id": "Q10",
+      "user": "jp",
+      "question": "Which materials were rejected?",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 4.7,
+      "searched_for": null
+    },
+    {
+      "id": "Q11",
+      "user": "jp",
+      "question": "allowable bearing pressure for the foundations",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.8,
+      "searched_for": null
+    },
+    {
+      "id": "Q12",
+      "user": "jp",
+      "question": "service bridge live load limit",
+      "scored": true,
+      "results": 1,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-cedar/09-bridge-load.md:3"
+      ],
+      "latency_ms": 3.7,
+      "searched_for": null
+    },
+    {
+      "id": "Q13",
+      "user": "jp",
+      "question": "What steel grade is used in the FHWA design example girders?",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 4.0,
+      "searched_for": null
+    },
+    {
+      "id": "Q14",
+      "user": "jp",
+      "question": "HL-93 inventory and operating rating",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.9,
+      "searched_for": null
+    },
+    {
+      "id": "Q15",
+      "user": "jp",
+      "question": "Is the proposed 7 kN/m\u00b2 roof load approved?",
+      "scored": true,
+      "results": 1,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "specifications/roof-load-draft.md:7"
+      ],
+      "latency_ms": 2.8,
+      "searched_for": null
+    },
+    {
+      "id": "Q16",
+      "user": "kamal",
+      "question": "What is the roof load limit?",
+      "scored": true,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": 0.0,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 3.3,
+      "searched_for": null
+    },
+    {
+      "id": "Q17",
+      "user": "kamal",
+      "question": "compliance approval status",
+      "scored": false,
+      "results": 0,
+      "first_relevant_rank": null,
+      "recall": null,
+      "leaks": [],
+      "top": [],
+      "latency_ms": 2.9,
+      "searched_for": null
+    }
+  ]
+}

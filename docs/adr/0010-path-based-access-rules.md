@@ -1,0 +1,29 @@
+---
+status: accepted
+date: 2026-10-28
+---
+# Index the whole repository, and control access with folder and file rules
+
+**Serves:** R1 (no information from forbidden documents), C2 (files in an existing repository), U2 (100+ documents).
+
+## Context
+
+The first prototype gave per-file grants to ten demonstration files, and gave all other files to two users only. That made most of the repository look out of scope, and it did not match how the existing repository (C2) controls access. File shares and document systems set permissions on folders, and files inherit them, as in Windows. The search must cover all 100+ documents (U2) and still never give a user information from a document that the user cannot read (R1).
+
+## Decision
+
+- Index every supported file. Permissions decide what a user sees, not what is indexed.
+- A rule applies to the whole repository, to a folder or to one file. The most specific rule wins and replaces the inherited one.
+- Rules list users directly. There are no groups and no "deny" entries.
+- Check the rules on each request, before answers, counts and pages ([ADR 0006](0006-permissions-before-results.md)).
+
+The full list of assumptions is at the top of [`access.py`](../../engineering_search/access.py).
+
+## Consequences
+
+- The rules are simpler than Windows (NTFS) permissions, which merge inherited and explicit entries and have "deny" entries. A production service must get the effective permissions from the repository through its connector, not copy them into a Python file.
+- The rules are small and easy to read for a demonstration. The sign-in screen and the README show which folders each user can read.
+
+## Implementation
+
+Done. `ACCESS_RULES`, `governing_rule` and `MockPermissionStore` in [`access.py`](../../engineering_search/access.py). JP reads 138 of 138 files, Kamal 130 and Maya 133. Tests: `tests/test_access.py`, `tests/test_pagination.py`, `tests/test_no_leaks.py` (which also checks each user's file list against a list written by hand).

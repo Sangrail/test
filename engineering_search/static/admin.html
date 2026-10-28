@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Index-team operations · Engineering Search</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/dashboard.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/search" aria-label="Engineering Search home"><span class="brand-mark">E<span>∕</span></span><span>Engineering<span class="brand-light"> Search</span></span></a><nav><a href="/search">Search</a><span class="active">Index operations</span><a href="/audit">Audit log</a><a href="/docs">API explorer ↗</a></nav><span class="local"><i></i> Index team · Maya</span></header>
+  <main>
+    <section class="page-heading"><div><div class="eyebrow">INDEX TEAM ONLY</div><h1>Index operations</h1><p>Manage indexing, uploads and telemetry. User search lives on its own page.</p></div><div class="actions"><button id="rescan" class="secondary" disabled>↻ &nbsp; Rescan files</button><button id="reindex" class="primary" disabled>Reindex documents <span>↗</span></button></div></section>
+    <div id="notice" role="status" aria-live="polite" hidden></div>
+    <section class="stats" aria-label="Document counts">
+      <article class="stat"><span>Documents (Markdown, PDF)</span><strong id="file-count">—</strong><small>Last scan plus accepted uploads</small></article>
+      <article class="stat"><span>Indexed documents</span><strong id="indexed-count">—</strong><small>Available to search</small></article>
+      <article class="stat"><span>Pending changes</span><strong id="pending-count">—</strong><small id="pending-detail">Rescan to compare with the index</small></article>
+      <article class="stat"><span>Searchable passages</span><strong id="passage-count">—</strong><small>With source locations and versions</small></article>
+    </section>
+    <section class="status-panel" aria-label="Index status"><div class="status-main"><span class="status-symbol" id="status-symbol">○</span><div><div class="eyebrow">INDEX STATUS</div><h2 id="status-title">Connecting to the API…</h2><p id="status-description">Loading the current index and file inventory.</p></div><span id="status-pill" class="badge">Loading</span></div><div class="status-meta"><div><span>Source folder</span><code id="source-root">—</code></div><div><span>Last filesystem check</span><strong id="last-scan">—</strong></div><div><span>Last successful index</span><strong id="last-index">—</strong></div></div></section>
+    <section class="panel upload-panel" aria-label="Uploads and indexing queue">
+      <div class="panel-heading"><div><div class="eyebrow">DOCUMENT INGESTION</div><h2>Uploads &amp; indexing queue</h2><p>Upload Markdown files (PDF upload is not supported yet). Workers make each document searchable when indexing finishes.</p></div><button class="primary" id="choose-files">↑ &nbsp; Choose Markdown files</button><input type="file" id="upload-files" accept=".md,text/markdown" multiple hidden></div>
+      <div class="upload-help"><span id="upload-limit">UTF-8 Markdown · up to 10 MiB per file · multiple files supported</span><span id="worker-summary">Connecting to workers…</span></div>
+      <div id="upload-notice" role="status" aria-live="polite" hidden></div>
+      <div class="queue-counts"><div><span>Uploading</span><strong id="jobs-uploading">—</strong></div><div><span>Queued</span><strong id="jobs-queued">—</strong></div><div><span>Indexing</span><strong id="jobs-indexing">—</strong></div><div><span>Ready to search</span><strong id="jobs-ready">—</strong></div><div><span>Failed</span><strong id="jobs-failed">—</strong></div></div>
+      <div class="upload-table-wrap"><table class="upload-table"><thead><tr><th>Uploaded file</th><th>State</th><th>Worker / attempt</th><th>Queue wait / processing</th><th>Details</th></tr></thead><tbody id="upload-rows"></tbody></table><p id="uploads-empty" class="empty">No uploads yet. Choose a Markdown file to start the queue.</p></div>
+      <div class="queue-footer"><span id="queue-summary">Latest 30 upload jobs</span><span id="queue-age">Oldest queued: —</span></div>
+    </section>
+    <section class="workspace">
+      <section class="panel documents"><div class="panel-heading"><div><h2>Documents</h2><p>Compare the latest file scan with the search index.</p></div><span id="inventory-count" class="count-label">— files</span></div><div class="filters"><label class="search-field"><span aria-hidden="true">⌕</span><input id="file-filter" type="search" placeholder="Filter by filename…" aria-label="Filter documents by filename"></label><label class="checkbox"><input type="checkbox" id="changes-only"> Changes only</label></div><div class="table-wrap"><table><thead><tr><th>File</th><th>Size</th><th>Index state</th></tr></thead><tbody id="document-rows"></tbody></table><p id="empty-state" class="empty">Scanning the source folder…</p></div><div class="table-footer"><span id="page-label">—</span><div><button id="previous" class="pagination" disabled aria-label="Previous page">←</button><button id="next" class="pagination" disabled aria-label="Next page">→</button></div></div></section>
+      <aside class="panel run-panel"><div class="panel-heading"><div><div class="eyebrow">TELEMETRY</div><h2>Latest full rebuild</h2><p>One worker. A complete index rebuild.</p></div></div><div class="run-duration"><strong id="total-time">—</strong><span>Total elapsed time</span></div><dl class="measurements"><div><dt>Reading &amp; extraction</dt><dd id="ingestion-time">—</dd></div><div><dt>Index construction</dt><dd id="index-time">—</dd></div><div><dt>Ingestion rate</dt><dd id="ingestion-rate">—</dd></div><div><dt>Indexing rate</dt><dd id="index-rate">—</dd></div><div><dt>Indexer workers</dt><dd id="workers">1</dd></div></dl><div class="manual-note"><span class="note-icon">↻</span><div><strong>Manual refresh</strong><p>Rescan detects additions, edits and deletions. Reindex makes those changes searchable.</p><small>Automatic file watching is a future step.</small></div></div></aside>
+    </section>
+    <section class="query-panel"><div><h2>Search performance</h2><p id="query-window">Server timings · no queries yet</p></div><dl><div><dt>Minimum</dt><dd id="query-min">—</dd></div><div><dt>Median</dt><dd id="query-median">—</dd></div><div><dt>Average</dt><dd id="query-average">—</dd></div><div><dt>Maximum</dt><dd id="query-max">—</dd></div></dl></section>
+    <details class="panel access-matrix"><summary>Access rules · backend view</summary><p>A rule on a folder covers every file below it. The most specific rule wins.</p><div class="table-wrap"><table><thead><tr><th>Folder or file</th><th>JP</th><th>Kamal</th><th>Maya</th></tr></thead><tbody id="permission-rows"></tbody></table></div></details>
+    <footer><span><i id="connection-dot"></i><span id="connection-label">Connecting</span></span><span>Index-team role enforced by the API. Pretend login is not production identity verification.</span></footer>
+  </main>
+</body>
+</html>

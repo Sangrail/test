@@ -1,0 +1,72 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R 9 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 1160 >>
+stream
+BT /F3 15 Tf 56 790 Td (Material Approval Register) Tj ET
+BT /F1 10 Tf 56 766 Td (Issue 7, March 2024. Covers projects Riverside and Northgate.) Tj ET
+BT /F1 10 Tf 56 752 Td (SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+BT /F3 11 Tf 56 728 Td (1 Register) Tj ET
+BT /F2 9 Tf 56 710 Td (Ref     Material                    Project     Status     Date) Tj ET
+BT /F2 9 Tf 56 697 Td (MAR-01  Structural steel S355J2+N   Riverside   Approved   2024-02-10) Tj ET
+BT /F2 9 Tf 56 684 Td (MAR-02  Concrete C32/40             Riverside   Approved   2024-02-10) Tj ET
+BT /F2 9 Tf 56 671 Td (MAR-03  Reinforcement B500B         Northgate   Approved   2024-01-22) Tj ET
+BT /F2 9 Tf 56 658 Td (MAR-04  Purlins S390GD              Northgate   Approved   2024-01-22) Tj ET
+BT /F2 9 Tf 56 645 Td (MAR-05  Chemical anchors HX-200     Northgate   Pending    -) Tj ET
+BT /F2 9 Tf 56 632 Td (MAR-06  Joint sealant PU-40         Riverside   Rejected   2024-03-05) Tj ET
+BT /F2 9 Tf 56 619 Td (MAR-07  Joint sealant PU-55         Riverside   Pending    -) Tj ET
+BT /F1 8 Tf 56 40 Td (MAR register, issue 7    Page 1 of 2    SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 453 >>
+stream
+BT /F3 11 Tf 56 790 Td (2 Notes) Tj ET
+BT /F1 10 Tf 56 772 Td (MAR-06 was rejected because the sealant failed the UV ageing test.) Tj ET
+BT /F1 10 Tf 56 758 Td (PU-55 \(MAR-07\) is proposed as the replacement and awaits approval.) Tj ET
+BT /F1 10 Tf 56 744 Td (MAR-05 anchors await the manufacturer's European Technical Assessment.) Tj ET
+BT /F1 8 Tf 56 40 Td (MAR register, issue 7    Page 2 of 2    SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Title (Material Approval Register) /Producer (make_test_pdfs.py) >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000224 00000 n 
+0000000319 00000 n 
+0000000421 00000 n 
+0000001633 00000 n 
+0000001779 00000 n 
+0000002283 00000 n 
+0000002429 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R /Info 10 0 R >>
+startxref
+2517
+%%EOF

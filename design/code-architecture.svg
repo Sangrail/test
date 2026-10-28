@@ -1,0 +1,294 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1640" viewBox="0 0 1680 1640" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4A5568"/></marker></defs>
+<rect width="1680" height="1640" fill="#FFFFFF"/>
+<text x="30" y="42" font-size="24" fill="#1A202C" font-weight="700">Engineering evidence search: code architecture</text>
+<text x="30" y="66" font-size="13" fill="#4A5568">The modules in engineering_search/, by layer · every import points down the page · two processes, one SearchService in each, share the SQLite files in .runtime/</text>
+<rect x="30" y="80" width="22" height="14" rx="3" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
+<text x="58" y="91" font-size="11" fill="#4A5568">Web front end</text>
+<rect x="180" y="80" width="22" height="14" rx="3" fill="#F3EEFC" stroke="#6B46C1" stroke-width="1.5"/>
+<text x="208" y="91" font-size="11" fill="#4A5568">MCP front end</text>
+<rect x="330" y="80" width="22" height="14" rx="3" fill="#E6FFFA" stroke="#2C7A7B" stroke-width="1.5"/>
+<text x="358" y="91" font-size="11" fill="#4A5568">Service and wiring</text>
+<rect x="480" y="80" width="22" height="14" rx="3" fill="#E9F7EF" stroke="#2F855A" stroke-width="1.5"/>
+<text x="508" y="91" font-size="11" fill="#4A5568">Domain logic</text>
+<rect x="630" y="80" width="22" height="14" rx="3" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
+<text x="658" y="91" font-size="11" fill="#4A5568">SQLite adapters</text>
+<rect x="780" y="80" width="22" height="14" rx="3" fill="#F1F5F9" stroke="#475569" stroke-width="1.5"/>
+<text x="808" y="91" font-size="11" fill="#4A5568">Base types</text>
+<rect x="930" y="80" width="22" height="14" rx="3" fill="#EDEFF2" stroke="#6B7280" stroke-width="1.5"/>
+<text x="958" y="91" font-size="11" fill="#4A5568">Outside the code</text>
+<path d="M1080 87 H1120" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="1128" y="91" font-size="11" fill="#4A5568">a call at run time (the caller is above)</text>
+<text x="1400" y="91" font-size="11" fill="#475569" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: package modules only</text>
+<rect x="15" y="110" width="1115" height="150" rx="12" fill="#F7F8FA"/>
+<text x="75" y="130" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">CLIENTS</text>
+<rect x="75" y="142" width="520" height="106" rx="8" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
+<text x="87" y="166" font-size="14" fill="#1A202C" font-weight="700">Web pages · static/</text>
+<text x="87" y="186" font-size="12" fill="#4A5568">search.html + search.js: sign-in, search bar, folder panel</text>
+<text x="87" y="203" font-size="12" fill="#4A5568">admin.html + dashboard.js: index, scan, uploads, access rules</text>
+<text x="87" y="220" font-size="12" fill="#4A5568">audit.html + audit.js: audit log, page by page</text>
+<text x="87" y="237" font-size="12" fill="#4A5568">style.css · app.py serves them · HTTP with a session cookie</text>
+<rect x="610" y="142" width="240" height="106" rx="8" fill="#EDEFF2" stroke="#6B7280" stroke-width="1.5"/>
+<text x="622" y="166" font-size="14" fill="#1A202C" font-weight="700">Chat client</text>
+<text x="622" y="186" font-size="12" fill="#4A5568">Claude Code, Claude Desktop</text>
+<text x="622" y="203" font-size="12" fill="#4A5568">Starts the MCP server as a</text>
+<text x="622" y="220" font-size="12" fill="#4A5568">child process and calls its</text>
+<text x="622" y="237" font-size="12" fill="#4A5568">tools over stdio</text>
+<text x="840" y="240" font-size="10" fill="#6B7280" text-anchor="end" font-style="italic">existing</text>
+<rect x="865" y="142" width="250" height="106" rx="8" fill="#FFFFFF" stroke="#A0AEC0" stroke-width="1.5"/>
+<text x="877" y="166" font-size="14" fill="#1A202C" font-weight="700">Tests and scripts</text>
+<text x="877" y="186" font-size="12" fill="#4A5568">tests/: create_app + TestClient</text>
+<text x="877" y="203" font-size="12" fill="#4A5568">scripts/evaluate.py: create_app</text>
+<text x="877" y="220" font-size="12" fill="#4A5568">scripts/check_mcp.py: starts</text>
+<text x="877" y="237" font-size="12" fill="#4A5568">mcp_server.py over stdio</text>
+<rect x="15" y="275" width="1115" height="150" rx="12" fill="#F7FAFE"/>
+<text x="75" y="295" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">ENTRY POINTS · ONE PROCESS EACH</text>
+<rect x="75" y="307" width="520" height="107" rx="8" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
+<text x="87" y="331" font-size="14" fill="#1A202C" font-weight="700">__main__.py · process 1: web server</text>
+<text x="87" y="351" font-size="12" fill="#4A5568">python -m engineering_search --documents --state-dir --port</text>
+<text x="87" y="368" font-size="12" fill="#4A5568">Checks the flags, then uvicorn.run(app) on 127.0.0.1</text>
+<text x="87" y="385" font-size="12" fill="#4A5568">Starts the upload workers (through app.py)</text>
+<text x="87" y="404" font-size="11" fill="#2B6CB0" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: runtime</text>
+<rect x="610" y="307" width="505" height="107" rx="8" fill="#F3EEFC" stroke="#6B46C1" stroke-width="1.5"/>
+<text x="622" y="331" font-size="14" fill="#1A202C" font-weight="700">mcp_server.py · process 2: MCP server</text>
+<text x="622" y="351" font-size="12" fill="#4A5568">python -m engineering_search.mcp_server --user jp</text>
+<text x="622" y="368" font-size="12" fill="#4A5568">FastMCP over stdio · tools search_evidence, read_evidence</text>
+<text x="622" y="385" font-size="12" fill="#4A5568">--user → access.USERS, not verified ⚠ · reindex() at start</text>
+<text x="622" y="404" font-size="11" fill="#6B46C1" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: runtime, service, access</text>
+<path d="M735 248 V307" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="742" y="284" font-size="11" text-anchor="start" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">starts · stdio</text>
+<path d="M990 248 V307" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="997" y="284" font-size="11" text-anchor="start" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">check_mcp</text>
+<rect x="15" y="440" width="1115" height="130" rx="12" fill="#F2FBFA"/>
+<text x="75" y="460" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">WIRING</text>
+<rect x="75" y="472" width="870" height="88" rx="8" fill="#E6FFFA" stroke="#2C7A7B" stroke-width="1.5"/>
+<text x="87" y="496" font-size="14" fill="#1A202C" font-weight="700">runtime.py · opens the stores and builds each process</text>
+<text x="87" y="516" font-size="12" fill="#4A5568">stores(documents, state): index-&lt;id&gt;.sqlite3, queue-&lt;id&gt;.sqlite3 and audit.sqlite3 in the state folder</text>
+<text x="87" y="533" font-size="12" fill="#4A5568">build_app() → app.create_app(stores)  ·  build_service() → SearchService(MockPermissionStore, stores)</text>
+<text x="87" y="550" font-size="11" fill="#2C7A7B" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: access, adapters, app, jobs, service, store</text>
+<path d="M450 414 V472" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="457" y="450" font-size="11" text-anchor="start" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">build_app()</text>
+<path d="M800 414 V472" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="807" y="450" font-size="11" text-anchor="start" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">build_service()</text>
+<rect x="15" y="585" width="1115" height="165" rx="12" fill="#F7FAFE"/>
+<text x="75" y="605" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">HTTP FRONT END · PROCESS 1 ONLY</text>
+<rect x="75" y="617" width="700" height="124" rx="8" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
+<text x="87" y="641" font-size="14" fill="#1A202C" font-weight="700">app.py · FastAPI</text>
+<text x="87" y="661" font-size="12" fill="#4A5568">create_app(): the app and its SearchService</text>
+<text x="87" y="678" font-size="12" fill="#4A5568">Default stores if none given (index in memory)</text>
+<text x="87" y="695" font-size="12" fill="#4A5568">WorkerPool threads → service.index_upload()</text>
+<text x="87" y="712" font-size="12" fill="#4A5568">Upload routes call service.queue directly</text>
+<text x="87" y="729" font-size="11" fill="#2B6CB0" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: service, access, adapters, jobs, store, core</text>
+<text x="465" y="661" font-size="12" fill="#4A5568">/search · /auth/* · /demo/documents</text>
+<text x="465" y="678" font-size="12" fill="#4A5568">Index team only: /admin /index /scan /uploads</text>
+<text x="465" y="695" font-size="12" fill="#4A5568">/audit /telemetry /health /docs</text>
+<text x="465" y="712" font-size="12" fill="#4A5568">backend_boundary checks the role on each call</text>
+<text x="465" y="729" font-size="12" fill="#4A5568">ServiceError → JSON reply with its status</text>
+<rect x="850" y="626" width="170" height="106" rx="8" fill="#FFFFFF" stroke="#A0AEC0" stroke-dasharray="5 4"/>
+<text x="862" y="648" font-size="12" fill="#4A5568">The MCP server has no</text>
+<text x="862" y="666" font-size="12" fill="#4A5568">HTTP layer. Its tools</text>
+<text x="862" y="684" font-size="12" fill="#4A5568">call SearchService</text>
+<text x="862" y="702" font-size="12" fill="#4A5568">directly, in process 2.</text>
+<path d="M75 195 H50 V680 H75" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="44" y="430" font-size="11" fill="#4A5568" transform="rotate(-90 44 430)" text-anchor="middle">HTTP + session cookie</text>
+<path d="M450 560 V617" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="457" y="596" font-size="11" text-anchor="start" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">create_app(stores)</text>
+<rect x="15" y="765" width="1115" height="165" rx="12" fill="#F2FBFA"/>
+<text x="75" y="785" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">SERVICE · ALL SEARCH LOGIC · NO HTTP, NO MCP, NO SQL</text>
+<rect x="75" y="797" width="1040" height="124" rx="8" fill="#E6FFFA" stroke="#2C7A7B" stroke-width="1.5"/>
+<text x="87" y="821" font-size="14" fill="#1A202C" font-weight="700">service.py · SearchService · one in each process</text>
+<text x="87" y="841" font-size="12" fill="#4A5568">search(user, question, limit, page, mode, within)</text>
+<text x="87" y="858" font-size="12" fill="#4A5568">read(user, file_id, page) · readable_files(user)</text>
+<text x="87" y="875" font-size="12" fill="#4A5568">scan() · reindex() · status()</text>
+<text x="87" y="892" font-size="12" fill="#4A5568">save_upload(job, content) · index_upload(job, start)</text>
+<text x="87" y="909" font-size="12" fill="#4A5568">commit_audit(event): fails → ServiceError(503)</text>
+<text x="605" y="841" font-size="12" fill="#4A5568">Holds: index, audit, permissions, queue, telemetry</text>
+<text x="605" y="858" font-size="12" fill="#4A5568">lock: index reads and writes in this process</text>
+<text x="605" y="875" font-size="12" fill="#4A5568">operation_lock: one scan or build at a time</text>
+<text x="605" y="892" font-size="12" fill="#4A5568">ServiceError(status, detail) for both front ends</text>
+<text x="605" y="909" font-size="11" fill="#2C7A7B" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: query, answer, access, adapters, jobs, core</text>
+<path d="M600 741 V797" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="592" y="758" font-size="11" text-anchor="end" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">routes call search(), read(), reindex(), scan(), save_upload()</text>
+<path d="M800 560 V797" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="807" y="784" font-size="11" text-anchor="start" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">creates</text>
+<path d="M1068 414 V797" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="1061" y="784" font-size="11" text-anchor="end" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">search(), read()</text>
+<rect x="15" y="945" width="1115" height="165" rx="12" fill="#F5FBF7"/>
+<text x="75" y="965" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">DOMAIN LOGIC · PURE PYTHON · NO FILES, NO SQL</text>
+<rect x="75" y="977" width="420" height="124" rx="8" fill="#E9F7EF" stroke="#2F855A" stroke-width="1.5"/>
+<text x="87" y="1001" font-size="14" fill="#1A202C" font-weight="700">answer.py</text>
+<text x="87" y="1021" font-size="12" fill="#4A5568">understand(question, mode) → Intent: value or list</text>
+<text x="87" y="1038" font-size="12" fill="#4A5568">answer(): exact sentence or table row,</text>
+<text x="87" y="1055" font-size="12" fill="#4A5568">found · partial · not_found, also stated in</text>
+<text x="87" y="1072" font-size="12" fill="#4A5568">list_documents(): Comparison, unit conversion</text>
+<text x="87" y="1089" font-size="12" fill="#4A5568">manifest(): the answer sources for the audit</text>
+<text x="167" y="1001" font-size="11" fill="#2F855A" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: core, query</text>
+<rect x="640" y="977" width="475" height="124" rx="8" fill="#E9F7EF" stroke="#2F855A" stroke-width="1.5"/>
+<text x="652" y="1001" font-size="14" fill="#1A202C" font-weight="700">access.py</text>
+<text x="652" y="1021" font-size="12" fill="#4A5568">ACCESS_RULES: repository, folder or file · governing_rule()</text>
+<text x="652" y="1038" font-size="12" fill="#4A5568">MockPermissionStore.evaluate(user, files): most specific wins</text>
+<text x="652" y="1055" font-size="12" fill="#4A5568">USERS: jp, kamal, maya · DemoSessions: pretend sign-in</text>
+<text x="652" y="1072" font-size="12" fill="#4A5568">folder_access(): the folder list on the sign-in screen</text>
+<text x="652" y="1091" font-size="11" fill="#2F855A" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: none</text>
+<path d="M470 921 V977" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M877 921 V977" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="884" y="958" font-size="11" text-anchor="start" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">evaluate()</text>
+<rect x="15" y="1125" width="1115" height="165" rx="12" fill="#FFFCF5"/>
+<text x="75" y="1145" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">ADAPTERS · THE ONLY SQL</text>
+<rect x="75" y="1157" width="330" height="124" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
+<text x="87" y="1181" font-size="14" fill="#1A202C" font-weight="700">store.py</text>
+<text x="87" y="1201" font-size="12" fill="#4A5568">SQLiteSearchIndex · WAL</text>
+<text x="87" y="1218" font-size="12" fill="#4A5568">candidates(): FTS5 MATCH, then BM25</text>
+<text x="87" y="1235" font-size="12" fill="#4A5568">document_matches() · passages()</text>
+<text x="87" y="1252" font-size="12" fill="#4A5568">apply(): all changes in one transaction</text>
+<text x="87" y="1271" font-size="11" fill="#B7791F" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: core, query</text>
+<rect x="420" y="1157" width="320" height="124" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
+<text x="432" y="1181" font-size="14" fill="#1A202C" font-weight="700">adapters.py</text>
+<text x="432" y="1201" font-size="12" fill="#4A5568">SQLiteAuditStore: append(), read_page()</text>
+<text x="432" y="1218" font-size="12" fill="#4A5568">Telemetry: in memory, last 10,000</text>
+<text x="432" y="1235" font-size="12" fill="#4A5568">queries and 100 index runs</text>
+<text x="432" y="1252" font-size="12" fill="#4A5568">Resets when the process stops</text>
+<text x="432" y="1271" font-size="11" fill="#B7791F" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: none</text>
+<rect x="755" y="1157" width="360" height="124" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
+<text x="767" y="1181" font-size="14" fill="#1A202C" font-weight="700">jobs.py</text>
+<text x="767" y="1201" font-size="12" fill="#4A5568">SQLiteJobQueue: create, enqueue, claim,</text>
+<text x="767" y="1218" font-size="12" fill="#4A5568">complete, fail, retry · full at 1,000 jobs</text>
+<text x="767" y="1235" font-size="12" fill="#4A5568">WorkerPool: threads claim a job and call</text>
+<text x="767" y="1252" font-size="12" fill="#4A5568">service.index_upload()</text>
+<text x="767" y="1271" font-size="11" fill="#B7791F" font-family="SFMono-Regular, Menlo, Consolas, monospace">imports: none</text>
+<path d="M567 921 V1118 H330 V1157" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M567 1118 H580 V1157" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M567 1118 H935 V1157" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="760" y="1112" font-size="11" fill="#4A5568" text-anchor="middle">index · audit and telemetry · queue: objects that the service holds</text>
+<rect x="15" y="1305" width="1115" height="140" rx="12" fill="#F6F7F9"/>
+<text x="75" y="1325" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">BASE · IMPORTS NOTHING FROM THE PACKAGE</text>
+<rect x="75" y="1337" width="700" height="96" rx="8" fill="#F1F5F9" stroke="#475569" stroke-width="1.5"/>
+<text x="87" y="1361" font-size="14" fill="#1A202C" font-weight="700">core.py</text>
+<text x="87" y="1381" font-size="12" fill="#4A5568">Types: Passage, Document</text>
+<text x="87" y="1398" font-size="12" fill="#4A5568">Interfaces: SearchIndex, AuditStore, AuditReader</text>
+<text x="87" y="1415" font-size="12" fill="#4A5568">evidence_manifest() · tokens()</text>
+<text x="425" y="1381" font-size="12" fill="#4A5568">source_files(), scan_files(): .md, .pdf, SHA-256</text>
+<text x="425" y="1398" font-size="12" fill="#4A5568">extract(): Markdown by headings and blank lines</text>
+<text x="425" y="1415" font-size="12" fill="#4A5568">PDF by page with pypdf, at most 15 lines</text>
+<rect x="790" y="1337" width="325" height="96" rx="8" fill="#F1F5F9" stroke="#475569" stroke-width="1.5"/>
+<text x="802" y="1361" font-size="14" fill="#1A202C" font-weight="700">query.py</text>
+<text x="802" y="1381" font-size="12" fill="#4A5568">plan(question) → QueryPlan</text>
+<text x="802" y="1398" font-size="12" fill="#4A5568">Stop words, synonym groups</text>
+<text x="802" y="1415" font-size="12" fill="#4A5568">S355 → prefix S355*</text>
+<rect x="15" y="1460" width="1115" height="160" rx="12" fill="#F7F8FA"/>
+<text x="75" y="1480" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">FILES ON DISK</text>
+<rect x="75" y="1492" width="300" height="112" rx="8" fill="#EDEFF2" stroke="#6B7280" stroke-width="1.5"/>
+<text x="87" y="1516" font-size="14" fill="#1A202C" font-weight="700">test-repository/</text>
+<text x="87" y="1536" font-size="12" fill="#4A5568">138 files: 133 Markdown, 5 PDF</text>
+<text x="87" y="1553" font-size="12" fill="#4A5568">core.extract() reads them</text>
+<text x="87" y="1570" font-size="12" fill="#4A5568">service.save_upload() writes</text>
+<text x="87" y="1587" font-size="12" fill="#4A5568">uploaded Markdown here</text>
+<text x="365" y="1596" font-size="10" fill="#6B7280" text-anchor="end" font-style="italic">existing</text>
+<path d="M300 1433 V1492" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="307" y="1468" font-size="11" text-anchor="start" fill="#4A5568" paint-order="stroke" stroke="#FFFFFF" stroke-width="4">reads</text>
+<rect x="400" y="1492" width="715" height="112" rx="10" fill="#FFFDF8" stroke="#B7791F" stroke-width="1.5"/>
+<text x="414" y="1512" font-size="13" fill="#1A202C" font-weight="700">.runtime/  (--state-dir)</text>
+<text x="590" y="1512" font-size="12" fill="#4A5568">&lt;id&gt; comes from the document folder path · both processes open the same files</text>
+<rect x="414" y="1524" width="220" height="70" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
+<text x="426" y="1548" font-size="14" fill="#1A202C" font-weight="700">index-&lt;id&gt;.sqlite3</text>
+<text x="426" y="1568" font-size="12" fill="#4A5568">written by store.py</text>
+<text x="426" y="1585" font-size="12" fill="#4A5568">documents, passages, FTS5, meta</text>
+<rect x="647" y="1524" width="220" height="70" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
+<text x="659" y="1548" font-size="14" fill="#1A202C" font-weight="700">queue-&lt;id&gt;.sqlite3</text>
+<text x="659" y="1568" font-size="12" fill="#4A5568">written by jobs.py</text>
+<text x="659" y="1585" font-size="12" fill="#4A5568">upload jobs and their state</text>
+<rect x="880" y="1524" width="220" height="70" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
+<text x="892" y="1548" font-size="14" fill="#1A202C" font-weight="700">audit.sqlite3</text>
+<text x="892" y="1568" font-size="12" fill="#4A5568">written by adapters.py</text>
+<text x="892" y="1585" font-size="12" fill="#4A5568">events, no document text</text>
+<rect x="1145" y="110" width="505" height="385" rx="10" fill="#FFFFFF" stroke="#A0AEC0" stroke-width="1.2"/>
+<text x="1161" y="136" font-size="14" fill="#1A202C" font-weight="700">The path of one question</text>
+<text x="1161" y="160" font-size="12" fill="#1A202C" font-weight="700">1</text>
+<text x="1185" y="160" font-size="12" fill="#1A202C">app.py POST /search, or mcp_server search_evidence</text>
+<text x="1185" y="176" font-size="12" fill="#4A5568">User from the session cookie, or from --user</text>
+<text x="1161" y="200" font-size="12" fill="#1A202C" font-weight="700">2</text>
+<text x="1185" y="200" font-size="12" fill="#1A202C">answer.understand(): one value or a list?</text>
+<text x="1185" y="216" font-size="12" fill="#4A5568">Finds a comparison, for example &gt; 5 kN/m²</text>
+<text x="1161" y="240" font-size="12" fill="#1A202C" font-weight="700">3</text>
+<text x="1185" y="240" font-size="12" fill="#1A202C">query.plan(): stop words, synonyms, prefixes</text>
+<text x="1161" y="264" font-size="12" fill="#1A202C" font-weight="700">4</text>
+<text x="1185" y="264" font-size="12" fill="#1A202C">store.candidates(): FTS5, up to 1,000 passages</text>
+<text x="1185" y="280" font-size="12" fill="#4A5568">store.document_matches() for a list question</text>
+<text x="1161" y="304" font-size="12" fill="#1A202C" font-weight="700">5</text>
+<text x="1185" y="304" font-size="12" fill="#1A202C">access.evaluate(): permitted files only from here</text>
+<text x="1185" y="320" font-size="12" fill="#4A5568">Fails → 503 and no evidence</text>
+<text x="1161" y="344" font-size="12" fill="#1A202C" font-weight="700">6</text>
+<text x="1185" y="344" font-size="12" fill="#1A202C">answer.answer() or answer.list_documents()</text>
+<text x="1185" y="360" font-size="12" fill="#4A5568">Exact text from the document, never written</text>
+<text x="1161" y="384" font-size="12" fill="#1A202C" font-weight="700">7</text>
+<text x="1185" y="384" font-size="12" fill="#1A202C">service.py pages the supporting passages</text>
+<text x="1161" y="408" font-size="12" fill="#1A202C" font-weight="700">8</text>
+<text x="1185" y="408" font-size="12" fill="#1A202C">SQLiteAuditStore.append(): decisions, sources</text>
+<text x="1185" y="424" font-size="12" fill="#4A5568">Fails → 503 and no evidence</text>
+<text x="1161" y="448" font-size="12" fill="#1A202C" font-weight="700">9</text>
+<text x="1185" y="448" font-size="12" fill="#1A202C">Telemetry.record_stages(), then return</text>
+<text x="1185" y="464" font-size="12" fill="#4A5568">Web: JSON reply · MCP: the tool result</text>
+<rect x="1145" y="510" width="505" height="425" rx="10" fill="#FFFFFF" stroke="#A0AEC0" stroke-width="1.2"/>
+<text x="1161" y="536" font-size="14" fill="#1A202C" font-weight="700">The index and upload paths</text>
+<text x="1161" y="564" font-size="12" fill="#2C7A7B" font-weight="700">Reindex: POST /index, web start or MCP start</text>
+<text x="1161" y="582" font-size="12" fill="#1A202C" font-weight="700">1</text>
+<text x="1185" y="582" font-size="12" fill="#1A202C">core.source_files(), then the SHA-256 of each file</text>
+<text x="1161" y="606" font-size="12" fill="#1A202C" font-weight="700">2</text>
+<text x="1185" y="606" font-size="12" fill="#1A202C">Compare with store.versions(): read only</text>
+<text x="1185" y="622" font-size="12" fill="#4A5568">new and changed files</text>
+<text x="1161" y="646" font-size="12" fill="#1A202C" font-weight="700">3</text>
+<text x="1185" y="646" font-size="12" fill="#1A202C">core.extract(): a Document with its passages</text>
+<text x="1185" y="662" font-size="12" fill="#4A5568">A file that fails is listed in failed_files</text>
+<text x="1161" y="686" font-size="12" fill="#1A202C" font-weight="700">4</text>
+<text x="1185" y="686" font-size="12" fill="#1A202C">queue.reconcile_ready(), store.apply(): one</text>
+<text x="1185" y="702" font-size="12" fill="#4A5568">transaction for all changes</text>
+<text x="1161" y="730" font-size="12" fill="#2C7A7B" font-weight="700">Upload: Markdown, index team only</text>
+<text x="1161" y="748" font-size="12" fill="#1A202C" font-weight="700">1</text>
+<text x="1185" y="748" font-size="12" fill="#1A202C">POST /uploads → service.queue.create()</text>
+<text x="1161" y="772" font-size="12" fill="#1A202C" font-weight="700">2</text>
+<text x="1185" y="772" font-size="12" fill="#1A202C">PUT /uploads/{id}/content → save_upload():</text>
+<text x="1185" y="788" font-size="12" fill="#4A5568">writes the file, then queue.enqueue()</text>
+<text x="1161" y="812" font-size="12" fill="#1A202C" font-weight="700">3</text>
+<text x="1185" y="812" font-size="12" fill="#1A202C">WorkerPool thread: queue.claim()</text>
+<text x="1185" y="828" font-size="12" fill="#4A5568">→ service.index_upload()</text>
+<text x="1161" y="852" font-size="12" fill="#1A202C" font-weight="700">4</text>
+<text x="1185" y="852" font-size="12" fill="#1A202C">core.extract() → store.upsert() → queue.complete()</text>
+<text x="1161" y="880" font-size="12" fill="#2C7A7B" font-weight="700">Scan: POST /scan</text>
+<text x="1185" y="898" font-size="12" fill="#1A202C">core.scan_files(): compare only, no change</text>
+<rect x="1145" y="950" width="505" height="360" rx="10" fill="#FFFFFF" stroke="#A0AEC0" stroke-width="1.2"/>
+<text x="1161" y="976" font-size="14" fill="#1A202C" font-weight="700">Rules that the structure keeps</text>
+<text x="1161" y="1000" font-size="12" fill="#1A202C" font-weight="700">1</text>
+<text x="1185" y="1000" font-size="12" fill="#1A202C">Every import points down the page.</text>
+<text x="1185" y="1016" font-size="12" fill="#4A5568">No module imports one above it.</text>
+<text x="1161" y="1040" font-size="12" fill="#1A202C" font-weight="700">2</text>
+<text x="1185" y="1040" font-size="12" fill="#1A202C">Only app.py knows HTTP.</text>
+<text x="1185" y="1056" font-size="12" fill="#4A5568">Only mcp_server.py knows MCP.</text>
+<text x="1161" y="1080" font-size="12" fill="#1A202C" font-weight="700">3</text>
+<text x="1185" y="1080" font-size="12" fill="#1A202C">SQL is only in store.py, adapters.py</text>
+<text x="1185" y="1096" font-size="12" fill="#4A5568">and jobs.py.</text>
+<text x="1161" y="1120" font-size="12" fill="#1A202C" font-weight="700">4</text>
+<text x="1185" y="1120" font-size="12" fill="#1A202C">Permissions and the audit are in service.py,</text>
+<text x="1185" y="1136" font-size="12" fill="#4A5568">so both front ends give the same result.</text>
+<text x="1161" y="1160" font-size="12" fill="#1A202C" font-weight="700">5</text>
+<text x="1185" y="1160" font-size="12" fill="#1A202C">service.py gets its stores as objects, from</text>
+<text x="1185" y="1176" font-size="12" fill="#4A5568">runtime.py or from a test.</text>
+<text x="1161" y="1200" font-size="12" fill="#1A202C" font-weight="700">6</text>
+<text x="1185" y="1200" font-size="12" fill="#1A202C">Each process has its own SearchService, locks</text>
+<text x="1185" y="1216" font-size="12" fill="#4A5568">and telemetry. They share the SQLite files.</text>
+<text x="1161" y="1240" font-size="12" fill="#1A202C" font-weight="700">⚠</text>
+<text x="1185" y="1240" font-size="12" fill="#1A202C">MVP shortcuts: pretend sign-in, --user not</text>
+<text x="1185" y="1256" font-size="12" fill="#4A5568">verified, upload routes use service.queue</text>
+<text x="1185" y="1272" font-size="12" fill="#4A5568">directly, rules in access.py. See ARCHITECTURE.md</text>
+<rect x="1145" y="1325" width="505" height="295" rx="10" fill="#FFFFFF" stroke="#A0AEC0" stroke-width="1.2"/>
+<text x="1161" y="1351" font-size="14" fill="#1A202C" font-weight="700">Related documents</text>
+<text x="1185" y="1375" font-size="12" fill="#1A202C">ARCHITECTURE.md</text>
+<text x="1185" y="1391" font-size="12" fill="#4A5568">Modules, one question step by step, MVP shortcuts</text>
+<text x="1185" y="1415" font-size="12" fill="#1A202C">design/system-design.svg</text>
+<text x="1185" y="1431" font-size="12" fill="#4A5568">The wider system: planes, stores, phases, MCP</text>
+<text x="1185" y="1455" font-size="12" fill="#1A202C">docs/adr/0011 and 0012</text>
+<text x="1185" y="1471" font-size="12" fill="#4A5568">One search service · the MCP server and its hole</text>
+<text x="1185" y="1495" font-size="12" fill="#1A202C">docs/adr/0006 and 0010</text>
+<text x="1185" y="1511" font-size="12" fill="#4A5568">Permissions before results · folder and file rules</text>
+<text x="1185" y="1535" font-size="12" fill="#1A202C">design/make_architecture.py</text>
+<text x="1185" y="1551" font-size="12" fill="#4A5568">Makes this diagram: change it with the code</text>
+</svg>

@@ -1,0 +1,305 @@
+{
+  "summary": {
+    "questions": 17,
+    "scored_questions": 16,
+    "success_at_1": 0.8125,
+    "success_at_5": 0.9375,
+    "mrr_at_10": 0.8552083333333333,
+    "recall_at_10": 0.96875,
+    "zero_result_rate": 0.0,
+    "permission_leaks": 0,
+    "latency_p50_ms": 11.6,
+    "latency_p95_ms": 53.8
+  },
+  "questions": [
+    {
+      "id": "Q01",
+      "user": "jp",
+      "question": "What is the roof load limit?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-cedar/03-roof-load.md:3",
+        "specifications/roof-load.md:7",
+        "specifications/roof-load-draft.md:7"
+      ],
+      "latency_ms": 21.0,
+      "searched_for": "roof \u00b7 load \u00b7 limit (or allowable, capacity, max, maximum, permissible, permitted)"
+    },
+    {
+      "id": "Q02",
+      "user": "jp",
+      "question": "maximum roof load for the Northgate warehouse",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:8",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2",
+        "project-cedar/03-roof-load.md:3"
+      ],
+      "latency_ms": 23.0,
+      "searched_for": "maximum (or allowable, capacity, limit, max, permissible, permitted) \u00b7 roof \u00b7 load \u00b7 northgate \u00b7 warehouse"
+    },
+    {
+      "id": "Q03",
+      "user": "jp",
+      "question": "pedestrian live load limit on the Riverside footbridge",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-riverside/riverside-footbridge-load-rating.pdf:7",
+        "project-riverside/riverside-footbridge-load-rating.pdf:2",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:48"
+      ],
+      "latency_ms": 26.3,
+      "searched_for": "pedestrian (or footbridge) \u00b7 live \u00b7 load \u00b7 limit (or allowable, capacity, max, maximum, permissible, permitted) \u00b7 riverside \u00b7 footbridge (or pedestrian)"
+    },
+    {
+      "id": "Q04",
+      "user": "jp",
+      "question": "Which vehicles are prohibited on the footbridge?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-riverside/riverside-footbridge-load-rating.pdf:2",
+        "project-riverside/riverside-footbridge-load-rating.pdf:7",
+        "project-riverside/riverside-footbridge-load-rating.pdf:4"
+      ],
+      "latency_ms": 4.2,
+      "searched_for": "vehicles \u00b7 prohibited (or banned, forbidden, restricted) \u00b7 footbridge (or pedestrian)"
+    },
+    {
+      "id": "Q05",
+      "user": "jp",
+      "question": "steel grade of the Riverside girders",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 0.5,
+      "leaks": [],
+      "top": [
+        "project-riverside/riverside-footbridge-load-rating.pdf:8",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:11",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:44"
+      ],
+      "latency_ms": 32.2,
+      "searched_for": "steel \u00b7 grade (or spec, specification) \u00b7 riverside \u00b7 girders"
+    },
+    {
+      "id": "Q06",
+      "user": "jp",
+      "question": "material specification for the portal frames",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2",
+        "specifications/bridge.md:7",
+        "specifications/roof-load.md:13"
+      ],
+      "latency_ms": 5.6,
+      "searched_for": "material \u00b7 specification (or grade, spec) \u00b7 portal \u00b7 frames"
+    },
+    {
+      "id": "Q07",
+      "user": "jp",
+      "question": "S355",
+      "scored": true,
+      "results": 6,
+      "first_relevant_rank": 3,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "specifications/roof-load.md:13",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2",
+        "project-cedar/04-beam-capacity.md:3"
+      ],
+      "latency_ms": 3.1,
+      "searched_for": "s355*"
+    },
+    {
+      "id": "Q08",
+      "user": "jp",
+      "question": "Has building control approved the Northgate warehouse?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:1",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:5"
+      ],
+      "latency_ms": 4.3,
+      "searched_for": "building \u00b7 control \u00b7 approved \u00b7 northgate \u00b7 warehouse"
+    },
+    {
+      "id": "Q09",
+      "user": "jp",
+      "question": "compliance approval status",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-cedar/07-compliance-approval.md:3",
+        "specifications/bridge.md:7",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2"
+      ],
+      "latency_ms": 3.1,
+      "searched_for": "compliance \u00b7 approval \u00b7 status"
+    },
+    {
+      "id": "Q10",
+      "user": "jp",
+      "question": "Which materials were rejected?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "registers/material-approval-register.pdf:5",
+        "registers/material-approval-register.pdf:2",
+        "specifications/bridge.md:7"
+      ],
+      "latency_ms": 3.2,
+      "searched_for": "materials \u00b7 rejected (or declined, refused)"
+    },
+    {
+      "id": "Q11",
+      "user": "jp",
+      "question": "allowable bearing pressure for the foundations",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-cedar/05-foundation.md:3",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:7",
+        "project-cedar/08-environmental-review.md:3"
+      ],
+      "latency_ms": 11.6,
+      "searched_for": "allowable (or capacity, limit, max, maximum, permissible, permitted) \u00b7 bearing \u00b7 pressure \u00b7 foundations"
+    },
+    {
+      "id": "Q12",
+      "user": "jp",
+      "question": "service bridge live load limit",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 4,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "public-fhwa/fhwa-steel-bridge-handbook-vol18-load-rating.pdf:16",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:29",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:13"
+      ],
+      "latency_ms": 43.9,
+      "searched_for": "service \u00b7 bridge \u00b7 live \u00b7 load \u00b7 limit (or allowable, capacity, max, maximum, permissible, permitted)"
+    },
+    {
+      "id": "Q13",
+      "user": "jp",
+      "question": "What steel grade is used in the FHWA design example girders?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 10,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:38",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:32",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol20-design-example-1.pdf:20"
+      ],
+      "latency_ms": 67.0,
+      "searched_for": "steel \u00b7 grade (or spec, specification) \u00b7 used \u00b7 fhwa \u00b7 design \u00b7 example \u00b7 girders"
+    },
+    {
+      "id": "Q14",
+      "user": "jp",
+      "question": "HL-93 inventory and operating rating",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "public-fhwa/fhwa-steel-bridge-handbook-vol18-load-rating.pdf:12",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol18-load-rating.pdf:17",
+        "public-fhwa/fhwa-steel-bridge-handbook-vol18-load-rating.pdf:6"
+      ],
+      "latency_ms": 8.0,
+      "searched_for": "hl \u00b7 93* \u00b7 inventory \u00b7 operating \u00b7 rating"
+    },
+    {
+      "id": "Q15",
+      "user": "jp",
+      "question": "Is the proposed 7 kN/m\u00b2 roof load approved?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "specifications/roof-load-draft.md:7",
+        "specifications/roof-load.md:7",
+        "project-northgate/northgate-warehouse-structural-calculations.pdf:2"
+      ],
+      "latency_ms": 53.8,
+      "searched_for": "proposed \u00b7 7* \u00b7 kn \u00b7 m\u00b2* \u00b7 roof \u00b7 load \u00b7 approved"
+    },
+    {
+      "id": "Q16",
+      "user": "kamal",
+      "question": "What is the roof load limit?",
+      "scored": true,
+      "results": 10,
+      "first_relevant_rank": 1,
+      "recall": 1.0,
+      "leaks": [],
+      "top": [
+        "project-cedar/03-roof-load.md:3",
+        "project-cedar/01-project-brief.md:3",
+        "project-cedar/04-beam-capacity.md:3"
+      ],
+      "latency_ms": 19.5,
+      "searched_for": "roof \u00b7 load \u00b7 limit (or allowable, capacity, max, maximum, permissible, permitted)"
+    },
+    {
+      "id": "Q17",
+      "user": "kamal",
+      "question": "compliance approval status",
+      "scored": false,
+      "results": 10,
+      "first_relevant_rank": null,
+      "recall": null,
+      "leaks": [],
+      "top": [
+        "project-riverside/riverside-footbridge-load-rating.pdf:2",
+        "project-cedar/09-bridge-load.md:3",
+        "project-cedar/03-roof-load.md:3"
+      ],
+      "latency_ms": 3.2,
+      "searched_for": "compliance \u00b7 approval \u00b7 status"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+# Synthetic project 063
+
+SYNTHETIC TEST DATA - not for engineering use.
+
+## Roof load
+
+| Parameter | Value | Conditions | Approval status |
+| --- | --- | --- | --- |
+| Maximum roof load | 1 kN/m² | Static, dry | Approved |
+
+## Material specification
+
+Support material: S355 steel. Project identifier: DEMO063.

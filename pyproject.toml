@@ -1,0 +1,18 @@
+[project]
+name = "engineering-search-mvp"
+version = "0.1.0"
+description = "Local Markdown search with evidence, telemetry, and durable auditing"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.116.1",
+    "mcp==1.27.2",
+    "pypdf==6.21.4",
+    "uvicorn==0.35.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==8.4.1", "httpx==0.28.1"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

@@ -1,0 +1,108 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R 9 0 R 11 0 R 13 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 766 >>
+stream
+BT /F3 15 Tf 56 790 Td (Northgate Distribution Warehouse - Structural Calculations) Tj ET
+BT /F1 10 Tf 56 766 Td (Document NDW-CALC-001, Revision B, January 2024. Project: Northgate.) Tj ET
+BT /F1 10 Tf 56 752 Td (SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+BT /F3 11 Tf 56 728 Td (1 Scope) Tj ET
+BT /F1 10 Tf 56 710 Td (Structural design of a single-storey steel portal frame warehouse with) Tj ET
+BT /F1 10 Tf 56 696 Td (an internal storage mezzanine and a two-storey office block.) Tj ET
+BT /F3 11 Tf 56 672 Td (2 Design standards) Tj ET
+BT /F1 10 Tf 56 654 Td (Eurocodes EN 1990, EN 1991 and EN 1993 with the UK National Annexes.) Tj ET
+BT /F1 8 Tf 56 40 Td (NDW-CALC-001 Revision B    Page 1 of 4    SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 874 >>
+stream
+BT /F3 11 Tf 56 790 Td (3 Design loads) Tj ET
+BT /F2 9 Tf 56 772 Td (Area                 Imposed load    Notes) Tj ET
+BT /F2 9 Tf 56 759 Td (Roof \(no access\)     0.6 kN/m≤       Category H) Tj ET
+BT /F2 9 Tf 56 746 Td (Mezzanine floor      7.5 kN/m≤       Storage, category E1) Tj ET
+BT /F2 9 Tf 56 733 Td (Office floor         2.5 kN/m≤       Category B) Tj ET
+BT /F2 9 Tf 56 720 Td (Roof snow            0.5 kN/m≤       Characteristic value) Tj ET
+BT /F3 11 Tf 56 697 Td (3.1 Roof load limit) Tj ET
+BT /F1 10 Tf 56 679 Td (The roof is designed for an imposed load of 0.6 kN/m≤. It is not) Tj ET
+BT /F1 10 Tf 56 665 Td (designed for plant or solar panels. Any additional roof load needs a) Tj ET
+BT /F1 10 Tf 56 651 Td (new structural assessment.) Tj ET
+BT /F1 8 Tf 56 40 Td (NDW-CALC-001 Revision B    Page 2 of 4    SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 690 >>
+stream
+BT /F3 11 Tf 56 790 Td (4 Materials) Tj ET
+BT /F2 9 Tf 56 772 Td (Element              Specification) Tj ET
+BT /F2 9 Tf 56 759 Td (Portal frames        S355 hot-rolled structural steel) Tj ET
+BT /F2 9 Tf 56 746 Td (Purlins              S390GD cold-formed galvanised steel) Tj ET
+BT /F2 9 Tf 56 733 Td (Floor slab           C30/37 concrete with B500B reinforcement) Tj ET
+BT /F3 11 Tf 56 710 Td (4.1 Foundations) Tj ET
+BT /F1 10 Tf 56 692 Td (Pad foundations. Allowable bearing pressure: 150 kPa, from the) Tj ET
+BT /F1 10 Tf 56 678 Td (geotechnical report NDW-GI-02.) Tj ET
+BT /F1 8 Tf 56 40 Td (NDW-CALC-001 Revision B    Page 3 of 4    SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 399 >>
+stream
+BT /F3 11 Tf 56 790 Td (5 Compliance) Tj ET
+BT /F1 10 Tf 56 772 Td (Building control approval status: PENDING. Submitted on 2 February) Tj ET
+BT /F1 10 Tf 56 758 Td (2024, reference BC-NDW-0042. The fire engineering review is still) Tj ET
+BT /F1 10 Tf 56 744 Td (outstanding.) Tj ET
+BT /F1 8 Tf 56 40 Td (NDW-CALC-001 Revision B    Page 4 of 4    SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Title (Northgate Distribution Warehouse - Structural Calculations) /Producer (make_test_pdfs.py) >>
+endobj
+xref
+0 15
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000141 00000 n 
+0000000238 00000 n 
+0000000333 00000 n 
+0000000435 00000 n 
+0000001252 00000 n 
+0000001398 00000 n 
+0000002323 00000 n 
+0000002469 00000 n 
+0000003211 00000 n 
+0000003359 00000 n 
+0000003810 00000 n 
+0000003958 00000 n 
+trailer
+<< /Size 15 /Root 1 0 R /Info 14 0 R >>
+startxref
+4078
+%%EOF

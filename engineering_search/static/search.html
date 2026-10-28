@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Search · Engineering Search</title><link rel="stylesheet" href="/static/style.css"><script src="/static/search.js" defer></script></head>
+<body>
+  <header class="topbar"><a class="brand" href="/search" aria-label="Engineering Search home"><span class="brand-mark">E<span>∕</span></span><span>Engineering<span class="brand-light"> Search</span></span></a><nav id="app-nav" hidden><span class="active">Search</span><a id="audit-link" href="/audit" hidden>Audit log</a><a id="admin-link" href="/admin" hidden>Index operations ↗</a></nav><span id="session-chip" class="session-chip" hidden><span id="identity-title"></span><button class="secondary" id="logout-button" type="button">Sign out</button></span></header>
+  <main class="search-main">
+    <p id="session-notice" role="status" aria-live="polite" hidden></p>
+    <section id="signin-screen" class="signin-screen" aria-labelledby="signin-title" hidden>
+      <div class="eyebrow">PRETEND SIGN-IN</div>
+      <h1 id="signin-title">Choose a demo user</h1>
+      <p>There is no password. Anyone can select any user. Each user can read different files, so the same question gives different results.</p>
+      <div id="user-cards" class="user-cards"></div>
+    </section>
+    <div id="app-screen" hidden>
+    <section class="search-hero"><div class="eyebrow">ENGINEERING KNOWLEDGE</div><h1>Find the detail.<br><span>See the source.</span></h1><p>Search project documents for load limits, material specifications and approval status. Each answer is the exact text from a document, with its file, page and lines.</p></section>
+    <section class="panel search-console" aria-label="Search documents"><form id="search-form"><label class="query-label" for="query">What are you looking for?</label><div class="query-controls"><input id="query" type="search" placeholder="e.g. What is the roof load limit at Northgate? · Which documents specify S355?" maxlength="500" required disabled><button type="submit" id="search-button" class="primary" disabled>Search documents →</button></div><div class="search-options"><label for="page-size">Per page <select id="page-size"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option><option value="50">50</option></select></label><span>Plain-language search · try <button id="try-load" type="button" disabled>load</button> to compare users</span></div></form></section>
+    <div class="search-context"><span id="search-identity">Sign in to search your permitted documents.</span><span>Answers are exact text from the documents, with their source</span></div>
+    <section id="my-documents" class="panel my-documents" aria-labelledby="my-documents-title" hidden>
+      <figure class="type-figure"><svg id="type-chart" viewBox="0 0 120 120" role="img" aria-labelledby="type-chart-title"><title id="type-chart-title"></title></svg><figcaption><ul id="type-legend" class="type-legend"></ul></figcaption></figure>
+      <div class="folder-summary"><h2 id="my-documents-title"></h2><p>Search uses only these documents. Folders you cannot read are not listed.</p>
+        <table class="folder-table"><thead><tr><th>Folder</th><th>Markdown</th><th>PDF</th><th>Files you can read</th></tr></thead><tbody id="folder-rows"></tbody></table>
+      </div>
+    </section>
+    <section id="answer-panel" class="answer-panel" aria-live="polite" hidden></section><label id="within-control" class="within-control" hidden><input type="checkbox" id="within-list" aria-labelledby="within-label"> <span id="within-label"></span></label><section aria-label="Search results"><div class="results-heading"><h2 id="results-title">Your evidence will appear here</h2><span id="results-timing"></span></div><p id="searched-for" class="search-message"></p><p id="search-message" class="search-message" role="status" aria-live="polite">Results contain only documents that you can read.</p><div id="search-results"></div><nav id="search-pagination" class="search-pagination" aria-label="Search result pages" hidden><button id="previous-page" class="secondary" type="button" disabled>← Previous</button><span id="page-summary" aria-live="polite"></span><button id="next-page" class="secondary" type="button" disabled>Next →</button><small>Permissions are checked on every page. Changes to documents or permissions can shift results.</small></nav><p id="trace-note" class="trace-note"></p></section>
+    </div>
+    <footer><span>Local permission demonstration</span><span>Backend operations are a separate restricted route. Anyone can select a demo identity; production authentication is not implemented.</span></footer>
+  </main>
+</body>
+</html>

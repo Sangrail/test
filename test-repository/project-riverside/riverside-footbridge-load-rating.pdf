@@ -1,0 +1,92 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R 9 0 R 11 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 942 >>
+stream
+BT /F3 15 Tf 56 790 Td (Riverside Footbridge RFB-01 - Load Rating Report) Tj ET
+BT /F1 10 Tf 56 766 Td (Document RFB-LR-003, Revision C, March 2024. Project: Riverside.) Tj ET
+BT /F1 10 Tf 56 752 Td (SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+BT /F3 11 Tf 56 728 Td (1 Introduction) Tj ET
+BT /F1 10 Tf 56 710 Td (This report rates the Riverside footbridge RFB-01 for pedestrian and) Tj ET
+BT /F1 10 Tf 56 696 Td (maintenance vehicle use after the 2023 principal inspection.) Tj ET
+BT /F3 11 Tf 56 672 Td (2 Structure description) Tj ET
+BT /F1 10 Tf 56 654 Td (Two spans of 18.5 m. Deck: 200 mm reinforced concrete slab, concrete) Tj ET
+BT /F1 10 Tf 56 640 Td (class C32/40. Main girders: welded plate girders, steel grade S355J2+N) Tj ET
+BT /F1 10 Tf 56 626 Td (to EN 10025-2. Bearings: elastomeric, type EB-3.) Tj ET
+BT /F1 8 Tf 56 40 Td (RFB-LR-003 Revision C    Page 1 of 3    SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 825 >>
+stream
+BT /F3 11 Tf 56 790 Td (3 Load rating summary) Tj ET
+BT /F2 9 Tf 56 772 Td (Load case            Rating factor   Limit          Result) Tj ET
+BT /F2 9 Tf 56 759 Td (Pedestrian crowd     1.32            5.0 kN/m≤      Pass) Tj ET
+BT /F2 9 Tf 56 746 Td (Maintenance vehicle  1.08            3.5 t gross    Pass) Tj ET
+BT /F2 9 Tf 56 733 Td (Emergency vehicle    0.86            12 t gross     Fail - restricted) Tj ET
+BT /F3 11 Tf 56 710 Td (4 Load limit) Tj ET
+BT /F1 10 Tf 56 692 Td (The maximum permitted pedestrian live load is 5.0 kN/m≤. Vehicles above) Tj ET
+BT /F1 10 Tf 56 678 Td (3.5 t gross weight are prohibited. Weight limit signs are required at) Tj ET
+BT /F1 10 Tf 56 664 Td (both abutments.) Tj ET
+BT /F1 8 Tf 56 40 Td (RFB-LR-003 Revision C    Page 2 of 3    SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 544 >>
+stream
+BT /F3 11 Tf 56 790 Td (5 Approval) Tj ET
+BT /F1 10 Tf 56 772 Td (Approval status: APPROVED by the Riverside Bridge Authority on) Tj ET
+BT /F1 10 Tf 56 758 Td (14 May 2024, reference RBA-2024-117. The approval is subject to the) Tj ET
+BT /F1 10 Tf 56 744 Td (vehicle restriction in section 4.) Tj ET
+BT /F3 11 Tf 56 720 Td (6 Next inspection) Tj ET
+BT /F1 10 Tf 56 702 Td (The next principal inspection is due in May 2026.) Tj ET
+BT /F1 8 Tf 56 40 Td (RFB-LR-003 Revision C    Page 3 of 3    SYNTHETIC TEST DATA - NOT FOR ENGINEERING USE) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Title (Riverside Footbridge RFB-01 - Load Rating Report) /Producer (make_test_pdfs.py) >>
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000134 00000 n 
+0000000231 00000 n 
+0000000326 00000 n 
+0000000428 00000 n 
+0000001421 00000 n 
+0000001567 00000 n 
+0000002443 00000 n 
+0000002589 00000 n 
+0000003185 00000 n 
+0000003333 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R /Info 12 0 R >>
+startxref
+3443
+%%EOF

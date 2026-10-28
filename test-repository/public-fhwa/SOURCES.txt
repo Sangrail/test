@@ -1,0 +1,25 @@
+PUBLIC DOCUMENTS - REAL, NOT SYNTHETIC
+
+These two PDFs are unmodified copies of US Federal Highway Administration
+(FHWA) publications. Works prepared by the US federal government are
+generally not subject to copyright in the United States (17 U.S.C. 105).
+No copyright or "reproduced with permission" notice was found on any page
+when they were added on 2026-10-28. They are included only to test how the
+search behaves on real engineering PDFs. They are reference material, not
+project records, and their values do not apply to any project.
+
+fhwa-steel-bridge-handbook-vol18-load-rating.pdf
+  Steel Bridge Design Handbook, Vol. 18: Load Rating of Steel Bridges
+  FHWA-HIF-16-002 - Vol. 18, December 2015, 25 pages
+  Source: https://rosap.ntl.bts.gov/view/dot/42900/dot_42900_DS1.pdf
+
+fhwa-steel-bridge-handbook-vol20-design-example-1.pdf
+  Steel Bridge Design Handbook, Vol. 20: Design Example 1, Three-Span
+  Continuous Straight Composite Steel I-Girder Bridge
+  FHWA-HIF-16-002 - Vol. 20, December 2015, 172 pages
+  Source: https://rosap.ntl.bts.gov/view/dot/42904/dot_42904_DS1.pdf
+
+Excluded on purpose
+  State DOT reports (Iowa, Florida, Tennessee, Connecticut, Oklahoma):
+  copyright status is not clear, so they are not redistributed here.
+  AISC publications: copyrighted, not redistributed.
