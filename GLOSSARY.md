@@ -40,11 +40,11 @@ An index that maps each word to the passages that contain it. A search looks up 
 The words that the service searches for after it removes common words, adds synonyms and makes codes into prefix searches. The response shows it as "Searched for".
 
 **Answer**:
-One sentence or table row, copied exactly from a passage, that states the value that a question asks for. It has the source of that passage.
+One sentence or table row, copied exactly from a passage, that the service selects as stating the value that a question asks for. It has the source of that passage. The selection is a word match: the service does not verify that the value belongs to the asked element.
 _Avoid_: Generated answer. The service does not write answer text.
 
 **Document list**:
-The answer to a "which documents" question: one entry for each readable document that contains every question word, with the line that shows why.
+The answer to a "which documents" question: one entry for each readable document that contains every question word, with the line that shows why. At most 200 entries are returned.
 
 **Access rule**:
 A path (the whole repository, a folder or a file) and the users who may read it. The most specific rule for a file applies.

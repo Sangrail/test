@@ -23,12 +23,12 @@ The use case must be enforced by tests (R4), not only described. The repository 
   - list questions, material, approval status, load comparison and a follow-up (R3);
   - each answer within the 10-second limit (U3);
   - no answer from a file the user cannot read (R1).
-- Test R1 more strongly in `tests/test_no_leaks.py`: every question, plus questions made from the text of each forbidden file, in each mode, on each page, for each user.
-- Measure ranking and answers with `scripts/evaluate.py` on 17 questions (`evaluation/questions.json`). Save the results in `evaluation/results/answers.json`.
+- Test R1 more strongly in `tests/test_no_leaks.py`: every question, plus questions made from the text of each forbidden file, in each mode, on the first five result pages of 50 passages, for each user.
+- Measure ranking and answers with `scripts/evaluate.py` on 17 questions, 16 of them scored (`evaluation/questions.json`). Save the results in `evaluation/results/answers.json`.
 
 ## Consequences
 
-- A change that breaks the use case fails a test.
+- A change that breaks the use case on these examples fails a test. The tests do not cover every failure: they pass with the defects listed in [TODO.md](../../TODO.md#known-defects-fix-first), for example a wrong parameter marked `found`, and lost results when forbidden passages fill the retrieval limit.
 - The test data was made with the questions and the synonyms. The scores are higher than on a real repository. [docs/METRICS.md](../METRICS.md) and [evaluation/README.md](../../evaluation/README.md) explain the limits and the gaps in the tests.
 - The tests prove the behaviour on this repository, not on the company's repository. A real question set, made from real users and real documents, is the next step ([ADR 0014](0014-defer-facts-store-and-embeddings.md)).
 

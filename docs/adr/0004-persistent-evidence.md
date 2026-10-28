@@ -21,7 +21,7 @@ To answer in under 10 seconds (U3) across many documents, search cannot open eve
 ## Consequences
 
 - Each answer has a file, page, line range and SHA-256 version. A test can check it against the file itself.
-- The index survives a restart. A restart reads only new and changed files.
+- The index survives a restart. A restart reads and hashes every file, and extracts only new and changed files.
 - Until the reader version is recorded, a reader change cannot be traced in the stored passages.
 
 ## Implementation

@@ -25,4 +25,9 @@ If a search finds nothing, the user must not think that no document states the v
 
 ## Implementation
 
-Partial. `SearchService.reindex` in [`service.py`](../../engineering_search/service.py) skips a file that cannot be read, logs it and returns it in `failed_files`. The other files are indexed. There is no stored coverage report, and files that are not `.md` or `.pdf` are not listed. Tests: `tests/test_startup.py`.
+Partial. `SearchService.reindex` in [`service.py`](../../engineering_search/service.py) skips a file that cannot be extracted, logs it and returns it in `failed_files`. The other files are indexed. There is no stored coverage report, and files that are not `.md` or `.pdf` are not listed. Tests: `tests/test_startup.py` (invalid UTF-8).
+
+Two parts of the decision are not met:
+
+- "One bad file must not stop the index build." The first read of each file is outside the per-file error handler. A file read error (for example, `PermissionError`) stops the whole refresh with status 503.
+- "No text" as an outcome. A PDF without a text layer is indexed with zero passages, and is not reported. The index status can show `up_to_date`.

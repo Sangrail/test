@@ -4,14 +4,14 @@ Updated 2026-10-28. This is an MVP, not the final platform. This document lists 
 
 ## Done
 
-- [x] Index Markdown and simple PDF files (text layer only), page by page. Skip and report files that cannot be read.
-- [x] Keep the index in SQLite with an FTS5 inverted index. Read only new and changed files when the index is updated. [ADR 0009](docs/adr/0009-sqlite-fts5-index-and-answers.md).
+- [x] Index Markdown and simple PDF files (text layer only), page by page. Skip and report files that cannot be extracted. (A file read error still stops the refresh, and PDFs without text are not reported. See [Known defects](#known-defects-fix-first).)
+- [x] Keep the index in SQLite with an FTS5 inverted index. Extract only new and changed files when the index is updated (every file is still read and hashed). [ADR 0009](docs/adr/0009-sqlite-fts5-index-and-answers.md).
 - [x] Change plain-language questions into index queries: stop words, synonyms, prefix search for codes such as S355. Show the user what was searched for.
-- [x] Answer one value with the exact sentence or table row, and its file, page, lines and version. Show other documents that also state a value. Say "not found" or "closest match" when no readable document states it.
-- [x] Answer list questions: documents by project, topic, material or status, and by number (with unit conversion). Support follow-up questions about the previous list.
+- [x] Answer one value with the exact sentence or table row, and its file, page, lines and version. Show up to five other documents that also state a value. Say "not found" or "closest match" when the best passages do not state it. (`found` can still be a wrong value. See [Known defects](#known-defects-fix-first).)
+- [x] Answer list questions: documents by project, topic, material or status, and by number (with unit conversion). At most 200 documents. Support follow-up questions about the previous list.
 - [x] One search service (`service.py`) for the web page, the HTTP API and the MCP server.
 - [x] MCP server with `search_evidence` and `read_evidence`, for a chat agent. Install and test guide: [docs/MCP.md](docs/MCP.md).
-- [x] Path-based access rules (whole repository, folder, file). Check permissions before answers, counts and pages. [ADR 0010](docs/adr/0010-path-based-access-rules.md), [ADR 0006](docs/adr/0006-permissions-before-results.md).
+- [x] Path-based access rules (whole repository, folder, file). Check permissions before answers, counts and pages. (The index lookup limit still applies before the check. See [Known defects](#known-defects-fix-first).) [ADR 0010](docs/adr/0010-path-based-access-rules.md), [ADR 0006](docs/adr/0006-permissions-before-results.md).
 - [x] Sign-in screen first. It shows what each demo user can do and which folders each user can read.
 - [x] Audit each search before the evidence is returned. Withhold evidence if the audit fails.
 - [x] Test repository with 138 files: synthetic Markdown and PDF, 120 generated project files, and two public FHWA PDFs.
@@ -23,22 +23,35 @@ Updated 2026-10-28. This is an MVP, not the final platform. This document lists 
 
 | Need | What the MVP does | Gap |
 | --- | --- | --- |
-| Find a load limit, material or approval status | Selects the exact sentence or table row from the best passages | Uses rules on text. It does not know which element a value belongs to |
+| Find a load limit, material or approval status | Selects the exact sentence or table row from the best passages | Uses rules on text. It does not know which element a value belongs to. When a document states several parameters, it can return the wrong one with status `found` |
 | Filter by project | Matches the project name as a word, mostly in the folder and file name | Fails when the name is not in the path or text, or when a project has more than one name |
-| Filter by number | Compares quantities in lines of documents that contain every question word | Not complete: it sees only what word search finds. Small unit list |
-| 100% confidence in the source | Each answer is exact text with file, page, lines and SHA-256 version. Tests check this against the files | A correct source can still hold an old or draft value. When documents disagree, the service shows all values but does not decide which is current |
+| Filter by number | Compares quantities in lines of documents that contain every question word | Not complete: it sees only what word search finds. Small unit list. The quantity can belong to a different element. Signs are ignored |
+| 100% confidence in the source | Each answer is exact text with file, page, lines and SHA-256 version. Tests check this against the files | This proves where the text is, not that it answers the question. A correct source can still hold an old or draft value, or a different parameter. When documents disagree, the service shows up to five other documents but does not decide which is current |
 | Plain-language questions | Basic keyword search with a small synonym list | Paraphrases are often missed. Better methods need a larger extraction phase, designed from real questions ([README](README.md#this-is-a-basic-method)) |
 | Real documents | Works on 138 clean test files that the team made | The formats, versions, structure and quality of the real files are not known. The test scores do not predict real scores ([docs/METRICS.md](docs/METRICS.md)) |
 | See the source in context | Shows the exact text, file, page and lines | No viewer. A lead cannot see the table, drawing or stamp around a value |
-| Under 10 seconds | About 16 ms per question on 138 files | Not measured on a real repository or with many users |
-| Chat-agent shell | MCP server with the same search service | No chat box on the web page. The MCP user is not verified (see below) |
+| Under 10 seconds | About 16 ms per question on 138 files, in the search service | Not measured on a real repository, with many users, or end to end through a chat agent |
+| Chat-agent shell | MCP server with the same search service | No chat box on the web page. The MCP user is not verified (see below). Nothing checks that the agent's reply matches the tool result |
 
 ## Gaps in file support
 
 - **PDF:** text layer only. No OCR. Tables come out as lines of text. Some characters are lost, for example foot and inch marks.
 - **Uploads:** Markdown only.
 - **CAD, BIM and other formats:** out of scope for the MVP. Each format and version needs a tested reader. [ADR 0001](docs/adr/0001-mvp-format-scope.md), [ADR 0003](docs/adr/0003-versioned-reader-selection.md), [design/DATA-PROFILE.md](design/DATA-PROFILE.md).
-- **Coverage:** failed files are reported in each index result, but there is no stored report of unsupported or unreadable files. [ADR 0005](docs/adr/0005-coverage-and-reader-gaps.md).
+- **Coverage:** failed files are reported in each index result, but there is no stored report of unsupported or unreadable files. PDFs without a text layer are counted as indexed. [ADR 0005](docs/adr/0005-coverage-and-reader-gaps.md).
+
+## Known defects (fix first)
+
+An independent review on 2026-10-28 found and reproduced these errors. They are not fixed. The current tests pass with them. [ARCHITECTURE.md](ARCHITECTURE.md#known-defects) gives the code location of each one.
+
+- [ ] **Bind the value to the question words.** `found` checks the question words against the whole document. A floor load can be the `found` answer to a roof load question, and a list comparison can cite a floor load for a roof load filter. Withhold ambiguous matches, or mark them as unverified candidates. Add regression tests.
+- [ ] **Apply permissions and `within` before the retrieval limit.** The 1,000-passage limit applies first. Permitted results can be lost, and forbidden files can change a user's result. Add a test that adding forbidden files leaves a user's results unchanged.
+- [ ] **Read signed quantities.** "-2 kN/m²" is compared as 2 kN/m². Parse the sign, or reject notation that the parser does not support.
+- [ ] **Page the document list.** A list returns at most 200 documents, and `page` does not page it. Page the list, or document the limit in the API response.
+- [ ] **Skip files that cannot be read.** Move the file read into the per-file error handler, so that one `PermissionError` does not stop the refresh.
+- [ ] **Coordinate index refreshes across processes.** The web service and the MCP server can publish an older index over a newer one. Use a lock across processes, or reject stale publication.
+- [ ] **Report PDFs without text.** Give them a separate "no text" outcome, not "indexed".
+- [ ] **Make the leak test check every page.** `tests/test_no_leaks.py` stops after five pages of 50 passages.
 
 ## Next (phase 2)
 

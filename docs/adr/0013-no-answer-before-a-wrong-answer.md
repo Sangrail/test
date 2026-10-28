@@ -29,4 +29,6 @@ The user asks for one parameter (U1) and must trust the source 100% (U4). The us
 
 ## Implementation
 
-Done. `answer()` in [`answer.py`](../../engineering_search/answer.py) takes a `document_text` callable that `SearchService.search` gives it. The web page and the MCP server show the status and the missing words. Tests: `test_no_answer_is_given_when_no_document_states_it` and `test_one_value_is_answered_from_its_exact_source` in `tests/test_use_case.py`, and the `answer_correct` metric of `scripts/evaluate.py`.
+Partial. `answer()` in [`answer.py`](../../engineering_search/answer.py) takes a `document_text` callable that `SearchService.search` gives it. The web page and the MCP server show the status and the missing words. Tests: `test_no_answer_is_given_when_no_document_states_it` and `test_one_value_is_answered_from_its_exact_source` in `tests/test_use_case.py`, and the `answer_correct` metric of `scripts/evaluate.py`.
+
+The statuses work for the wrong-project case in the context: a Cedar roof load is `partial` for a Northgate question. They do not stop a wrong parameter from the right document. Because the question words are checked against the whole document, a document with "Roof load is not specified. Floor load limit is 5 kN/m²." answers "What is the roof load?" with the floor load and status `found`. This is the wrong answer that this decision exists to prevent. The tests and the evaluation do not include this case. See [TODO.md](../../TODO.md#known-defects-fix-first).

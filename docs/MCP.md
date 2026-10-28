@@ -241,6 +241,8 @@ Also try your own questions. Ask in plain language. You do not need to know file
 - **The source is exact.** Ask the agent for the file, page and lines. The values are in the tool result.
 - **Kamal never gets Northgate or specification content.** If Kamal gets text, a file name or a count from `project-northgate/` or `specifications/`, report it at once. That is a serious defect.
 - **"Not found" is correct when no document states the value.**
+- **The quoted text answers the question.** The status `found` is a word check, not a check of the value. In a document that states several parameters, the service can quote the wrong one, for example a floor load for a roof load question. Report any answer whose quoted text is about a different element.
+- **The agent's reply matches the tool result.** Nothing checks this. Report a reply that changes a value, or presents a `partial` or `not_found` result as a fact.
 - **Speed.** Each tool call must take less than 10 seconds. Most take less than 0.1 seconds.
 
 ### What to report
@@ -260,7 +262,8 @@ For each problem, send:
 | `claude mcp list` shows `Failed to connect` | The server cannot start. Copy the command from `claude mcp get engineering-search-jp` and run it in a terminal. Read the error |
 | Claude Desktop does not show the servers | The JSON is not valid, or Claude Desktop was not restarted. Check the commas and brackets. Quit Claude Desktop fully and start it again |
 | Claude Desktop shows `spawn uv ENOENT` | Claude Desktop cannot find `uv`. Use the full path from `which uv` in `command` |
-| The first question is slow | The server indexes new and changed files when it starts. The next start reads only changed files |
+| The first question is slow | The server indexes new and changed files when it starts. The next start reads and hashes every file, and extracts only the changed files |
+| Index refresh fails with 503 at start | The service cannot read one of the files (for example, a permission error). This stops the whole refresh. Make every `.md` and `.pdf` file readable. Do not start the web service on the same state folder at the same time |
 | A warning about pydantic shows in the log | The warning is harmless. The server writes it to stderr, not to the MCP channel |
 | Results look out of date | Delete `.runtime/index-*.sqlite3`. The server makes the index again at the next start |
 

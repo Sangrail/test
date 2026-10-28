@@ -28,4 +28,11 @@ The first prototype kept passages in memory and needed every question word to ma
 
 ## Implementation
 
-Done. [`store.py`](../../engineering_search/store.py) (index, up to 1,000 candidates), [`query.py`](../../engineering_search/query.py) (query plan), [`answer.py`](../../engineering_search/answer.py) (answer and list). Measured by `scripts/evaluate.py`. Enforced by `tests/test_use_case.py` and `tests/test_index.py`.
+Done, with known defects. [`store.py`](../../engineering_search/store.py) (index, up to 1,000 candidates), [`query.py`](../../engineering_search/query.py) (query plan), [`answer.py`](../../engineering_search/answer.py) (answer and list). Measured by `scripts/evaluate.py`. Enforced by `tests/test_use_case.py` and `tests/test_index.py`.
+
+Known defects ([TODO.md](../../TODO.md#known-defects-fix-first)):
+
+- The 1,000-candidate limit applies before permissions and `within` ([ADR 0006](0006-permissions-before-results.md)).
+- A list comparison accepts a quantity in any line that contains one question word, so the quantity can belong to a different element. Signs are ignored: "-2 kN/m²" is compared as 2 kN/m².
+- A list returns at most 200 documents, and `page` does not page the list.
+- The incremental update reads and hashes every file. Only extraction is incremental.

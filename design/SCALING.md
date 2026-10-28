@@ -26,7 +26,7 @@ flowchart LR
 
 ## The MVP today
 
-The MVP runs on one machine: one process, SQLite files, a local upload queue with worker threads, and one lock for the index. [ARCHITECTURE.md](../ARCHITECTURE.md#mvp-shortcuts-in-the-code) lists these shortcuts. It has not been tested with hundreds of thousands of files or with many users at the same time.
+The MVP runs on one machine: one web process (plus an optional MCP process), SQLite files, a local upload queue with worker threads, and one lock for the index in each process. The locks do not coordinate the two processes, so their index refreshes can conflict ([ARCHITECTURE.md](../ARCHITECTURE.md#known-defects)). [ARCHITECTURE.md](../ARCHITECTURE.md#mvp-shortcuts-in-the-code) lists these shortcuts. It has not been tested with hundreds of thousands of files or with many users at the same time.
 
 ## Changes required for multiple machines
 

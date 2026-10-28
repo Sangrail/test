@@ -21,7 +21,7 @@ uv run --frozen python -m engineering_search
 The service does these steps:
 
 1. It opens or creates the index in `.runtime/`.
-2. It reads the new and changed files in `test-repository/`.
+2. It reads and hashes every file in `test-repository/`, and extracts passages from the new and changed files.
 3. It starts two upload workers.
 4. It starts the web server on `127.0.0.1:8000`.
 
@@ -63,11 +63,16 @@ uv run --frozen python -m engineering_search --documents /absolute/path/to/docum
 
 The service reads `.md` files (UTF-8) and `.pdf` files. It does not follow symbolic links. It does not change or move the documents.
 
-If the service cannot read a file, it does not stop. It skips the file and shows the file in `failed_files` in the index result. The other files are indexed.
+If the service cannot extract a file (for example, invalid UTF-8 or a damaged PDF), it does not stop. It skips the file and shows the file in `failed_files` in the index result. The other files are indexed.
+
+Two known defects:
+
+- If the operating system refuses to read a file (for example, a permission error), the whole index refresh fails with status 503. The previous index stays. Make sure that the service can read every `.md` and `.pdf` file in the folder.
+- A PDF without a text layer (for example, a scan) is indexed with zero passages. It is not in `failed_files`, and the index status can show `up_to_date`. Its content cannot be found.
 
 The access rules in `engineering_search/access.py` apply to your files too. If no rule matches a path, the whole-repository rule applies, and all three users can read the file.
 
-After you add, change or delete files, select **Reindex documents** in `/admin`. The service reads only the changed files. There is no automatic file watcher.
+After you add, change or delete files, select **Reindex documents** in `/admin`. The service reads and hashes every file, and extracts passages only from the changed files. There is no automatic file watcher.
 
 ## Connect a chat agent (MCP)
 
@@ -78,6 +83,8 @@ uv run --frozen python -m engineering_search.mcp_server --user jp
 ```
 
 `--user` selects whose permissions apply. In production, the user must come from the sign-in of the MCP client (OAuth), not from a flag.
+
+The MCP server refreshes the index when it starts. If the web service uses the same state folder, do not start both at the same time, and do not reindex from `/admin` while the MCP server starts. The two processes do not coordinate their index refreshes, and the slower one can overwrite a newer version of a file with an older one ([ARCHITECTURE.md](ARCHITECTURE.md#known-defects)).
 
 [docs/MCP.md](docs/MCP.md) tells you how to connect Claude Code or Claude Desktop, which questions to ask, and what to report. To check the server without a chat client:
 

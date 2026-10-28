@@ -121,15 +121,16 @@ The MVP has the inverted index and the text with locations (2.2). It does not ha
 | Q3, Q4, Q5 | Find the documents that contain every question word (in text, heading or file name). Show the line that best shows why |
 | Q4 follow-up | Limit the next question to the files of the previous list (`within`) |
 | Q6 | Read the numbers and units in the lines of the matching documents. Convert units (N/m², kN/m², kPa, MPa, psf, ksi and others) and compare |
-| Q7 | Show the other documents that also state a value. Show the status in the same text when it is there |
+| Q7 | Show up to five other documents that also state a value, from the 8 best passages. Show the status in the same text when it is there |
 | Q8 | A small synonym list only |
 
 The limits of this method:
 
 - It finds only what the word search finds first. A value written with other words is not found.
-- It does not know which element a number belongs to. "Mezzanine 7.5 kN/m²" is not a roof load. The rule that the line must contain a question word reduces this error, but does not remove it.
-- It does not know which document supersedes which. It shows conflicts, but it does not resolve them.
-- The patterns and the unit list are small.
+- It does not know which element a number belongs to. "Mezzanine 7.5 kN/m²" is not a roof load. For Q6, a line must contain one question word, so "floor load 10 kN/m²" qualifies for "roof load greater than 5 kN/m²". For Q1 and Q2, the status `found` checks the question words against the whole document, so a floor load sentence can be the `found` answer to a roof load question. These are known defects ([TODO.md](../TODO.md#known-defects-fix-first)).
+- It does not know which document supersedes which. It shows some conflicts, but it does not resolve them.
+- The patterns and the unit list are small. Signs are not read: "-2 kN/m²" is compared as 2 kN/m².
+- A list returns at most 200 documents.
 - The work happens on each query. At a large scale, a facts store is faster and gives complete lists.
 
 The same rules can run at index time to fill the facts store. Thus the MVP code is a first version of extraction method 2, not a separate path.

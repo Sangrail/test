@@ -54,17 +54,17 @@ Each record cites the parts of the brief that it serves, with these IDs.
 | [0002](0002-independent-local-instances.md) | Each tester runs an independent local instance | S1, S3, C2 | Done |
 | [0003](0003-versioned-reader-selection.md) | Select and record a tested reader for each format and version | C2, C3, U4 | Planned |
 | [0004](0004-persistent-evidence.md) | Store extracted passages with their source version | U3, U4, U5 | Done, except reader provenance |
-| [0005](0005-coverage-and-reader-gaps.md) | Report files that cannot be read | C2, C3, U4 | Partial |
-| [0006](0006-permissions-before-results.md) | Check permissions before answers, counts and pages | R1, U1 | Done |
+| [0005](0005-coverage-and-reader-gaps.md) | Report files that cannot be read | C2, C3, U4 | Partial. A read error stops the refresh |
+| [0006](0006-permissions-before-results.md) | Check permissions before answers, counts and pages | R1, U1 | Done. Known defect: retrieval limit applies first |
 | [0007](0007-telemetry-and-audit.md) | Telemetry and an audit record before evidence is released | U3, U4, R1 | Done |
 | [0008](0008-index-team-and-audit-viewer.md) | Search users and the index team are separate roles | R1, U1 | Done |
-| [0009](0009-sqlite-fts5-index-and-answers.md) | SQLite FTS5 inverted index. Answers are exact text | U2, U3, U4, U6, R2, R3 | Done |
+| [0009](0009-sqlite-fts5-index-and-answers.md) | SQLite FTS5 inverted index. Answers are exact text | U2, U3, U4, U6, R2, R3 | Done. Known defects in number comparison and list paging |
 | [0010](0010-path-based-access-rules.md) | Index the whole repository. Folder and file access rules | R1, C2, U2 | Done |
 | [0011](0011-one-search-service.md) | One search service for the web page, the API and the MCP server | C1, C5, R1, U4 | Done |
 | [0012](0012-mcp-server-for-the-chat-agent.md) | A stdio MCP server is the chat-agent interface | C5, U6, S1, R1 | Done. Identity is a known security hole |
-| [0013](0013-no-answer-before-a-wrong-answer.md) | Give no answer before a wrong answer | U4, R2, R1 | Done |
+| [0013](0013-no-answer-before-a-wrong-answer.md) | Give no answer before a wrong answer | U4, R2, R1 | Partial. A wrong parameter can be `found` |
 | [0014](0014-defer-facts-store-and-embeddings.md) | Defer the facts store and embeddings. Design extraction from the questions and the data | C3, C4, S1, U1 | Accepted. Design only |
-| [0015](0015-acceptance-tests-enforce-the-use-case.md) | Acceptance tests enforce the use case on a public test repository | R4, U1 to U5, R1, S3 | Done |
+| [0015](0015-acceptance-tests-enforce-the-use-case.md) | Acceptance tests enforce the use case on a public test repository | R4, U1 to U5, R1, S3 | Done. Known defects are not covered |
 
 ## Related documents
 

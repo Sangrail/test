@@ -43,7 +43,9 @@ The automated tests ([`tests/`](../tests/), 69 tests) enforce the use case. They
 - a request takes 10 seconds or more;
 - a document list or a number comparison is wrong;
 - the service gives an answer when no document states it;
-- any user gets a file name, text or count from a file that the user cannot read ([`tests/test_no_leaks.py`](../tests/test_no_leaks.py) asks every question, and questions made from each forbidden file, in each mode and on each page).
+- any user gets a file name, text or count from a file that the user cannot read ([`tests/test_no_leaks.py`](../tests/test_no_leaks.py) asks every question, and questions made from each forbidden file, in each mode, on the first five pages of 50 passages).
+
+The tests pass with known defects in the code: a wrong parameter can be marked `found`, forbidden passages can push permitted results out of the 1,000-passage retrieval limit, signs are ignored in number comparisons, and lists stop at 200 documents. See [TODO.md](../TODO.md#known-defects-fix-first).
 
 ### History
 
