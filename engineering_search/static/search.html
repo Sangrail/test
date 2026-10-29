@@ -2,13 +2,18 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Search · Engineering Search</title><link rel="stylesheet" href="/static/style.css"><script src="/static/search.js" defer></script></head>
 <body>
-  <header class="topbar"><a class="brand" href="/search" aria-label="Engineering Search home"><span class="brand-mark">E<span>∕</span></span><span>Engineering<span class="brand-light"> Search</span></span></a><nav id="app-nav" hidden><span class="active">Search</span><a id="audit-link" href="/audit" hidden>Audit log</a><a id="admin-link" href="/admin" hidden>Index operations ↗</a></nav><span id="session-chip" class="session-chip" hidden><span id="identity-title"></span><button class="secondary" id="logout-button" type="button">Sign out</button></span></header>
+  <header class="topbar"><a class="brand" href="/search" aria-label="Engineering Search home"><span class="brand-mark">E<span>∕</span></span><span>Engineering<span class="brand-light"> Search</span></span></a><span class="poc-badge" title="Proof of concept: not production security">MVP · proof of concept</span><nav id="app-nav" hidden><span class="active">Search</span><a id="audit-link" href="/audit" hidden>Audit log</a><a id="admin-link" href="/admin" hidden>Index operations ↗</a></nav><span id="session-chip" class="session-chip" hidden><span id="identity-title"></span><button class="secondary" id="logout-button" type="button">Sign out</button></span></header>
   <main class="search-main">
     <p id="session-notice" role="status" aria-live="polite" hidden></p>
     <section id="signin-screen" class="signin-screen" aria-labelledby="signin-title" hidden>
-      <div class="eyebrow">PRETEND SIGN-IN</div>
+      <aside class="poc-notice" aria-label="About this proof of concept">
+        <strong>Proof of concept, not production security.</strong>
+        <p>This MVP has no real sign-in: anyone can pick any demo user, to see that the same question gives different answers to people with different permissions.</p>
+        <p>In production there is no user picker. Each person signs in through the company&rsquo;s identity provider, and the permissions of the repository that holds the files decide what that authenticated user may see. A user sees only the documents they are entitled to, and never the names of projects they are not.</p>
+      </aside>
+      <div class="eyebrow">DEMO SIGN-IN</div>
       <h1 id="signin-title">Choose a demo user</h1>
-      <p>There is no password. Anyone can select any user. Each user can read different files, so the same question gives different results.</p>
+      <p>Each card lists only the folders that user may read.</p>
       <div id="user-cards" class="user-cards"></div>
     </section>
     <div id="app-screen" hidden>
@@ -23,7 +28,7 @@
     </section>
     <section id="answer-panel" class="answer-panel" aria-live="polite" hidden></section><label id="within-control" class="within-control" hidden><input type="checkbox" id="within-list" aria-labelledby="within-label"> <span id="within-label"></span></label><section aria-label="Search results"><div class="results-heading"><h2 id="results-title">Your evidence will appear here</h2><span id="results-timing"></span></div><p id="searched-for" class="search-message"></p><p id="search-message" class="search-message" role="status" aria-live="polite">Results contain only documents that you can read.</p><div id="search-results"></div><nav id="search-pagination" class="search-pagination" aria-label="Search result pages" hidden><button id="previous-page" class="secondary" type="button" disabled>← Previous</button><span id="page-summary" aria-live="polite"></span><button id="next-page" class="secondary" type="button" disabled>Next →</button><small>Permissions are checked on every page. Changes to documents or permissions can shift results.</small></nav><p id="trace-note" class="trace-note"></p></section>
     </div>
-    <footer><span>Local permission demonstration</span><span>Backend operations are a separate restricted route. Anyone can select a demo identity; production authentication is not implemented.</span></footer>
+    <footer><span>MVP · proof of concept</span><span>Demo identities only. In production, sign-in and permissions come from the company&rsquo;s identity provider and the repository.</span></footer>
   </main>
 </body>
 </html>

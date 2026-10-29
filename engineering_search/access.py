@@ -40,17 +40,18 @@ from threading import RLock
 from time import monotonic
 from typing import Protocol
 
-# "can" and "try" are shown on the sign-in screen so a demo shows the differences.
+# "can" and "try" are shown on the sign-in screen so a demo shows the differences. They name
+# only what that user may read: a user never learns the names of folders they cannot read.
 USERS = (
     {"id": "jp", "subject": "demo-user-001", "name": "JP", "title": "Engineering lead", "role": "reader",
      "can": ["Read every file in the repository."],
      "try": "Ask \u201cWhat is the roof load limit?\u201d Results come from Project Cedar, "
             "the specifications and the Northgate PDF."},
     {"id": "kamal", "subject": "demo-user-002", "name": "Kamal", "title": "Structural engineer", "role": "reader",
-     "can": ["Read most files. The folder list below shows which."],
-     "try": "Ask the same roof load question as JP. The specification and Northgate results do not show."},
+     "can": ["Read the folders listed below."],
+     "try": "Ask the same roof load question as JP. Kamal gets fewer results: only what his folders hold."},
     {"id": "maya", "subject": "demo-user-003", "name": "Maya", "title": "Index team", "role": "index_team",
-     "can": ["Read most files. The folder list below shows which.",
+     "can": ["Read the folders listed below.",
              "Index documents (Index operations).",
              "Read the audit log, which records each search and its permission decisions."],
      "try": "Search for anything, then open Audit log to see the record of that search."},

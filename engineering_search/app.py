@@ -251,13 +251,16 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
 
     @app.get("/auth/users", summary="The three deliberately selectable demo identities")
     def demo_users():
-        # A demo aid: the sign-in screen shows which folders each demo user can
-        # read, so a tester knows what to expect. It shows counts, not content.
+        # A demo aid: the sign-in screen shows the folders each demo user can read,
+        # so a tester knows what to expect. Only readable folders and readable counts:
+        # a folder a user may not read is never named, and nothing says how many
+        # files they cannot read (K13). A real deployment has no user picker (G1).
         users = []
         for user in USERS:
             try:
                 file_ids, readable = service.readable_files(user)
-                users.append({**user, "folders": folder_access(file_ids, readable)})
+                users.append({**user, "folders": [{"folder": f["folder"], "readable": f["readable"]}
+                                                  for f in folder_access(file_ids, readable) if f["readable"]]})
             except ServiceError:
                 users.append({**user, "folders": []})
         return {"users": users, "mode": "pretend_login"}

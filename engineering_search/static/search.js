@@ -140,12 +140,11 @@ function userCard(person) {
   for (const line of person.can) { const item = document.createElement('li'); item.textContent = line; can.append(item); }
   const folders = el('ul', 'folder-access');
   folders.setAttribute('aria-label', `Folders ${person.name} can read`);
+  // Only the folders this user may read, with the files they may read in each.
   for (const folder of person.folders || []) {
-    // A symbol and words show the access, so it is not shown by colour alone.
-    const [mark, words] = {all: ['✓', `all ${folder.files}`], some: ['◐', `${folder.readable} of ${folder.files}`],
-                           none: ['✕', 'none']}[folder.access];
-    const item = el('li', `access-${folder.access}`);
-    item.append(el('span', 'mark', mark), el('code', '', folder.folder), el('span', 'count', words));
+    const item = el('li', 'access-all');
+    item.append(el('span', 'mark', '✓'), el('code', '', folder.folder),
+                el('span', 'count', `${folder.readable} ${folder.readable === 1 ? 'file' : 'files'}`));
     folders.append(item);
   }
   const tryIt = document.createElement('p'); tryIt.className = 'try'; tryIt.textContent = `Try: ${person.try}`;

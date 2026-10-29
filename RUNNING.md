@@ -24,7 +24,7 @@ The service does these steps:
 2. It detects the type of every file in `test-repository/`, reads and hashes the files that have a reader, and extracts passages, tables and facts from the new and changed files. It holds the index lock while it does this.
 3. It starts the web server on `127.0.0.1:8000`.
 
-Open <http://127.0.0.1:8000/search>. The page shows only the sign-in screen until you select a demo user. The screen says what each user can do and what to try. For example:
+Open <http://127.0.0.1:8000/search>. The page shows only the sign-in screen until you select a demo user. Every page is marked as an MVP: the sign-in is pretend, and the screen says how sign-in and permissions work in production. Each card lists only the folders that user may read, and what to try. For example:
 
 1. Sign in as JP. Ask "Has building control approved the Northgate warehouse?".
 2. Ask "Do we have any documents in Northgate?". Select "Ask the next question about these documents only", then ask "Of those documents, which mention compliance?".

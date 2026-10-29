@@ -16,3 +16,9 @@
 .folder-summary{min-width:0;overflow-x:auto}.my-documents .accessible-list{margin-top:12px}
 .folder-access{list-style:none;padding:0!important;margin:0;display:flex;flex-direction:column;gap:3px;font-size:11px!important;border-top:1px solid var(--border);padding-top:10px!important}.folder-access li{display:grid;grid-template-columns:16px 1fr auto;gap:6px;align-items:center}.folder-access code{font-family:ui-monospace,SFMono-Regular,monospace;font-size:11px;overflow-wrap:anywhere}.folder-access .count{color:var(--muted);font-variant-numeric:tabular-nums}.folder-access .access-all .mark{color:#126c57}.folder-access .access-some .mark{color:#9a6b1f}.folder-access .access-none{color:#97a39d}.folder-access .access-none .mark{color:#ad5949}
 @media(max-width:760px){.my-documents{grid-template-columns:1fr;padding:18px}}
+
+/* The app is a proof of concept: said on every page, and in full on the sign-in screen. */
+.poc-badge{margin-left:12px;padding:3px 9px;border:1px solid #e3b86b;border-radius:999px;background:#fdf4e3;color:#7a4d00;font-size:11px;font-weight:600;letter-spacing:.2px;white-space:nowrap}
+.poc-notice{border:1px solid #e3b86b;border-left:4px solid #c58a00;border-radius:10px;background:#fdf8ee;color:#4a3a1a;padding:14px 18px;margin:0 0 28px;max-width:760px;font-size:14px;line-height:1.5}
+.poc-notice strong{display:block;color:#7a4d00;margin-bottom:4px}.poc-notice p{margin:4px 0 0}
+@media (max-width:560px){.poc-badge{margin-left:8px;padding:2px 7px;font-size:10px}}

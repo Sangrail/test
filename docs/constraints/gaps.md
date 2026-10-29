@@ -30,7 +30,7 @@ The hardest of these is [G4](#g4): a retrieval system is only as good as its acc
 
 **In the MVP:** users choose a demo name to sign in (no password); the MCP server takes the user from its `--user` flag, unverified. Folder and file rules in [`access.py`](../../engineering_search/access.py) stand in for the repository's access controls. Permissions apply before ranking, limits and counts ([ADR 0004](../adr/0004-permissions-before-ranking-limits-and-counts.md)), and the leak tests attack that from many sides; they do not prove the rules match the real repository.
 
-**Needed:** sign-in through the company's identity provider, a verified user on the MCP path, and permissions read from the repository (or its connector), with a test that they are wired correctly.
+**Needed:** sign-in through the company's identity provider, a verified user on the MCP path, and permissions read from the repository (or its connector), with a test that they are wired correctly. Security lives in the repository's permissions, tied to the authenticated user: only an authenticated and authorised user sees the documents they are entitled to, and nothing (not even a project's name) of the rest. There is no user picker.
 
 <a id="g2"></a>
 

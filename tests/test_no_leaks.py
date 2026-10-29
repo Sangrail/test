@@ -202,3 +202,15 @@ def test_the_document_overview_does_not_count_forbidden_files(client, user):
     assert all("files" not in folder for folder in overview["by_folder"])
     # Every readable type has a column, so each folder's types add up to its readable files.
     assert all(sum(folder["types"].values()) == folder["readable"] for folder in overview["by_folder"])
+
+
+def test_a_sign_in_card_names_only_the_folders_its_user_may_read(client):
+    cards = {card["id"]: card for card in client.get("/auth/users").json()["users"]}
+    for user, card in cards.items():
+        readable = set(ALL_FILES) - CANNOT_READ[user]
+        folders = {f.split("/")[0] + "/" if "/" in f else "(top level)" for f in readable}
+        assert {folder["folder"] for folder in card["folders"]} == folders, user
+        assert sum(folder["readable"] for folder in card["folders"]) == len(readable)
+        assert all(set(folder) == {"folder", "readable"} for folder in card["folders"])  # no totals
+        forbidden_folders = {f.split("/")[0] for f in CANNOT_READ[user]} - {f.split("/")[0] for f in readable}
+        assert not any(name in json.dumps(card) for name in forbidden_folders), user
