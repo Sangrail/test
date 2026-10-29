@@ -2,6 +2,8 @@
 status: superseded in part by 0019 (evaluation); the acceptance tests stand
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Enforce the use case with acceptance tests on a public test repository
 
 > **Superseded in part** by [ADR 0019](0019-evaluate-retrieval-and-nl-to-sql.md): evaluation now covers retrieval, natural language to SQL and the agent's reply. The acceptance tests stand; the test repository now has 148 files.

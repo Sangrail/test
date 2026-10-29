@@ -1,8 +1,12 @@
 ---
-status: accepted
+status: accepted, amended by 0020 (the readers are stand-ins for connectors)
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Report the files that cannot be read
+
+> **Amended** by [ADR 0020](0020-assume-the-environment-and-stand-in-for-it.md): the readers are stand-ins for the connectors that the brief says exist ([C3](../constraints/environment.md#c3)), written to prove the chain, not extraction to be built.
 
 **Serves:** [C2](../constraints/environment.md#c2) (years of files in an existing repository), [C3](../constraints/environment.md#c3) (supported files only), [U4](../constraints/use-case.md#u4) (100% confidence in the source).
 

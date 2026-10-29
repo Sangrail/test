@@ -2,6 +2,8 @@
 status: accepted (MVP; the scaling work is open)
 date: 2026-10-29
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Answer within the time budget or refuse at once, and record what does not scale
 
 **Serves:** [U3](../constraints/use-case.md#u3) (under 10 seconds), [U4](../constraints/use-case.md#u4) (trust), [C5](../constraints/environment.md#c5) (a chat-agent shell calls the service), [S1](../constraints/scope.md#s1) (MVP only). **Not met:** [P1](../constraints/production.md#p1) (any number of users, each answered within 10 seconds).

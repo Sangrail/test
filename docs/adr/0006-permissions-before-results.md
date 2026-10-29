@@ -2,6 +2,8 @@
 status: superseded in part by 0017 (permissions apply inside the lookup, before the limit)
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Check permissions before answers, counts and pages
 
 > **Superseded in part** by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md): permissions now apply inside the index lookup, before the 1,000-passage limit, not after it. The rest of this record stands.

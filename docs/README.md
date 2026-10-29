@@ -4,9 +4,25 @@ This repository is a **minimum viable product built in about four to five hours*
 
 > A selected engineering lead asks, in plain language, for a critical engineering parameter across 100+ project documents, and gets an answer in under 10 seconds, with the exact source, without opening a design file or a viewer, and without ever seeing information from a document they may not read.
 
-The constraints come from [the brief](Starting_document.md) and from decisions made while the MVP was built. They are listed, one anchor each, in [constraints/](constraints/README.md). Every decision record in [adr/](adr/README.md) links to the constraints it serves.
+The constraints come from [the brief](Starting_document.md) and from decisions made while the MVP was built. They are listed, one anchor each, in [constraints/](constraints/README.md). Every decision record in [adr/](adr/README.md) links to the constraints it serves. Both are generated from one SQLite database of design records ([design/records/](../design/records/README.md)), so the links cannot drift.
 
 The reality is a far more complex system. Real repositories hold years of files in many formats and versions, with their own permissions, owners and approval workflows. Real users ask questions that no one wrote down in advance. And making a search service **highly available to a whole organisation**, so that any number of people get a trustworthy answer within 10 seconds, is its own engineering challenge, separate from proving that the answer can be found at all. The MVP does not attempt it. This page says what the MVP proves, what it does not, and what that challenge involves.
+
+<a id="what-is-assumed-and-what-stands-in-for-it"></a>
+
+## What is assumed, and what stands in for it
+
+The brief says five things **already exist** ([C1–C5](constraints/environment.md)): an architecture direction, the repository, connectors and APIs that extract metadata, text and properties from supported files, structured and semantic stores, and a chat-agent shell. The MVP takes them as given and does not design or build them. To run end to end it needs something in each place, so it uses the simplest stand-in that proves the chain from question to cited answer ([ADR 0020](adr/0020-assume-the-environment-and-stand-in-for-it.md)):
+
+| In the brief (exists) | Stand-in in the MVP | In a real deployment |
+| --- | --- | --- |
+| [C1](constraints/environment.md#c1) An architecture direction | One search service behind an HTTP API, a web page and an MCP server | The existing architecture calls the same service |
+| [C2](constraints/environment.md#c2) An existing repository | A local folder of 148 test files; folder rules for permissions | The repository, its versions and its permissions, through its connector |
+| [C3](constraints/environment.md#c3) Connectors extract metadata, text and properties | Readers for Markdown, PDF text layer, CSV and XLSX | The existing connectors, each plugged in behind the reader interface |
+| [C4](constraints/environment.md#c4) Structured and semantic stores | SQLite: an FTS5 index, tables and typed facts | The company's stores |
+| [C5](constraints/environment.md#c5) A chat-agent shell | Claude Code, Codex and Pi over a local MCP server | The company's shell, over remote MCP or its tool API |
+
+So the PDF and Markdown extraction in this repository is a **placeholder**, not a proposal to build extraction. The work that is the MVP's own sits between these parts: knowing the questions, what to take from tables and how to type it, permissions before limits, binding an answer to its subject, citations, constrained SQL, the time budget, and the tests and evaluation.
 
 ## What the MVP proves
 
@@ -23,7 +39,7 @@ The reality is a far more complex system. Real repositories hold years of files 
 - **That it is secure.** Sign-in on the web page is pretend; the MCP server trusts the user named on its command line ([P2](constraints/production.md#p2)). Permissions are folder rules in a Python file, not the repository's own ([P3](constraints/production.md#p3)). The permission tests prove the logic, not the deployment.
 - **That it serves an organisation.** See the next section ([P1](constraints/production.md#p1)).
 - **That the chat agent's SQL is right.** The server makes the SQL safe, not correct. A gold set checks the reference queries; the live evaluation of each client's model is designed, not built ([ADR 0019](adr/0019-evaluate-retrieval-and-nl-to-sql.md)).
-- **That it can read everything.** No OCR, no tables from PDF files, no facts from prose, no CAD ([S2](constraints/scope.md#s2), [S4](constraints/scope.md#s4)).
+- **Anything about extraction quality.** Reading files is the connectors' job ([C3](constraints/environment.md#c3)). The stand-in readers have no OCR, no tables from PDF files and no CAD ([S2](constraints/scope.md#s2)), and facts come only from table cells; what the real connectors return must be profiled on the real repository.
 
 The full list of production requirements the MVP does not meet is in [constraints/production.md](constraints/production.md).
 
@@ -68,8 +84,9 @@ None of this changes what the MVP proved: the questions, the extraction, the two
 
 | Document | What it is |
 | --- | --- |
-| [constraints/](constraints/README.md) | The use case, constraints, scope and requirements, one anchor each, and the production requirements the MVP does not meet |
-| [adr/](adr/README.md) | The architecture decision records, each linked to the constraints it serves |
+| [constraints/](constraints/README.md) | The background, constraints, use case, task and scope from the brief, the requirements added during the MVP, and the production requirements the MVP does not meet, one anchor each. Generated |
+| [adr/](adr/README.md) | The architecture decision records, each linked to the constraints it serves. Generated |
+| [design/records/](../design/records/README.md) | The SQLite database that holds the brief, the constraints and the decision records, and generates the two folders above. With a browser view and an MCP server for agents |
 | [MCP.md](MCP.md) | How to connect a chat client to the MCP server, the tools, example SQL and what was verified |
 | [METRICS.md](METRICS.md) | What is measured, how, and why the scores are optimistic |
 | [Starting_document.md](Starting_document.md) | The original brief |

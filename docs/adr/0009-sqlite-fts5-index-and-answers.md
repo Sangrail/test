@@ -2,6 +2,8 @@
 status: accepted, amended by 0017 (bound list comparisons, signed numbers, list paging)
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Use a SQLite FTS5 inverted index, and answer with exact text
 
 > **Amended** by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md): list comparisons need a bound line, numbers keep their sign, and lists are paged. Filters over tables use SQL ([ADR 0016](0016-structured-facts-and-client-written-sql.md)).

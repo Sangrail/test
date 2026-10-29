@@ -2,6 +2,8 @@
 status: accepted
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Store extracted passages with their source version
 
 **Serves:** [U3](../constraints/use-case.md#u3) (under 10 seconds), [U4](../constraints/use-case.md#u4) (100% confidence in the source), [U5](../constraints/use-case.md#u5) (no need to open the file).

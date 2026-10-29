@@ -1,15 +1,17 @@
 # Production requirements (P)
 
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 What a service for a whole organisation needs and **the MVP does not meet**. They are out of scope by [S1](scope.md#s1), and recorded so that no one mistakes the MVP for a platform. [docs/README.md](../README.md#making-it-available-to-an-organisation) explains why each is its own engineering work.
 
-| ID | Constraint |
-| --- | --- |
-| [P1](#p1) | Any number of users, each answered within 10 seconds |
-| [P2](#p2) | Verified identity |
-| [P3](#p3) | Permissions from the repository |
-| [P4](#p4) | Durable, protected audit |
-| [P5](#p5) | Approved use of language models |
-| [P6](#p6) | Quality measured on real questions |
+| ID | Constraint | Standing |
+| --- | --- | --- |
+| [P1](#p1) | Any number of users, each answered within 10 seconds | not met |
+| [P2](#p2) | Verified identity | not met |
+| [P3](#p3) | Permissions from the repository | not met |
+| [P4](#p4) | Durable, protected audit | not met |
+| [P5](#p5) | Approved use of language models | not met |
+| [P6](#p6) | Quality measured on real questions | not met |
 
 <a id="p1"></a>
 
@@ -17,11 +19,15 @@ What a service for a whole organisation needs and **the MVP does not meet**. The
 
 > An arbitrary number of people can ask at the same time, and each gets an answer within 10 seconds. The service stays available when a process, a machine or a zone fails.
 
-**Source:** Follows from U3 at organisational scale.
+**Source:** Required of a service for the whole organisation. Follows from [U3](use-case.md#u3) at organisational scale.
+
+**Standing:** *not met*. Not met by the MVP.
 
 **What it means for the design:** No single process, lock, connection or machine on the query path. Reads scale out; writes do not block reads; the store is replicated and fails over; capacity is planned and load-tested.
 
 **Where the MVP stands:** **Not met.** One process, one lock, one SQLite connection, about 10 requests a second, on one machine. Admission control refuses the excess at once rather than answering late. See [ADR 0018](../adr/0018-admission-control-and-the-time-budget.md).
+
+**Measured by:** [`scripts/load_test.py`](../../scripts/load_test.py).
 
 **Decisions:**
 
@@ -34,7 +40,9 @@ What a service for a whole organisation needs and **the MVP does not meet**. The
 
 > The service knows who is asking from the company identity provider. It never takes the user from a flag, a setting or a tool argument.
 
-**Source:** Follows from R1.
+**Source:** Required of a service for the whole organisation. Follows from [R1](requirements.md#r1).
+
+**Standing:** *not met*. Not met by the MVP.
 
 **What it means for the design:** Company sign-in for the web app; a remote MCP server with OAuth, taking the user from the verified token.
 
@@ -50,7 +58,9 @@ What a service for a whole organisation needs and **the MVP does not meet**. The
 
 > Each user's file permissions come from the repository itself, current at query time.
 
-**Source:** Follows from R1 and C2.
+**Source:** Required of a service for the whole organisation. Follows from [R1](requirements.md#r1) and [C2](environment.md#c2).
+
+**Standing:** *not met*. Not met by the MVP.
 
 **What it means for the design:** Effective permissions (including inheritance and deny entries) synced or queried through the connector.
 
@@ -66,7 +76,9 @@ What a service for a whole organisation needs and **the MVP does not meet**. The
 
 > The audit log survives the loss of a machine, is protected against change, and has retention and backup rules.
 
-**Source:** Follows from U4 and R1.
+**Source:** Required of a service for the whole organisation. Follows from [U4](use-case.md#u4) and [R1](requirements.md#r1).
+
+**Standing:** *not met*. Not met by the MVP.
 
 **What it means for the design:** A managed audit store with retention, tamper evidence and access control.
 
@@ -82,7 +94,9 @@ What a service for a whole organisation needs and **the MVP does not meet**. The
 
 > The company approves which document text may be sent to which language model provider.
 
-**Source:** Follows from C5.
+**Source:** Required of a service for the whole organisation. Follows from [C5](environment.md#c5).
+
+**Standing:** *not met*. Not met by the MVP.
 
 **What it means for the design:** A data-governance decision per repository or classification, enforced by the service.
 
@@ -98,7 +112,9 @@ What a service for a whole organisation needs and **the MVP does not meet**. The
 
 > Answer quality is measured on real questions from engineering leads, with a held-back set, and releases are gated on it.
 
-**Source:** Follows from U4 and R4.
+**Source:** Required of a service for the whole organisation. Follows from [U4](use-case.md#u4) and [R4](requirements.md#r4).
+
+**Standing:** *not met*. Not met by the MVP.
 
 **What it means for the design:** Profile the real repository; collect real questions with expected answers and sources; score retrieval, SQL and replies.
 

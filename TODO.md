@@ -75,6 +75,8 @@ Updated 2026-10-29. This is an MVP, not the final platform. This document lists 
 
 ## Next (phase 2)
 
+- [ ] **Evaluate the design records database** ([ADR 0021](docs/adr/0021-design-records-in-one-database.md)) after a few real changes: is editing prose in SQLite workable, or should the prose move to files that the database references? Should the MCP server get write tools? Known weaknesses: no history (constraints and decisions are updated in place, with no active or displaced versions), a binary source that does not merge, standing typed by hand rather than derived from tests, no features table. Decide the source of truth (SQLite, or text files with SQLite as an index), then add append-only versions and links from decisions to constraint versions ([design/records/README.md](design/records/README.md#weaknesses-and-what-comes-next)).
+
 - [ ] **Document and question research.** Profile the real repository: formats, versions, structure, tables, revisions, and where the parameters are. Collect real questions from engineering leads, with the answers and sources that they need. Add them to `evaluation/questions.json`, and keep some back from the developers. See [design/DATA-PROFILE.md](design/DATA-PROFILE.md).
 - [ ] **Parameter dictionary, version 1.** The 20 to 30 parameters that leads ask about, with their names, other names and units. Extend the fact rules from it.
 - [ ] **Project and revision metadata.** Get project, discipline, revision and status from the repository connector. See [design/EXTRACTION.md](design/EXTRACTION.md).

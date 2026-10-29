@@ -2,6 +2,8 @@
 status: accepted
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Run independent instances with local data
 
 **Serves:** [S1](../constraints/scope.md#s1) (MVP only), [S3](../constraints/scope.md#s3) (published repository), [C2](../constraints/environment.md#c2) (files in an existing repository). **Not met:** [P1](../constraints/production.md#p1) (any number of users, each answered within 10 seconds).

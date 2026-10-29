@@ -1,10 +1,14 @@
 ---
-status: superseded in part by 0016 (CSV and XLSX are read)
+status: superseded in part by 0016 (CSV and XLSX are read); amended by 0020 (the readers are stand-ins for connectors)
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Start with Markdown and simple text-layer PDF
 
 > **Superseded in part** by [ADR 0016](0016-structured-facts-and-client-written-sql.md): CSV and XLSX are now read, with their tables. The rest of this record stands.
+
+> **Amended** by [ADR 0020](0020-assume-the-environment-and-stand-in-for-it.md): the readers are stand-ins for the connectors that the brief says exist ([C3](../constraints/environment.md#c3)), written to prove the chain, not extraction to be built.
 
 **Serves:** [S1](../constraints/scope.md#s1) (MVP only), [S2](../constraints/scope.md#s2) (Markdown and simple PDF, no OCR, no CAD), [U5](../constraints/use-case.md#u5) (no CAD file or PDF viewer).
 

@@ -2,6 +2,8 @@
 status: superseded in part by 0016
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Defer the facts store and embeddings until the questions and the data are known
 
 > **Superseded in part** by [ADR 0016](0016-structured-facts-and-client-written-sql.md): typed facts from tables are built, and the MCP client writes constrained SQL over them. Embeddings and facts from prose stay deferred.

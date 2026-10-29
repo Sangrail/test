@@ -1,13 +1,15 @@
 # Requirements added during the MVP (R)
 
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 Requirements that the product owner added while the MVP was built.
 
-| ID | Constraint |
-| --- | --- |
-| [R1](#r1) | No information from a forbidden document |
-| [R2](#r2) | An answer, not a list of passages |
-| [R3](#r3) | Lists of documents, with follow-ups |
-| [R4](#r4) | The tests enforce the use case |
+| ID | Constraint | Standing |
+| --- | --- | --- |
+| [R1](#r1) | No information from a forbidden document | partly met |
+| [R2](#r2) | An answer, not a list of passages | met |
+| [R3](#r3) | Lists of documents, with follow-ups | met |
+| [R4](#r4) | The tests enforce the use case | partly met |
 
 <a id="r1"></a>
 
@@ -15,11 +17,15 @@ Requirements that the product owner added while the MVP was built.
 
 > A user must never get information from a document that the user is not authorised to read. This is an absolute requirement.
 
-**Source:** Added during the MVP.
+**Source:** A decision during the MVP.
+
+**Standing:** *partly met*. Met in part. Where the MVP stands says what is missing.
 
 **What it means for the design:** Information is more than text: a count, a file name, a ranking or a join can leak too. Permissions apply before any limit, ranking, count, join or aggregate.
 
 **Where the MVP stands:** Met in the tests on both paths. It rests on pretend sign-in and an unverified MCP user, so it is a demonstration until [P2](production.md#p2) and [P3](production.md#p3) are met.
+
+**Enforced by:** [`tests/test_access.py`](../../tests/test_access.py), [`tests/test_no_leaks.py`](../../tests/test_no_leaks.py), [`tests/test_sql.py`](../../tests/test_sql.py).
 
 **Decisions:**
 
@@ -34,6 +40,7 @@ Requirements that the product owner added while the MVP was built.
 - [ADR 0016](../adr/0016-structured-facts-and-client-written-sql.md): Read tables into typed facts at index time, and let the MCP client write constrained SQL
 - [ADR 0017](../adr/0017-bind-answers-and-permit-before-the-limit.md): Bind each answer to its subject, and apply permissions before the retrieval limit
 - [ADR 0019](../adr/0019-evaluate-retrieval-and-nl-to-sql.md): Evaluate retrieval, natural-language-to-SQL and the agent's reply, and gate releases on the results
+- [ADR 0021](../adr/0021-design-records-in-one-database.md): Keep the brief, the constraints and the decision records in one SQLite database, and generate their pages from it (cited)
 
 <a id="r2"></a>
 
@@ -41,11 +48,15 @@ Requirements that the product owner added while the MVP was built.
 
 > The service must answer the question. A list of passages is not an answer.
 
-**Source:** Added during the MVP.
+**Source:** A decision during the MVP.
+
+**Standing:** *met*. Met by the MVP, on the test data.
 
 **What it means for the design:** Select one value with its source, or say clearly that no readable document states it.
 
 **Where the MVP stands:** One sentence or row with a status (found, unverified, partial, not found), or rows from SQL.
+
+**Enforced by:** [`tests/test_binding.py`](../../tests/test_binding.py), [`tests/test_use_case.py`](../../tests/test_use_case.py).
 
 **Decisions:**
 
@@ -59,11 +70,15 @@ Requirements that the product owner added while the MVP was built.
 
 > Users can ask for lists of documents: by project, topic, material, approval status, or a value such as a load above 5 kN/m², with follow-up questions about a previous list.
 
-**Source:** Added during the MVP.
+**Source:** A decision during the MVP.
+
+**Standing:** *met*. Met by the MVP, on the test data.
 
 **What it means for the design:** Lists must be complete within the user's permissions, paged, and filterable by value with units.
 
 **Where the MVP stands:** Text lists with bound number comparisons and paging; complete filters over tables through SQL.
+
+**Enforced by:** [`tests/test_pagination.py`](../../tests/test_pagination.py), [`tests/test_use_case.py`](../../tests/test_use_case.py).
 
 **Decisions:**
 
@@ -78,13 +93,18 @@ Requirements that the product owner added while the MVP was built.
 
 > The tests must enforce the use case.
 
-**Source:** Added during the MVP.
+**Source:** A decision during the MVP.
+
+**Standing:** *partly met*. Met in part. Where the MVP stands says what is missing.
 
 **What it means for the design:** Each part of the use case has a test that fails when it breaks. Quality is measured by evaluation, not by eye.
 
 **Where the MVP stands:** Acceptance tests, a leak test, SQL and binding tests, a retrieval evaluation and an NL-to-SQL gold set. The live-client SQL evaluation is not built.
 
+**Enforced by:** [`tests/test_sql_questions.py`](../../tests/test_sql_questions.py), [`tests/test_use_case.py`](../../tests/test_use_case.py).
+
 **Decisions:**
 
 - [ADR 0015](../adr/0015-acceptance-tests-enforce-the-use-case.md): Enforce the use case with acceptance tests on a public test repository
 - [ADR 0019](../adr/0019-evaluate-retrieval-and-nl-to-sql.md): Evaluate retrieval, natural-language-to-SQL and the agent's reply, and gate releases on the results
+- [ADR 0021](../adr/0021-design-records-in-one-database.md): Keep the brief, the constraints and the decision records in one SQLite database, and generate their pages from it

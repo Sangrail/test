@@ -2,6 +2,8 @@
 status: superseded in part by 0017 (binding and the unverified status)
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Give no answer, or a partial answer, before a wrong answer
 
 > **Superseded in part** by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md): the question words are bound to the sentence, its heading, the file path or the title, not checked against the whole document, and a new status, `unverified`, marks an unbound value. The principle stands.

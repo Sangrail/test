@@ -2,11 +2,13 @@
 status: accepted
 date: 2026-10-29
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Bind each answer to its subject, and apply permissions before the retrieval limit
 
-**Serves:** [U4](../constraints/use-case.md#u4) (100% confidence in the source), [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [R2](../constraints/requirements.md#r2) (an answer, not passages), [R3](../constraints/requirements.md#r3) (lists by value).
-
 Supersedes in part [ADR 0013](0013-no-answer-before-a-wrong-answer.md) (the whole-document word check) and [ADR 0006](0006-permissions-before-results.md) (permissions after the lookup). Amends [ADR 0009](0009-sqlite-fts5-index-and-answers.md) (list comparisons and paging).
+
+**Serves:** [U4](../constraints/use-case.md#u4) (100% confidence in the source), [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [R2](../constraints/requirements.md#r2) (an answer, not passages), [R3](../constraints/requirements.md#r3) (lists by value).
 
 ## Context
 

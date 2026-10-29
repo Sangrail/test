@@ -122,7 +122,7 @@ SearchService           under the index lock: index.apply(upserts, removals, inv
 | `detect.py` | `ContentDetector` (the default) and `ExtensionDetector` |
 | `status.py` | The status of each file, and a hint for each status that is a gap |
 | `inventory.py` | `SourceFile` and `Inventory`: every file of a scan, with its type, format version, status, reader and warnings |
-| `readers/` | The readers, their manifests, and the registry (`default_registry()`) |
+| `readers/` | The readers, their manifests, and the registry (`default_registry()`). The readers are stand-ins for the connectors that the brief says exist ([ADR 0020](docs/adr/0020-assume-the-environment-and-stand-in-for-it.md)) |
 | `facts.py` | The fixed rules that turn table cells into facts |
 | `indexer.py` | `Indexer`: scan, plan, extract one file |
 | `coverage.py` | The coverage report |
@@ -145,6 +145,8 @@ The JT probe reads the version string of the header only. It is not a JT parser.
 A detector is any object with `detect(path, head) -> FileSignature` (the `Detector` protocol). Pass another one as `Indexer(root, detector=...)`.
 
 ### 2. Choose a reader
+
+The brief says connectors and APIs already extract metadata, text and properties from supported files. The readers here are placeholders for them, written only to prove the chain from file to cited answer; a connector plugs in as one more reader that returns an `Extraction` ([ADR 0020](docs/adr/0020-assume-the-environment-and-stand-in-for-it.md)).
 
 [`ReaderRegistry.select`](engineering_search/indexing/readers/registry.py) chooses the first reader that reads the file type and the format version, and whose Python packages are installed. [`default_registry()`](engineering_search/indexing/readers/registry.py) is the one place that lists the readers. Several readers can read one type; the first that fits is chosen.
 
@@ -312,7 +314,7 @@ The MVP takes these shortcuts on purpose, to deliver quickly. Each one is accept
 | Index state | The inventory is stored with the index. The last scan time, the last index run and the operation state are in memory | After a restart, the index operations page shows the stored inventory but not the last run | Store the run history with the index |
 | Telemetry | In memory | Resets when the service stops | A metrics system |
 | File types | `ContentDetector` checks signatures for PDF, XLSX, DOCX and JT only. Markdown, CSV and the others are named by extension | A misnamed text file is found only when its reader fails. The JT probe reads the header version, not the content | libmagic or a format identification tool, and the format versions of more types ([ADR 0003](docs/adr/0003-versioned-reader-selection.md)) |
-| Readers | Markdown, text-layer PDF, CSV and XLSX only | No OCR, no PDF tables, no Word, no CAD or BIM content. The coverage report lists these files | Readers or connectors for the formats that the real repository holds ([design/DATA-PROFILE.md](design/DATA-PROFILE.md)) |
+| Readers | Stand-ins for the connectors: Markdown, text-layer PDF, CSV and XLSX only | No OCR, no PDF tables, no Word, no CAD or BIM content. The coverage report lists these files | Readers or connectors for the formats that the real repository holds ([design/DATA-PROFILE.md](design/DATA-PROFILE.md)) |
 | Query words | Stop words and synonyms are lists in `query.py` | Changes need a code change. The lists fit the test questions | A parameter dictionary that engineers maintain |
 | Answer rules | Value patterns are regular expressions in `answer.py`. The title is a heuristic: the first heading, only if its passage starts on the first 3 lines | They fit the test documents. Other notations are missed. A Markdown title with no text directly under it is not used, so its words do not bind | Readers return the title. More patterns from real documents |
 | Fact rules | Fixed header and cell patterns in `facts.py`, from tables only | A value in free text is not a fact. A header that the rules do not know gives the role `unknown`. Key-value tables put their heading in `subject`, so `components` mixes real components (B-104) with 121 rows whose subject is "Roof load", mostly from the generated project files; a query must filter by project, grade or subject to tell them apart | A parameter dictionary, and extraction from text with span checks ([design/EXTRACTION.md](design/EXTRACTION.md)) |

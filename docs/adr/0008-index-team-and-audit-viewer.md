@@ -2,6 +2,8 @@
 status: accepted
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Keep search users and the index team separate
 
 **Serves:** [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [U1](../constraints/use-case.md#u1) (selected managers and leads search).

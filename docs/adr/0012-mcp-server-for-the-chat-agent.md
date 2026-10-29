@@ -2,6 +2,8 @@
 status: superseded in part by 0016 (the tools) and 0018 (admission); stdio and the identity hole stand
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Give the chat agent an MCP server over stdio, and accept an unverified user for the MVP only
 
 > **Superseded in part** by [ADR 0016](0016-structured-facts-and-client-written-sql.md) (five structured tools and a coverage tool for the index team) and [ADR 0018](0018-admission-control-and-the-time-budget.md) (admission control). The stdio transport and the identity hole stand.

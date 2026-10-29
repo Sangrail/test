@@ -2,6 +2,8 @@
 status: accepted
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Measure from the start, and audit before evidence is released
 
 **Serves:** [U3](../constraints/use-case.md#u3) (under 10 seconds), [U4](../constraints/use-case.md#u4) (100% confidence in the source), [R1](../constraints/requirements.md#r1) (no information from forbidden documents). **Not met:** [P4](../constraints/production.md#p4) (durable, protected audit).

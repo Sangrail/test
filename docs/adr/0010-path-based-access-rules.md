@@ -2,6 +2,8 @@
 status: accepted
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Index the whole repository, and control access with folder and file rules
 
 **Serves:** [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [C2](../constraints/environment.md#c2) (files in an existing repository), [U2](../constraints/use-case.md#u2) (100+ documents). **Not met:** [P3](../constraints/production.md#p3) (permissions from the repository).

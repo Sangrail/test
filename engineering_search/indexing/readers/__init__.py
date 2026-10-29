@@ -1,5 +1,10 @@
 """Readers: one class per way of reading a file type, listed in registry.py.
 
+These readers are stand-ins. The brief says connectors and APIs already extract
+metadata, text and properties from supported files; the MVP reads Markdown, PDF text,
+CSV and XLSX itself only to prove the chain from file to cited answer. A connector
+plugs in here as one more reader that returns an Extraction (ADR 0020).
+
     base.py       ReaderManifest, Capabilities, Extraction, ReaderError, Reader
     text.py       split lines into passages (shared)
     markdown.py   MarkdownReader (text and pipe tables)

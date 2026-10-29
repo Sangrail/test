@@ -5,6 +5,12 @@
       "command": "uv",
       "args": ["run", "--frozen", "python", "-m", "engineering_search.mcp_server", "--user", "jp"],
       "env": {}
+    },
+    "design-records": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["run", "--frozen", "python", "-m", "design_records", "mcp"],
+      "env": {}
     }
   }
 }

@@ -2,6 +2,8 @@
 status: accepted
 date: 2026-10-28
 ---
+<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+
 # Put all search logic in one service, used by the web page and the chat agent
 
 **Serves:** [C1](../constraints/environment.md#c1) (a broader architecture exists), [C5](../constraints/environment.md#c5) (a chat-agent shell calls backend APIs and tools), [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [U4](../constraints/use-case.md#u4) (100% confidence in the source).
