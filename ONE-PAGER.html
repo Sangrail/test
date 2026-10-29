@@ -59,7 +59,7 @@ select { font: inherit; font-size: 13px; border: 1px solid var(--line); backgrou
 .progress > div { height: 100%; width: 0; background: var(--accent); }
 
 .mapbox { overflow-x: auto; border-bottom: 1px solid var(--line); background: var(--bg); }
-.mapbox svg { display: block; width: 100%; min-width: 920px; height: auto; }
+.mapbox svg { display: block; width: 100%; min-width: 980px; height: auto; }
 svg text { fill: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
 svg .muted { fill: var(--muted); }
 svg .lbl { font-size: 12px; } svg .ttl { font-size: 13.5px; font-weight: 700; } svg .tag { font-size: 10px; font-weight: 700; letter-spacing: .07em; fill: var(--muted); }
@@ -76,10 +76,29 @@ svg .ztxt { font-size: 11px; font-weight: 700; letter-spacing: .08em; fill: var(
 svg.focus .node { opacity: var(--dim); }
 svg.focus .node.on { opacity: 1; }
 svg.focus .node.on rect.box { stroke-width: 3; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 45%, transparent)); }
-.edge { stroke: var(--muted); stroke-width: 1.4; fill: none; transition: opacity .6s, stroke .4s; }
-svg.focus .edge { opacity: .25; }
-svg.focus .edge.on { opacity: 1; stroke: var(--accent); stroke-width: 2.2; }
-.edge.deny { stroke: var(--no); stroke-dasharray: 5 4; }
+.edge { stroke: var(--muted); stroke-width: 1.5; fill: none; marker-end: url(#ah); transition: opacity .6s, stroke .4s; }
+.edge.link { marker-end: none; }
+svg.focus .edge { opacity: .3; }
+svg.focus .edge.on { opacity: 1; stroke: var(--accent); stroke-width: 2.4; marker-end: url(#ah-on); }
+svg.focus .edge.link.on { marker-end: none; }
+i.mvp { display: block; font-style: normal; font-size: 12.5px; color: var(--muted); }
+.codes-note { font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+.codes-note a, .key a { color: var(--accent); }
+a.chip { text-decoration: none; cursor: help; }
+a.chip:hover { border-color: var(--accent); color: var(--accent); }
+ul.defs { list-style: none; padding-left: 0; }
+ul.defs li { padding-left: 34px; text-indent: -34px; }
+ul.defs .chip { min-width: 28px; text-align: center; margin-right: 4px; text-indent: 0; }
+.key { margin-top: 22px; }
+.key h2 { font-size: 18px; margin: 0 0 4px; }
+.key-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+@media (max-width: 900px) { .key-grid { grid-template-columns: 1fr; } }
+.key dl { margin: 0; font-size: 13px; }
+.key dt { font-weight: 700; margin-top: 6px; }
+.key dd { margin: 0 0 0 0; color: var(--ink); }
+.key dt:target, .key dt:target + dd { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.key h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 2px; }
+.key .group-note { font-size: 12px; color: var(--muted); margin: 0 0 4px; }
 #token, #qtoken { transition: transform 1.6s cubic-bezier(.45,.05,.25,1), opacity .6s; }
 #token rect { fill: var(--panel); stroke: var(--accent); stroke-width: 2; }
 #qtoken rect { fill: var(--accent); }
@@ -172,34 +191,48 @@ footer a { color: var(--accent); }
   <button id="theme" type="button" aria-label="Switch light or dark">◐ Theme</button>
 </header>
 
+<p class="codes-note">Codes such as <span class="chip">B1</span> or <span class="chip">K13</span> name items of the brief and of its analysis; each card below defines its own. Hover a code for its meaning, or see <a href="#key">what every code means</a> at the foot of the page.</p>
+
 <div class="cards">
   <div class="card">
-    <h2>Background</h2>
-    <ul>
-      <li>Years of design information sit in design files and project documents <span class="chip">B1</span></li>
-      <li>Users do not know which file holds what they need <span class="chip">B2</span></li>
-      <li>They will not learn file formats or schemas <span class="chip">B3</span>, query languages or jargon <span class="chip">B4</span></li>
+    <h2>Background (B)</h2>
+    <ul class="defs">
+      <li><span class="chip">B1</span> Years of design information sit in design files and project documents.</li>
+      <li><span class="chip">B2</span> Users do not know which files hold what they need.</li>
+      <li><span class="chip">B3</span> Users will not learn file formats or schema details.</li>
+      <li><span class="chip">B4</span> Users will not learn query languages or system jargon.</li>
     </ul>
   </div>
   <div class="card">
-    <h2>Use case</h2>
-    <p>A selected engineering manager or lead <span class="chip">U1</span> finds a load limit, a material specification or an approval status <span class="chip">U2</span> across 100+ project documents <span class="chip">U3</span>, in under 10 seconds <span class="chip">U4</span>, with 100% confidence in the source <span class="chip">U5</span>, without opening a CAD file or a PDF viewer <span class="chip">U6</span>.</p>
-  </div>
-  <div class="card">
-    <h2>Constraints (they already exist)</h2>
-    <ul>
-      <li>An architecture direction <span class="chip">C1</span></li>
-      <li>A repository that holds the files <span class="chip">C2</span></li>
-      <li>Connectors that extract metadata, text and properties <span class="chip">C3</span></li>
-      <li>Structured and/or semantic stores <span class="chip">C4</span></li>
-      <li>A chat-agent shell that calls tools <span class="chip">C5</span></li>
+    <h2>Use case (U): one use case, six parts</h2>
+    <ul class="defs">
+      <li><span class="chip">U1</span> A selected engineering manager or lead</li>
+      <li><span class="chip">U2</span> finds a load limit, a material specification or an approval status</li>
+      <li><span class="chip">U3</span> across 100+ project documents</li>
+      <li><span class="chip">U4</span> in under 10 seconds</li>
+      <li><span class="chip">U5</span> with 100% confidence in the source</li>
+      <li><span class="chip">U6</span> without opening a CAD file or a PDF viewer.</li>
     </ul>
-    <p class="small">The MVP does not build these. It stands in for each only as far as the flow needs (amber below).</p>
   </div>
   <div class="card">
-    <h2>Scope</h2>
-    <p>An MVP <span class="chip">S1</span>, not the final platform <span class="chip">S2</span>. Built: one search service behind an MCP server and a web test page; permissions before ranking; cited answers; constrained SQL; audit; an 8 s time budget.</p>
-    <p class="small">Out of scope or open: semantic search <span class="chip">O1</span>, real identity <span class="chip">G1</span>, durable audit <span class="chip">G2</span>, many users and automatic refresh <span class="chip">G5</span>, an ontology <span class="chip">G6</span>, formats the stand-ins cannot read <span class="chip">G8</span>.</p>
+    <h2>Constraints (C): what the brief assumes</h2>
+    <ul class="defs">
+      <li><span class="chip">C1</span> A broader architecture direction. <i class="mvp">MVP: one service behind tools and an HTTP API, so it can fit.</i></li>
+      <li><span class="chip">C2</span> A repository that holds the files. <i class="mvp">MVP: a test repository of 149 files, read in place.</i></li>
+      <li><span class="chip">C3</span> Connectors that extract metadata, text and properties. <i class="mvp">MVP: simple connectors built here, one reader per format plus fixed fact rules, to show the flow of information.</i></li>
+      <li><span class="chip">C4</span> Structured and/or semantic stores. <i class="mvp">MVP: one SQLite file with a full-text index, tables and facts.</i></li>
+      <li><span class="chip">C5</span> A chat-agent shell that calls tools. <i class="mvp">MVP: Claude Code, Codex or Pi through its MCP server.</i></li>
+    </ul>
+    <p class="small">Where the company's own version exists, it replaces the MVP's. The MVP's versions are kept deliberately straightforward (amber in the map).</p>
+  </div>
+  <div class="card">
+    <h2>Scope (S)</h2>
+    <ul class="defs">
+      <li><span class="chip">S1</span> An MVP.</li>
+      <li><span class="chip">S2</span> Not the final platform or solution.</li>
+    </ul>
+    <p class="small">Built: one search service behind an MCP server and a web test page; permissions before ranking; quoted, cited answers; constrained SQL; an audit log; an 8-second time budget.</p>
+    <p class="small">Left open (G) or out of scope (O): <span class="chip">G1</span> real identity, <span class="chip">G2</span> durable audit, <span class="chip">G5</span> many users and automatic refresh, <span class="chip">G6</span> an ontology, <span class="chip">G8</span> formats the MVP's readers cannot read, <span class="chip">O1</span> semantic search.</p>
   </div>
 </div>
 
@@ -222,179 +255,184 @@ footer a { color: var(--accent); }
   <div class="progress" aria-hidden="true"><div id="bar"></div></div>
   <div class="legend">
     <span class="lg-exist">exists in the company</span>
-    <span class="lg-stand">MVP stand-in for it</span>
+    <span class="lg-stand">built simply for the MVP, to show the flow</span>
     <span class="lg-built">built by the MVP</span>
     <span class="lg-u">unstructured: passages</span>
     <span class="lg-s">structured: tables and facts</span>
   </div>
 
   <div class="mapbox">
-  <svg id="map" viewBox="0 0 1200 500" role="img" aria-label="System map: repository, indexing line, stores, search service, front ends and users">
+<svg id="map" viewBox="0 0 1260 510" role="img" aria-label="System map: repository, indexing line, stores, search service, front ends and users">
     <defs>
-      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+      <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker>
+      <marker id="ah-on" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/></marker>
     </defs>
     <!-- zones -->
-    <rect class="zone" x="8" y="20" width="168" height="470" rx="10"/><text class="ztxt" x="20" y="38">REPOSITORY</text>
-    <rect class="zone" x="186" y="20" width="392" height="470" rx="10"/><text class="ztxt" x="198" y="38">INDEXING LINE</text>
-    <rect class="zone" x="588" y="20" width="200" height="470" rx="10"/><text class="ztxt" x="600" y="38">ONE SQLITE INDEX</text>
-    <rect class="zone" x="798" y="20" width="224" height="470" rx="10"/><text class="ztxt" x="810" y="38">SEARCH SERVICE</text>
-    <rect class="zone" x="1032" y="20" width="160" height="470" rx="10"/><text class="ztxt" x="1044" y="38">FRONT ENDS · USERS</text>
-
-    <!-- edges -->
-    <g style="color:var(--muted)">
-      <path id="e-repo-det" class="edge" d="M164,110 H198" marker-end="url(#ah)"/>
-      <path id="e-det-reg" class="edge" d="M366,92 H378" marker-end="url(#ah)"/>
-      <path id="e-reg-read" class="edge" d="M490,128 V150" marker-end="url(#ah)"/>
-      <path id="e-read-pass" class="edge" d="M566,196 C580,196 584,150 600,150" marker-end="url(#ah)"/>
-      <path id="e-read-tab" class="edge" d="M490,246 V270" marker-end="url(#ah)"/>
-      <path id="e-tab-facts" class="edge" d="M566,300 C582,300 584,270 600,270" marker-end="url(#ah)"/>
-      <path id="e-fact-store" class="edge" d="M566,370 C582,370 584,300 600,300" marker-end="url(#ah)"/>
-      <path id="e-pass-svc" class="edge" d="M776,150 H810" marker-end="url(#ah)"/>
-      <path id="e-tab-svc" class="edge" d="M776,285 C792,285 796,250 810,250" marker-end="url(#ah)"/>
-      <path id="e-acc-svc" class="edge" d="M916,388 V352" marker-end="url(#ah)"/>
-      <path id="e-svc-fe" class="edge" d="M1010,180 H1044" marker-end="url(#ah)"/>
-      <path id="e-fe-jp" class="edge" d="M1112,232 V262" marker-end="url(#ah)"/>
-      <path id="e-fe-kamal" class="edge" d="M1112,232 C1112,300 1112,320 1112,334" marker-end="url(#ah)"/>
-      <path id="e-svc-repo" class="edge" d="M916,64 V54 H86 V70" marker-end="url(#ah)"/>
-      <path id="e-maya-svc" class="edge" d="M1060,424 H1010" marker-end="url(#ah)"/>
-    </g>
-    <text id="t-hash-check" class="tag stamp" x="300" y="50">FINGERPRINT CHECK: HASH CITED FILES AGAIN</text>
+    <rect class="zone" x="8" y="20" width="186" height="480" rx="10"/><text class="ztxt" x="20" y="38">REPOSITORY</text>
+    <rect class="zone" x="204" y="20" width="428" height="480" rx="10"/><text class="ztxt" x="216" y="38">INDEXING LINE</text>
+    <rect class="zone" x="642" y="20" width="210" height="480" rx="10"/><text class="ztxt" x="654" y="38">ONE SQLITE INDEX</text>
+    <rect class="zone" x="862" y="20" width="232" height="480" rx="10"/><text class="ztxt" x="874" y="38">SEARCH SERVICE</text>
+    <rect class="zone" x="1104" y="20" width="148" height="480" rx="10"/><text class="ztxt" x="1116" y="38">FRONT ENDS</text>
 
     <!-- nodes -->
     <g id="n-repo" class="node n-exist">
-      <rect class="box" x="20" y="70" width="144" height="200" rx="9"/>
+      <rect class="box" x="20" y="70" width="162" height="196" rx="9"/>
       <text class="ttl" x="32" y="92">Repository</text><text class="tag" x="32" y="107">EXISTS · C2</text>
       <text class="lbl muted" x="32" y="130">project-cedar/</text>
       <text class="lbl muted" x="32" y="148">project-harbour/</text>
       <text class="lbl muted" x="32" y="166">project-northgate/</text>
       <text class="lbl" x="32" y="184" font-weight="700">specifications/</text>
-      <text class="lbl muted" x="32" y="202">registers/ …</text>
-      <text class="lbl muted" x="32" y="226">149 files, read in place</text>
+      <text class="lbl muted" x="32" y="202">registers/ and others</text>
+      <text class="lbl muted" x="32" y="226">149 files</text>
     </g>
     <g id="n-perm" class="node n-stand">
-      <rect class="box" x="20" y="300" width="144" height="120" rx="9"/>
-      <text class="ttl" x="32" y="322">Folder permissions</text><text class="tag" x="32" y="337">STAND-IN · G1</text>
-      <text class="lbl muted" x="32" y="358">specifications/ →</text>
-      <text class="lbl muted" x="32" y="374">JP, Maya</text>
+      <rect class="box" x="20" y="296" width="162" height="128" rx="9"/>
+      <text class="ttl" x="32" y="318">Permissions</text><text class="tag" x="32" y="333">MVP RULES · G1</text>
+      <text class="lbl muted" x="32" y="356">specifications/ →</text>
+      <text class="lbl muted" x="32" y="372">JP and Maya</text>
       <text class="lbl muted" x="32" y="396">The repository's own</text>
       <text class="lbl muted" x="32" y="412">rules, per user</text>
     </g>
 
     <g id="n-detect" class="node n-built">
-      <rect class="box" x="198" y="56" width="168" height="72" rx="9"/>
-      <text class="ttl" x="210" y="78">① Detect</text><text class="tag" x="210" y="93">FILE METADATA</text>
-      <text class="lbl muted" x="210" y="114">type, version, size</text>
+      <rect class="box" x="216" y="56" width="200" height="74" rx="9"/>
+      <text class="ttl" x="228" y="78">① Detect</text><text class="tag" x="228" y="93">FILE METADATA EXTRACTOR</text>
+      <text class="lbl muted" x="228" y="116">type, version, size</text>
     </g>
     <g id="n-reg" class="node n-built">
-      <rect class="box" x="380" y="56" width="186" height="72" rx="9"/>
-      <text class="ttl" x="392" y="78">② Registry + ③ hash</text><text class="tag" x="392" y="93">CHOOSE READER · SHA-256</text>
-      <text class="lbl muted" x="392" y="114">fingerprint of the bytes</text>
+      <rect class="box" x="436" y="56" width="184" height="74" rx="9"/>
+      <text class="ttl" x="448" y="78">② Reader + ③ hash</text><text class="tag" x="448" y="93">REGISTRY · SHA-256</text>
+      <text class="lbl muted" x="448" y="116">fingerprint of the bytes</text>
     </g>
     <g id="n-read" class="node n-stand">
-      <rect class="box" x="198" y="150" width="368" height="96" rx="9"/>
-      <text class="ttl" x="210" y="172">④ Readers: file-specific extractors</text><text class="tag" x="210" y="187">STAND-INS FOR THE CONNECTORS · C3</text>
-      <text class="lbl muted" x="210" y="210">Markdown · PDF text · CSV · XLSX · DXF notes and title block</text>
-      <text class="lbl muted" x="210" y="230">One Extraction: passages (prose) + tables (rows) — or both</text>
+      <rect class="box" x="216" y="152" width="404" height="94" rx="9"/>
+      <text class="ttl" x="228" y="174">④ Readers: file-specific extractors</text><text class="tag" x="228" y="189">SIMPLE CONNECTORS BUILT FOR THE MVP · C3</text>
+      <text class="lbl muted" x="228" y="212">Markdown · PDF text · CSV · XLSX · DXF drawing</text>
+      <text class="lbl muted" x="228" y="232">Each returns passages (prose), tables (rows), or both</text>
     </g>
     <g id="n-tab" class="node n-s">
-      <rect class="box" x="198" y="270" width="368" height="62" rx="9"/>
-      <text class="ttl" x="210" y="292">Tables: header + rows, each row with its line</text>
-      <text class="lbl muted" x="210" y="314">Every row is also kept as a passage</text>
+      <rect class="box" x="216" y="272" width="404" height="62" rx="9"/>
+      <text class="ttl" x="228" y="294">Tables: header and rows, each with its line</text>
+      <text class="lbl muted" x="228" y="318">Every table row is also kept as a passage</text>
     </g>
     <g id="n-facts" class="node n-stand">
-      <rect class="box" x="198" y="346" width="368" height="72" rx="9"/>
-      <text class="ttl" x="210" y="368">⑤ Fact rules (index time)</text><text class="tag" x="210" y="383">STAND-IN · FIXED RULES ON TABLE CELLS</text>
-      <text class="lbl muted" x="210" y="404">parameter · role · value · unit · SI value · subject</text>
+      <rect class="box" x="216" y="356" width="404" height="74" rx="9"/>
+      <text class="ttl" x="228" y="378">⑤ Fact rules (index time)</text><text class="tag" x="228" y="393">BUILT FOR THE MVP · FIXED RULES ON CELLS</text>
+      <text class="lbl muted" x="228" y="416">parameter · role · value · unit · SI value · subject</text>
     </g>
 
     <g id="n-pass" class="node n-u">
-      <rect class="box" x="600" y="110" width="176" height="96" rx="9"/>
-      <text class="ttl" x="612" y="132">Passages + FTS5</text><text class="tag" x="612" y="147">UNSTRUCTURED</text>
-      <text class="lbl muted" x="612" y="168">exact text, heading,</text>
-      <text class="lbl muted" x="612" y="184">lines, page; word index</text>
+      <rect class="box" x="654" y="110" width="186" height="96" rx="9"/>
+      <text class="ttl" x="666" y="132">Passages + FTS5</text><text class="tag" x="666" y="147">UNSTRUCTURED</text>
+      <text class="lbl muted" x="666" y="170">exact text, heading,</text>
+      <text class="lbl muted" x="666" y="186">lines, page; word index</text>
     </g>
     <g id="n-store" class="node n-s">
-      <rect class="box" x="600" y="230" width="176" height="96" rx="9"/>
-      <text class="ttl" x="612" y="252">Tables · rows · facts</text><text class="tag" x="612" y="267">STRUCTURED</text>
-      <text class="lbl muted" x="612" y="288">source_tables, table_rows,</text>
-      <text class="lbl muted" x="612" y="304">facts</text>
+      <rect class="box" x="654" y="232" width="186" height="96" rx="9"/>
+      <text class="ttl" x="666" y="254">Tables, rows, facts</text><text class="tag" x="666" y="269">STRUCTURED</text>
+      <text class="lbl muted" x="666" y="292">source_tables,</text>
+      <text class="lbl muted" x="666" y="308">table_rows, facts</text>
     </g>
     <g id="n-docs" class="node n-built">
-      <rect class="box" x="600" y="350" width="176" height="80" rx="9"/>
-      <text class="ttl" x="612" y="372">Documents + inventory</text>
-      <text class="lbl muted" x="612" y="392">file ID, fingerprint,</text>
-      <text class="lbl muted" x="612" y="408">type, reader, status</text>
-      <text class="tag" x="612" y="424">ONE TRANSACTION</text>
+      <rect class="box" x="654" y="354" width="186" height="96" rx="9"/>
+      <text class="ttl" x="666" y="376">Documents</text><text class="tag" x="666" y="391">AND THE INVENTORY</text>
+      <text class="lbl muted" x="666" y="414">file ID, fingerprint,</text>
+      <text class="lbl muted" x="666" y="430">type, reader, status</text>
     </g>
 
     <g id="n-svc" class="node n-built">
-      <rect class="box" x="810" y="70" width="200" height="282" rx="9"/>
-      <text class="ttl" x="822" y="92">One search service</text><text class="tag" x="822" y="107">BUILT BY THE MVP</text>
-      <text class="lbl" x="822" y="132">1 Plan the question</text>
-      <text class="lbl" x="822" y="154">2 Find files with its words</text>
-      <text class="lbl" x="822" y="176" font-weight="700">3 Apply permissions</text>
-      <text class="lbl muted" x="836" y="192">before ranking, limits, counts</text>
-      <text class="lbl" x="822" y="214">4 Rank permitted passages</text>
-      <text class="lbl" x="822" y="236">5 Pick the sentence or row</text>
-      <text class="lbl" x="822" y="258">6 Re-hash the cited file</text>
-      <text class="lbl" x="822" y="280">7 Audit, then answer</text>
-      <text class="lbl muted" x="822" y="306">or: run the agent's SQL</text>
-      <text class="lbl muted" x="822" y="322">over permitted rows only</text>
-      <text class="tag" x="822" y="342">8 s TIME BUDGET</text>
+      <rect class="box" x="874" y="70" width="208" height="290" rx="9"/>
+      <text class="ttl" x="886" y="92">One search service</text><text class="tag" x="886" y="107">BUILT BY THE MVP</text>
+      <text class="lbl" x="886" y="132">1 Plan the question</text>
+      <text class="lbl" x="886" y="154">2 Find files with its words</text>
+      <text class="lbl" x="886" y="176" font-weight="700">3 Apply permissions</text>
+      <text class="lbl muted" x="900" y="192">before ranking or counting</text>
+      <text class="lbl" x="886" y="214">4 Rank permitted passages</text>
+      <text class="lbl" x="886" y="236">5 Pick the sentence or row</text>
+      <text class="lbl" x="886" y="258">6 Re-hash the cited file</text>
+      <text class="lbl" x="886" y="280">7 Audit, then answer</text>
+      <text class="lbl muted" x="886" y="306">or: run the agent's SQL</text>
+      <text class="lbl muted" x="886" y="322">over permitted rows only</text>
+      <text class="tag" x="886" y="346">8-SECOND TIME BUDGET</text>
     </g>
     <g id="n-acc" class="node n-stand">
-      <rect class="box" x="810" y="388" width="200" height="62" rx="9"/>
-      <text class="ttl" x="822" y="410">Identity + permissions</text><text class="tag" x="822" y="425">STAND-IN · G1</text>
-      <text class="lbl muted" x="822" y="442">demo sign-in, path rules</text>
+      <rect class="box" x="874" y="392" width="208" height="64" rx="9"/>
+      <text class="ttl" x="886" y="414">Identity, permissions</text><text class="tag" x="886" y="429">MVP: DEMO SIGN-IN · G1</text>
+      <text class="lbl muted" x="886" y="448">demo sign-in, path rules</text>
     </g>
 
     <g id="n-fe" class="node n-exist">
-      <rect class="box" x="1044" y="128" width="136" height="104" rx="9"/>
-      <text class="ttl" x="1056" y="150">Chat agent</text><text class="tag" x="1056" y="165">EXISTS · C5</text>
-      <text class="lbl muted" x="1056" y="186">calls the MCP</text>
-      <text class="lbl muted" x="1056" y="202">server's tools;</text>
-      <text class="lbl muted" x="1056" y="218">web page for tests</text>
+      <rect class="box" x="1116" y="128" width="124" height="104" rx="9"/>
+      <text class="ttl" x="1128" y="150">Chat agent</text><text class="tag" x="1128" y="165">EXISTS · C5</text>
+      <text class="lbl muted" x="1128" y="188">calls the MCP</text>
+      <text class="lbl muted" x="1128" y="204">server's tools;</text>
+      <text class="lbl muted" x="1128" y="220">web page: tests</text>
     </g>
     <g id="n-jp" class="node n-user">
-      <rect class="box" x="1044" y="262" width="136" height="60" rx="9"/>
-      <text class="ttl" x="1056" y="284">JP</text>
-      <text class="lbl muted" x="1056" y="304">may read the file</text>
+      <rect class="box" x="1116" y="264" width="124" height="58" rx="9"/>
+      <text class="ttl" x="1128" y="286">JP</text>
+      <text class="lbl muted" x="1128" y="306">may read it</text>
     </g>
     <g id="n-kamal" class="node n-user">
-      <rect class="box" x="1044" y="334" width="136" height="60" rx="9"/>
-      <text class="ttl" x="1056" y="356">Kamal</text>
-      <text class="lbl muted" x="1056" y="376">may not read it</text>
+      <rect class="box" x="1116" y="336" width="124" height="58" rx="9"/>
+      <text class="ttl" x="1128" y="358">Kamal</text>
+      <text class="lbl muted" x="1128" y="378">may not read it</text>
     </g>
     <g id="n-maya" class="node n-user">
-      <rect class="box" x="1060" y="404" width="120" height="44" rx="9"/>
-      <text class="ttl" x="1072" y="424">Maya</text>
-      <text class="lbl muted" x="1072" y="440">index team</text>
+      <rect class="box" x="1116" y="410" width="124" height="50" rx="9"/>
+      <text class="ttl" x="1128" y="430">Maya</text>
+      <text class="lbl muted" x="1128" y="449">index team</text>
     </g>
 
-    <!-- tokens -->
-    <g id="token" transform="translate(30,273)">
+    <!-- edges: drawn over the boxes, right-angled, each ending in a straight run so the arrowhead shows -->
+    <path id="e-repo-det" class="edge" d="M182,93 H213"/>
+    <path id="e-det-reg" class="edge" d="M416,93 H433"/>
+    <path id="e-reg-read" class="edge" d="M528,130 V149"/>
+    <path id="e-read-pass" class="edge" d="M620,199 H636 V158 H651"/>
+    <path id="e-read-tab" class="edge" d="M418,246 V269"/>
+    <path id="e-tab-facts" class="edge" d="M418,334 V353"/>
+    <path id="e-tab-store" class="edge" d="M620,303 H651"/>
+    <path id="e-fact-store" class="edge" d="M620,385 H636 V318 H651"/>
+    <path id="e-pub" class="edge" d="M620,415 H636 V402 H651"/>
+    <path id="e-pass-svc" class="edge" d="M840,158 H871"/>
+    <path id="e-store-svc" class="edge" d="M840,280 H871"/>
+    <path id="e-acc-svc" class="edge" d="M978,392 V363"/>
+    <path id="e-svc-fe" class="edge" d="M1082,180 H1113"/>
+    <path id="e-fe-jp" class="edge link" d="M1178,232 V264"/>
+    <path id="e-fe-kamal" class="edge link" d="M1240,214 H1248 V365 H1240"/>
+    <path id="e-svc-repo" class="edge" d="M978,70 V50 H101 V67"/>
+    <path id="e-perm-acc" class="edge" d="M101,424 V480 H978 V459"/>
+    <path id="e-maya-svc" class="edge" d="M1116,435 H1098 V330 H1085"/>
+    <g id="t-hash-check" class="stamp">
+      <rect x="400" y="41" width="290" height="18" rx="9" style="fill:var(--panel);stroke:var(--accent)"/>
+      <text x="545" y="54" text-anchor="middle" class="tag" style="fill:var(--accent)">FINGERPRINT CHECK: RE-HASH THE CITED FILE</text>
+    </g>
+
+    <!-- tokens and stamps -->
+    <g id="token" transform="translate(44,270)">
       <rect x="0" y="0" width="124" height="22" rx="11"/>
       <text x="62" y="15" text-anchor="middle" class="lbl" font-weight="700">📄 roof-load.md</text>
     </g>
-    <g id="qtoken" transform="translate(1050,236)" opacity="0">
+    <g id="qtoken" transform="translate(1114,238)" opacity="0">
       <rect x="0" y="0" width="124" height="22" rx="11"/>
       <text id="qlabel" x="62" y="15" text-anchor="middle" class="lbl">🔎 question</text>
     </g>
     <g id="denied" class="stamp">
-      <rect x="826" y="160" width="172" height="40" rx="6" fill="var(--no-bg)" stroke="var(--no)"/>
-      <text x="912" y="177" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">DENIED: specifications/</text>
-      <text x="912" y="193" text-anchor="middle" class="lbl" style="fill:var(--no)">file dropped before ranking</text>
+      <rect x="888" y="158" width="180" height="40" rx="6" style="fill:var(--no-bg);stroke:var(--no)"/>
+      <text x="978" y="175" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">DENIED: specifications/</text>
+      <text x="978" y="191" text-anchor="middle" class="lbl" style="fill:var(--no)">dropped before ranking</text>
     </g>
     <g id="stale" class="stamp">
-      <rect x="826" y="244" width="172" height="40" rx="6" fill="var(--no-bg)" stroke="var(--no)"/>
-      <text x="912" y="261" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">CHANGED ON DISC</text>
-      <text x="912" y="277" text-anchor="middle" class="lbl" style="fill:var(--no)">left out until refresh</text>
+      <rect x="888" y="240" width="180" height="40" rx="6" style="fill:var(--no-bg);stroke:var(--no)"/>
+      <text x="978" y="257" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">CHANGED ON DISC</text>
+      <text x="978" y="273" text-anchor="middle" class="lbl" style="fill:var(--no)">left out until refresh</text>
     </g>
     <g id="edited" class="stamp">
-      <rect x="28" y="238" width="128" height="22" rx="6" fill="var(--no-bg)" stroke="var(--no)"/>
-      <text x="92" y="253" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">edited: 5 → 6 kN/m²</text>
+      <rect x="28" y="236" width="146" height="22" rx="6" style="fill:var(--no-bg);stroke:var(--no)"/>
+      <text x="101" y="251" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">edited: 5 → 6 kN/m²</text>
     </g>
   </svg>
+
   </div>
 
   <div class="stage">
@@ -431,7 +469,7 @@ footer a { color: var(--accent); }
       <li><b>Indexer</b>: the SHA-256 content fingerprint; the reader and its version.</li>
       <li><b>Readers</b> (file specific): headings, lines, pages and sheets; a DXF title block (drawing number, revision, approval) as a table.</li>
       <li><b>Path</b>: the file ID; the project from a <code>project-&lt;name&gt;</code> folder.</li>
-      <li><b>Not extracted</b>: author, dates, repository revision. A real connector supplies them <span class="chip">C3</span>.</li>
+      <li><b>Not extracted</b>: author, dates, repository revision. The company's connectors would supply them <span class="chip">C3</span>.</li>
     </ul>
   </div>
   <div class="card">
@@ -442,9 +480,15 @@ footer a { color: var(--accent); }
       <li>No name, text or count from a file a user may not read <span class="chip">K13</span></li>
       <li>A changed file is never quoted stale <span class="chip">K3</span></li>
     </ul>
-    <p class="small">Not shown, because not built: real connectors and identity, a repository watcher, a semantic store, many users at once.</p>
+    <p class="small">Not shown, because not built: the company's own connectors and identity, a repository watcher, a semantic store, many users at once.</p>
   </div>
 </div>
+
+<section class="key card" id="key" aria-labelledby="key-title">
+  <h2 id="key-title">What every code means</h2>
+  <p class="small">The brief is split into items with one ID each (B, U, C, T, S); the analysis adds clarifications (K), gaps and challenges (G) and recorded out-of-scope items (O). Decisions are recorded as ADRs. Full text: <a href="docs/constraints/README.md">the brief, item by item</a> and <a href="docs/adr/README.md">the decision records</a>.</p>
+  <div class="key-grid" id="key-grid"></div>
+</section>
 
 <footer>
   Every value in the journey is what the code returned on the test repository (29 October 2026). The edit was made on a copy. Read more: <a href="design/INDEXING.md">design/INDEXING.md</a> (indexing, explicitly) · <a href="ARCHITECTURE.md">ARCHITECTURE.md</a> (the code) · <a href="design/SYSTEM-DESIGN.md">design/SYSTEM-DESIGN.md</a> (the initial phase) · <a href="docs/constraints/README.md">the brief, item by item</a> · <a href="docs/adr/README.md">decision records</a>.
@@ -480,10 +524,83 @@ footer a { color: var(--accent); }
 
   // Token positions on the map (x, y of the token's top-left corner).
   const P = {
-    repo: [30, 273], detect: [222, 128], reg: [420, 128], read: [330, 247],
-    facts: [330, 425], store: [626, 327], hidden: [626, 327],
-    jp: [1050, 236], kamal: [1050, 236], maya: [1056, 454]
+    repo: [44, 270], detect: [254, 130], reg: [470, 130], read: [300, 248],
+    facts: [300, 436], store: [684, 330], hidden: [684, 330],
+    jp: [1114, 238], kamal: [1114, 238], maya: [1114, 466]
   };
+
+  // Every code used on the page, with its meaning (from docs/constraints and docs/adr).
+  const DEFS = {
+    B: ["Background", "What the brief says about the situation today."],
+    U: ["Use case", "The one use case the MVP must prove, in six parts."],
+    C: ["Constraints", "What the brief says already exists in the company."],
+    S: ["Scope", "What the brief asks to be built."],
+    K: ["Clarifications", "The product owner's answers where the brief is open."],
+    G: ["Gaps and challenges", "What the MVP leaves open."],
+    O: ["Out of scope", "Recorded as out of scope, with the reason."],
+    ADR: ["Decision records", "The decisions, each tracing to the items above."],
+    B1: "Years of design information sit in design files and project documents.",
+    B2: "Users do not know which files hold what they need.",
+    B3: "Users will not learn file formats or schema details.",
+    B4: "Users will not learn query languages or system-specific jargon.",
+    U1: "A selected engineering manager or lead.",
+    U2: "Finds a critical engineering parameter: a load limit, a material specification or an approval status.",
+    U3: "Across 100+ project documents.",
+    U4: "In under 10 seconds.",
+    U5: "With 100% confidence in the source.",
+    U6: "Without opening a design file (CAD) or a tool (PDF viewer).",
+    C1: "A broader architecture direction already exists.",
+    C2: "The files live in an existing repository.",
+    C3: "Connectors and APIs extract metadata, text and properties from supported files.",
+    C4: "Extracted information can be stored in structured and/or semantic stores.",
+    C5: "A chat-agent shell can call backend APIs or tools.",
+    S1: "An MVP.",
+    S2: "Not the final platform or solution.",
+    K3: "A source is the file on disc as it is now; an answer names the file, the location and the quoted evidence.",
+    K12: "Files are read from the repository, never uploaded.",
+    K13: "A user never gets information from a document they may not read.",
+    K16: "The index is refreshed on start and on request.",
+    G1: "Identity management, and permissions wired correctly.",
+    G2: "Durable audits.",
+    G5: "Any number of users, within 10 seconds (and automatic refresh).",
+    G6: "Consistent status values across sources: an ontology.",
+    G8: "What the MVP's simple readers cannot read.",
+    O1: "Semantic search (embeddings).",
+    "ADR 0001": "Prove the use case with simple sample readers built for the MVP, not the company's connectors.",
+    "ADR 0002": "Store structured tables and a lexical full-text index; leave semantic search out.",
+    "ADR 0003": "Answer with a sentence copied from the source, and refuse rather than guess.",
+    "ADR 0004": "Apply permissions before ranking, limits and counts; folder rules stand in for the repository's controls.",
+    "ADR 0005": "One search service behind MCP tools and HTTP; the chat shell owns the conversation.",
+    "ADR 0007": "The source is the file on disc; a content fingerprint detects change.",
+    "ADR 0011": "Tables land in one fixed schema; the questions, not the files, shape the model."
+  };
+  const CODE = /ADR \d{4}|\b[BUCSKGO]\d{1,2}\b/g;
+  const slug = code => "key-" + code.replace(/\s+/g, "-");
+  function chip(code) {
+    const text = DEFS[code];
+    if (!text) console.warn("undefined code", code);
+    return `<a class="chip" href="#${slug(code)}" title="${code}: ${(text || "").replace(/"/g, "&quot;")}">${code}</a>`;
+  }
+  // Turn plain chips (<span class="chip">K3</span>) into links with their meaning.
+  function decorate(root) {
+    root.querySelectorAll("span.chip").forEach(el => {
+      const code = el.textContent.trim();
+      el.outerHTML = chip(code);
+    });
+  }
+  // "B1–B4 · K3 · C3" -> chips; a range is expanded.
+  function traces(text) {
+    return text.replace(/\b([BUCSKGO])(\d{1,2})–\1(\d{1,2})\b/g, (m, l, a, b) =>
+             Array.from({length: b - a + 1}, (_, k) => `${l}${+a + k}`).join(" "))
+           .replace(CODE, c => chip(c));
+  }
+  function buildKey() {
+    const groups = ["B", "U", "C", "S", "K", "G", "O", "ADR"];
+    $("key-grid").innerHTML = groups.map(g => {
+      const codes = Object.keys(DEFS).filter(c => c !== g && (g === "ADR" ? c.startsWith("ADR ") : c[0] === g && /\d/.test(c[1] || "")));
+      return `<div><h3>${g} · ${DEFS[g][0]}</h3><p class="group-note">${DEFS[g][1]}</p><dl>${codes.map(c => `<dt id="${slug(c)}">${c}</dt><dd>${DEFS[c]}</dd>`).join("")}</dl></div>`;
+    }).join("");
+  }
 
   const STEPS = [
     {
@@ -492,16 +609,16 @@ footer a { color: var(--accent); }
       body: `<p>Files stay where they are, in the company's repository. An <b>indexing line</b> reads each file once and keeps two kinds of data in one index: <b>passages</b> of prose, found by their words, and <b>tables</b>, whose cells become typed <b>facts</b> that SQL can filter.</p>
              <p>A <b>search service</b> answers every question from that index. It applies the user's permissions first, quotes the source, and checks that the file on disc has not changed since it was indexed.</p>
              <p>Press <b>Play</b> to follow one file from the repository to two users' answers, through an edit and a refresh. Each step waits long enough to read; use Back and Next to go at your own pace.</p>`,
-      ids: "Brief: B1–B4, U1–U6, C1–C5, S1–S2",
+      ids: "B1–B4 · U1–U6 · C1–C5 · S1–S2",
       ex: `${T("The file we follow")}${file()}
            ${T("Why this file")}<div class="box">A Markdown specification that holds <b>both</b> kinds of data: prose (lines 3 and 13) and a table (lines 7–9). One user may read it and another may not.</div>`
     },
     {
       title: "A file lives in the repository",
       on: ["n-repo", "n-perm"], edges: [], token: "repo", q: null,
-      body: `<p><code>specifications/roof-load.md</code> is one of 149 files in the test repository, which stands in for the company's own <span class="chip">C2</span>. The system reads files in place; nothing is uploaded <span class="chip">K12</span>.</p>
+      body: `<p><code>specifications/roof-load.md</code> is one of 149 files in the test repository, which takes the place of the company's own <span class="chip">C2</span>. The system reads files in place; nothing is uploaded <span class="chip">K12</span>.</p>
              <p>Who may read it belongs to the repository, not to the search: here, the folder rule for <code>specifications/</code> names JP and Maya. Kamal is not on it.</p>
-             <p>In the MVP, those rules are a short list in <code>access.py</code>, a labelled stand-in for the repository's real permissions <span class="chip">G1</span>.</p>`,
+             <p>In the MVP, those rules are a short list in <code>access.py</code>, a simple version of the repository's real permissions <span class="chip">G1</span>.</p>`,
       ids: "C2 · K12 · K13 · G1",
       ex: `${T("The file on disc")}${file()}
            ${T("The access rule that governs it")}${kv([["Rule", "<code>specifications/</code>"], ["May read", "JP, Maya"], ["May not read", "Kamal"]])}`
@@ -512,7 +629,7 @@ footer a { color: var(--accent); }
       body: `<p>The scan lists every regular file and makes its path the <b>file ID</b>. The <b>detector</b> is the file-level metadata extractor: it reads the extension and at most the first 512 bytes.</p>
              <p>For formats with a signature (<code>%PDF-1.7</code>, a ZIP with <code>xl/workbook.xml</code>, a JT header, a DXF <code>$ACADVER</code>) the content decides the type and version. Markdown has no signature, so the extension decides.</p>
              <p>The detector does not decide whether the file can be read. That is the registry's job, next.</p>`,
-      ids: "C3 (stand-in) · ADR 0001",
+      ids: "C3 · ADR 0001",
       ex: `${T("What the detector records")}${kv([["file_id", "<code>specifications/roof-load.md</code>"], ["file_type", "markdown"], ["format_version", "— (Markdown has none)"], ["decided by", "the extension (no signature to check)"]])}
            ${T("For comparison")}${kv([["<code>…/northgate-…calculations.pdf</code>", "pdf, version from <code>%PDF-1.x</code>"], ["<code>…/hangar-frame.jt</code>", "jt, version from the header → no reader"]])}`
     },
@@ -523,7 +640,7 @@ footer a { color: var(--accent); }
              <p>Then the whole file is read and hashed. The <b>SHA-256 of its bytes</b> is its content fingerprint. It is stored with the document and on every passage, and every citation carries it.</p>
              <p>On the next refresh, a file with the same fingerprint and the same reader version is not read again.</p>`,
       ids: "K3 · ADR 0007",
-      ex: `${T("Registry decision")}${kv([["Reader", "<code>markdown-text@2</code> (stand-in for a connector)"], ["Capabilities", "text, tables"], ["Status", "CLASSIFIED → read"]])}
+      ex: `${T("Registry decision")}${kv([["Reader", "<code>markdown-text@2</code> (a simple connector built for the MVP)"], ["Capabilities", "text, tables"], ["Status", "CLASSIFIED → read"]])}
            ${T("Content fingerprint")}<div class="box mono" style="word-break:break-all">d3c375218eb55b65b56a9181097d86ec7356da24367e0d2188b552147e706789</div>`
     },
     {
@@ -533,7 +650,7 @@ footer a { color: var(--accent); }
              <p><span class="pill u">unstructured</span> <b>3 passages</b>, split at headings and blank lines, each with its heading and line range.</p>
              <p><span class="pill s">structured</span> <b>1 table</b> named after the heading above it, "Roof load", with 4 columns and 1 row that cites line 9.</p>
              <p>The table's lines also stay in the "Roof load" passage, so the row can be found by its words <i>and</i> by SQL.</p>`,
-      ids: "C3 (stand-in) · ADR 0011",
+      ids: "C3 · ADR 0011",
       ex: `${T("What the reader saw")}${file({3: "u", 7: "us", 8: "us", 9: "us", 13: "u"})}
            <div class="two" style="margin-top:10px">
              <div class="box u"><h4>3 passages</h4><ul><li>line 3 · "Demonstration roof specification"</li><li>lines 7–9 · "Roof load"</li><li>line 13 · "Material specification"</li></ul></div>
@@ -555,11 +672,11 @@ footer a { color: var(--accent); }
     },
     {
       title: "Publish: one transaction, all or nothing",
-      on: ["n-pass", "n-store", "n-docs"], edges: ["e-read-pass", "e-fact-store"], token: "store", q: null,
+      on: ["n-pass", "n-store", "n-docs"], edges: ["e-read-pass", "e-tab-store", "e-fact-store", "e-pub"], token: "store", q: null,
       body: `<p>The service writes everything for the file in <b>one transaction</b>: the document row with its fingerprint, the passages and their full-text entries, the table, its row and its facts, and the inventory record. If anything fails, the old index stays.</p>
              <p>The passages go into an <b>FTS5 inverted index</b> over the heading, the text and the words of the path. The table goes into the same three fixed tables as every other table; no file ever creates a database table.</p>
              <p>Across the test repository, this run indexed 145 files and 2,550 passages. The other four files were listed, not read.</p>`,
-      ids: "C4 (stand-in) · ADR 0002 · ADR 0011",
+      ids: "C4 · ADR 0002 · ADR 0011",
       ex: `${T("What the index now holds for this file")}${kv([
               ["documents", "1 row · fingerprint d3c37521… · 3 passages"],
               ["passages + passages_fts", "3 rows · path words: specifications roof load"],
@@ -572,7 +689,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "JP signs in and asks a question",
-      on: ["n-jp", "n-fe", "n-svc", "n-acc", "n-pass"], edges: ["e-fe-jp", "e-svc-fe", "e-acc-svc", "e-pass-svc"], token: "hidden", q: ["jp", "🔎 JP asks"],
+      on: ["n-jp", "n-fe", "n-svc", "n-acc", "n-perm", "n-pass"], edges: ["e-fe-jp", "e-svc-fe", "e-acc-svc", "e-perm-acc", "e-pass-svc"], token: "hidden", q: ["jp", "🔎 JP asks"],
       body: `<p>JP is an engineering lead. Through the chat agent (or the web test page) JP asks: <b>"distributed roof load conditions"</b>.</p>
              <p>The service plans the words, finds <b>every file that contains one of them</b>, and asks the permission rules about those files. JP may read <code>specifications/</code>, so the file stays in.</p>
              <p>Only then does it rank, and only over permitted passages: BM25 statistics never see a file JP cannot read.</p>`,
@@ -587,7 +704,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "JP gets the file, quoted and cited",
-      on: ["n-jp", "n-fe", "n-svc", "n-pass", "n-store", "n-repo"], edges: ["e-fe-jp", "e-svc-fe", "e-pass-svc", "e-tab-svc", "e-svc-repo"], token: "hidden", q: ["jp", "✅ 5 kN/m²"], stamps: ["t-hash-check"],
+      on: ["n-jp", "n-fe", "n-svc", "n-pass", "n-store", "n-repo"], edges: ["e-fe-jp", "e-svc-fe", "e-pass-svc", "e-store-svc", "e-svc-repo"], token: "hidden", q: ["jp", "✅ 5 kN/m²"], stamps: ["t-hash-check"],
       body: `<p>The best permitted passage is the table row on line 9. Before quoting it, the service <b>hashes the file on disc again</b>. It matches the fingerprint in the index, so the row is quoted exactly, with the file, the line and the fingerprint.</p>
              <p>The same value is reachable as a <b>fact</b>: the chat agent's SQL over the facts of JP's permitted files returns 5 kN/m² (5,000 N/m²), citing the same line.</p>
              <p>The search took about 50 ms. The audit log records the permission decision for every matched file, but no document text.</p>`,
@@ -602,7 +719,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "Kamal asks the same question, and never sees the file",
-      on: ["n-kamal", "n-fe", "n-svc", "n-acc", "n-perm"], edges: ["e-fe-kamal", "e-svc-fe", "e-acc-svc"], token: "hidden", q: ["kamal", "🔎 Kamal asks"], stamps: ["denied"],
+      on: ["n-kamal", "n-fe", "n-svc", "n-acc", "n-perm"], edges: ["e-fe-kamal", "e-svc-fe", "e-acc-svc", "e-perm-acc"], token: "hidden", q: ["kamal", "🔎 Kamal asks"], stamps: ["denied"],
       body: `<p>Kamal, a structural engineer, asks exactly the same words. The file contains them, but the rule for <code>specifications/</code> does not name Kamal, so it is <b>dropped before ranking, limits, counts and pages</b>.</p>
              <p>Kamal's answer comes from a file Kamal may read: a Project Cedar load review that states the same limit in a sentence.</p>
              <p>Nothing in the response names the specification, quotes it, or counts it. Kamal's SQL over the same facts returns no rows. Only the index team can see the denial, in the audit log.</p>`,
@@ -637,7 +754,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "The refresh: only the changed file is read again",
-      on: ["n-maya", "n-svc", "n-detect", "n-reg", "n-read", "n-facts", "n-pass", "n-store", "n-docs"], edges: ["e-maya-svc", "e-det-reg", "e-reg-read", "e-read-tab", "e-tab-facts", "e-read-pass", "e-fact-store"], token: "store", q: ["maya", "↻ Reindex"],
+      on: ["n-maya", "n-svc", "n-detect", "n-reg", "n-read", "n-tab", "n-facts", "n-pass", "n-store", "n-docs"], edges: ["e-maya-svc", "e-det-reg", "e-reg-read", "e-read-tab", "e-tab-facts", "e-read-pass", "e-tab-store", "e-fact-store", "e-pub"], token: "store", q: ["maya", "↻ Reindex"],
       body: `<p>A refresh runs when a process starts, or when the index team asks for one: Maya selects <b>Reindex</b> (<code>POST /index</code>). In production, the repository connector's change events would start it; that watcher is not built <span class="chip">G5</span>.</p>
              <p>The refresh hashes every file that has a reader. 144 fingerprints match and are skipped. One differs, so <b>only that file is read again</b>: same reader, new passages, new table row, new facts.</p>
              <p>One transaction deletes the old rows and writes the new ones. It took about 20 ms.</p>`,
@@ -647,7 +764,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "After the refresh: the new value, for those allowed",
-      on: ["n-jp", "n-kamal", "n-fe", "n-svc", "n-pass", "n-store"], edges: ["e-fe-jp", "e-svc-fe", "e-pass-svc", "e-tab-svc"], token: "hidden", q: ["jp", "✅ 6 kN/m²"],
+      on: ["n-jp", "n-kamal", "n-fe", "n-svc", "n-pass", "n-store"], edges: ["e-fe-jp", "e-fe-kamal", "e-svc-fe", "e-pass-svc", "e-store-svc"], token: "hidden", q: ["jp", "✅ 6 kN/m²"],
       body: `<p>JP asks again. The fingerprint on disc matches the index, so the specification is back: the row on line 9 now says <b>6 kN/m²</b>, cited with the new fingerprint. SQL returns 6,000 N/m².</p>
              <p>Kamal asks again and still gets nothing from the specification: the permission rule has not changed, and it applies on every request.</p>
              <p>That is the whole loop: read once, keep prose and tables apart but linked, filter by permission before anything is ranked or counted, quote only what the file says now.</p>`,
@@ -678,7 +795,8 @@ footer a { color: var(--accent); }
     $("stepno").textContent = `Step ${i} of ${STEPS.length - 1}`;
     $("title").textContent = s.title;
     $("body").innerHTML = s.body;
-    $("ids").textContent = s.ids ? `Traces to: ${s.ids}` : "";
+    $("ids").innerHTML = s.ids ? `Traces to: ${traces(s.ids)}` : "";
+    decorate($("body")); decorate($("exhibit"));
     $("exhibit").innerHTML = s.ex;
     map.classList.toggle("focus", s.on.length > 0);
     map.querySelectorAll(".node").forEach(n => n.classList.toggle("on", s.on.includes(n.id)));
@@ -735,6 +853,10 @@ footer a { color: var(--accent); }
     const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     root.dataset.theme = dark ? "light" : "dark";
   });
+  buildKey();
+  decorate(document.querySelector(".cards"));
+  decorate(document.querySelector(".codes-note"));
+  decorate(document.querySelector(".below"));
   render();
 })();
 </script>
