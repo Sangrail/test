@@ -1,12 +1,36 @@
 from __future__ import annotations
 
 from collections import deque
+import fcntl
 import json
 import math
 from pathlib import Path
 import sqlite3
 import statistics
+import threading
 from threading import Lock
+
+
+class FileLock:
+    """A lock that other processes see: the web server and each MCP server can share
+    one index file, so only one of them may plan and publish index changes at a time.
+
+    Each acquire opens its own file descriptor, so threads also exclude each other."""
+    def __init__(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.path = path
+        self._held = threading.local()
+
+    def __enter__(self):
+        stream = self.path.open("a")
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        self._held.stream = stream
+        return self
+
+    def __exit__(self, *exc) -> None:
+        stream = self._held.stream
+        fcntl.flock(stream, fcntl.LOCK_UN)
+        stream.close()
 
 
 class SQLiteAuditStore:

@@ -18,7 +18,7 @@ from threading import RLock
 from .core import Document, Passage
 from .query import QueryPlan, plan
 
-# Most passages a single query ranks. Permissions and paging work on this list.
+# Most passages a single query ranks, after the permission and scope filter.
 CANDIDATE_LIMIT = 1000
 
 SCHEMA = """
@@ -142,18 +142,27 @@ class SQLiteSearchIndex:
                     counts[file_id] = counts.get(file_id, 0) + 1
         return counts
 
-    def candidates(self, query: str | QueryPlan) -> list[Passage]:
-        """Passages that contain any query word, best first.
+    def candidates(self, query: str | QueryPlan, files: set[str] | None = None) -> list[Passage]:
+        """Passages that contain any query word, best first, from `files` only (None: all files).
 
+        `files` is applied inside the index query, before the CANDIDATE_LIMIT, so
+        passages outside it can never push the passages inside it out of the result.
         Rank: passages that contain more of the query words first, then BM25.
         """
         query_plan = plan(query) if isinstance(query, str) else query
-        if not query_plan.terms:
+        if not query_plan.terms or files is not None and not files:
             return []
         with self._lock:
+            scope = ""
+            if files is not None:
+                self._db.execute("CREATE TEMP TABLE IF NOT EXISTS scope (file_id TEXT PRIMARY KEY)")
+                self._db.execute("DELETE FROM temp.scope")
+                self._db.executemany("INSERT INTO temp.scope VALUES (?)", [(f,) for f in files])
+                scope = (" AND rowid IN (SELECT p.id FROM passages p"
+                         " JOIN temp.scope s ON s.file_id = p.file_id)")
             ranked = self._db.execute(
                 "SELECT rowid, bm25(passages_fts, ?, ?, ?) FROM passages_fts"
-                " WHERE passages_fts MATCH ? ORDER BY 2 LIMIT ?",
+                f" WHERE passages_fts MATCH ?{scope} ORDER BY 2 LIMIT ?",
                 (*WEIGHTS, query_plan.fts(), CANDIDATE_LIMIT)).fetchall()
             if not ranked:
                 return []

@@ -124,7 +124,8 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
                audit: AuditStore | None = None, telemetry: Telemetry | None = None,
                queue: JobQueue | None = None, worker_count: int | None = None,
                permissions: PermissionStore | None = None,
-               index_on_start: bool = False, audit_reader: AuditReader | None = None) -> FastAPI:
+               index_on_start: bool = False, audit_reader: AuditReader | None = None,
+               index_lock=None) -> FastAPI:
     root = (root or Path(os.environ.get("DOCUMENT_ROOT", "test-repository"))).resolve()
     audit = audit if audit is not None else SQLiteAuditStore(
         Path(os.environ.get("AUDIT_DB", ".runtime/audit.sqlite3")))
@@ -140,7 +141,7 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
         permissions=permissions if permissions is not None else MockPermissionStore(),
         queue=queue if queue is not None else SQLiteJobQueue(
             Path(os.environ.get("QUEUE_DB", f".runtime/queue-{namespace}.sqlite3"))),
-        telemetry=telemetry)
+        telemetry=telemetry, index_lock=index_lock)
     sessions = DemoSessions()
     pool = WorkerPool(service.queue, service.index_upload, worker_count)
 

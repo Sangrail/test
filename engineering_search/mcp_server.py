@@ -31,12 +31,19 @@ Call search_evidence with the user's question in plain language.
 - For "which documents..." questions, answer.type is "list": one entry per
   matching document, each with the exact line that qualifies it. Comparisons
   such as "greater than 5 kN/m²" are applied by the service.
+  A list holds at most 200 documents per page; answer.count is the total, and
+  `page` 2, 3... returns the next documents when answer.truncated is true.
 - For a follow-up about a previous list ("of those, which..."), pass the
   file_id values of that list as `within`.
-Quote values exactly and cite file and page. If answer.status is "not_found",
-say that no readable document states it. If it is "partial", the text is only the
-closest match: say which question words it lacks (missing_words), and do not
-present it as the answer. Do not guess or calculate values.
+Quote values exactly and cite file and page. answer.status is one of:
+- "found": the cited sentence states the value and names what it is about.
+- "unverified": the document contains every question word, but the cited
+  sentence does not name some of them (unbound_words), e.g. a load that may be
+  for the floor, not the roof. Give the value only with that warning.
+- "partial": the closest match lacks some question words (missing_words). Say
+  which, and do not present it as the answer.
+- "not_found": say that no readable document states it.
+Do not guess or calculate values.
 Use read_evidence to read a whole page or file around a result."""
 
 

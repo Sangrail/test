@@ -133,13 +133,17 @@ def assert_no_leak(user: str, response: dict, secrets: list[str], question: str 
 
 
 def search_all_pages(client, body: dict) -> list[dict]:
-    pages, page, total = [], 1, 1
-    while page <= min(total, 5):
+    """The first five pages and the last page. Every page costs a full search, so
+    the middle pages of long results are skipped to keep the suite fast."""
+    def fetch(page):
         response = client.post("/search", json={**body, "limit": 50, "page": page})
         assert response.status_code == 200, response.text
-        pages.append(response.json())
-        total = pages[-1]["total_pages"] or 1
-        page += 1
+        return response.json()
+    pages = [fetch(1)]
+    total = pages[0]["total_pages"] or 1
+    pages += [fetch(page) for page in range(2, min(total, 5) + 1)]
+    if total > 5:
+        pages.append(fetch(total))
     return pages
 
 

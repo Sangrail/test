@@ -182,11 +182,11 @@ function renderAnswer(answer) {
   const parts = [];
   if (answer.type === 'answer') {
     parts.push(el('div', 'eyebrow', 'ANSWER'));
-    if (answer.status === 'partial') {
-      parts[0].textContent = 'CLOSEST MATCH, NOT AN ANSWER';
+    if (answer.status === 'partial' || answer.status === 'unverified') {
+      parts[0].textContent = answer.status === 'partial' ? 'CLOSEST MATCH, NOT AN ANSWER' : 'VALUE FOUND, SUBJECT NOT CONFIRMED';
       parts.push(el('p', 'answer-missing', answer.message));
     }
-    if (answer.status === 'found' || answer.status === 'partial') {
+    if (answer.status !== 'not_found') {
       parts.push(quoted(answer), el('p', 'answer-source', `Source: ${where(answer)}`));
       const version = el('details', 'answer-version'); version.append(el('summary', '', 'File version'), el('code', '', `SHA-256 ${answer.source_version}`));
       parts.push(version);
@@ -206,7 +206,7 @@ function renderAnswer(answer) {
       const list = el('ul', 'answer-list');
       for (const doc of answer.documents) { const item = el('li'); item.append(el('p', 'answer-file', where(doc)), quoted(doc)); list.append(item); }
       parts.push(list);
-      if (answer.truncated) parts.push(el('p', 'answer-source', `Showing the first ${answer.documents.length}.`));
+      if (answer.truncated || answer.document_pages > 1) parts.push(el('p', 'answer-source', `Showing ${answer.documents.length} of ${answer.count}. Ask a narrower question to see the rest.`));
     } else parts.push(el('p', 'answer-missing', answer.message));
   }
   panel.replaceChildren(...parts);

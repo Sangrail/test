@@ -10,6 +10,7 @@ The web app returns that status. The MCP server returns the detail as an error.
 """
 from __future__ import annotations
 
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict
 from datetime import datetime, timezone
 import logging
@@ -21,7 +22,7 @@ from uuid import uuid4
 
 from .access import PermissionStore
 from .adapters import Telemetry
-from .answer import answer as pick_answer, list_documents, manifest, understand
+from .answer import MAX_LISTED, answer as pick_answer, list_documents, manifest, understand
 from .core import AuditStore, SearchIndex, evidence_manifest
 from .indexing import INDEXABLE, UNREADABLE, UNSUPPORTED, Indexer, Inventory
 from .jobs import JobQueue
@@ -42,8 +43,12 @@ class ServiceError(Exception):
 
 class SearchService:
     def __init__(self, root: Path, index: SearchIndex, audit: AuditStore, permissions: PermissionStore,
-                 queue: JobQueue, telemetry: Telemetry | None = None, indexer: Indexer | None = None):
+                 queue: JobQueue, telemetry: Telemetry | None = None, indexer: Indexer | None = None,
+                 index_lock: AbstractContextManager | None = None):
         self.root = root.resolve()
+        # Held from reading the index versions to publishing the changes, so another
+        # process that shares the index file cannot publish a plan made from stale versions.
+        self.index_lock = index_lock if index_lock is not None else nullcontext()
         self.index, self.audit, self.permissions, self.queue = index, audit, permissions, queue
         self.telemetry = telemetry if telemetry is not None else Telemetry()
         # The indexing line: finds, classifies and reads the files. The service publishes its plans.
@@ -90,17 +95,10 @@ class SearchService:
             # A question about a previous list ("of those, which…") is also a list question.
             intent = understand(query, "list" if within is not None and mode == "auto" else mode)
             query_plan = plan(intent.search_text)
-            scope = None if within is None else set(within)
-            candidates = [p for p in self.index.candidates(query_plan) if scope is None or p.file_id in scope]
-            listed: set[str] = set()
-            if intent.mode == "list":
-                # A list answer needs documents that contain every query word somewhere.
-                listed = {f for f, count in self.index.document_matches(query_plan).items()
-                          if count == len(query_plan.terms) and (scope is None or f in scope)}
-            retrieval_ms = (perf_counter() - retrieval_start) * 1000
-
+            # Every file that contains a query word, with how many of the words it contains.
+            matches = self.index.document_matches(query_plan)
+            file_ids = set(matches) if within is None else set(matches) & set(within)
             policy_start = perf_counter()
-            file_ids = {p.file_id for p in candidates} | listed
             try:
                 policy = self.permissions.evaluate(user["subject"], file_ids)
             except Exception:
@@ -109,21 +107,28 @@ class SearchService:
                                    "identity_issuer": "local-demo", "identity_validation": "demo_session",
                                    "authorisation": "unavailable"})
                 raise ServiceError(503, "Permissions unavailable; evidence withheld") from None
-            # Everything after this line uses permitted files only.
-            permitted = [p for p in candidates if p.file_id in policy.allowed]
+            policy_ms = (perf_counter() - policy_start) * 1000
+            # Permissions and `within` decide the visible files before the index ranks or
+            # limits anything, so forbidden files cannot push permitted passages out.
+            visible = set(policy.allowed) & file_ids
+            permitted = self.index.candidates(query_plan, visible)
+            retrieval_ms = (perf_counter() - retrieval_start) * 1000 - policy_ms
             if intent.mode == "list":
+                listed = {f for f in visible if matches.get(f) == len(query_plan.terms)}
                 result = list_documents(query_plan, intent.comparison,
-                                        {f: self.index.passages(f) for f in sorted(listed & policy.allowed)})
+                                        {f: self.index.passages(f) for f in sorted(listed)})
+                documents = result["documents"]
+                result["documents"] = documents[(page - 1) * MAX_LISTED:page * MAX_LISTED]
+                result["document_pages"] = max(1, -(-len(documents) // MAX_LISTED))
+                result["truncated"] = len(documents) > page * MAX_LISTED
             else:
-                result = pick_answer(query_plan, permitted, lambda file_id: " ".join(
-                    f"{p.heading} {p.text}" for p in self.index.passages(file_id)))
+                result = pick_answer(query_plan, permitted, self.index.passages)
             result["mode"] = intent.mode
             # Pages are live views: permissions are checked again on each request.
             total = len(permitted)
             offset = (page - 1) * limit
             passages = permitted[offset:offset + limit]
             total_pages = (total + limit - 1) // limit
-            policy_ms = (perf_counter() - policy_start) * 1000
 
             audit_start = perf_counter()
             self.commit_audit({
@@ -224,40 +229,41 @@ class SearchService:
         start = perf_counter()
         self._begin("indexing")
         try:
-            with self.lock:
-                old = self.index.versions()
-            blocked = self.queue.blocked_files()  # Uploads that the workers still own.
-            read_start = perf_counter()
-            plan = self.indexer.plan(old, skip=blocked)
-            ingestion_seconds = max(perf_counter() - read_start, 1e-9)
-            indexable = plan.inventory.indexable()
-            total_bytes = sum(f.size for f in indexable.values())
-            with self.lock:
-                commit_start = perf_counter()
-                self.queue.reconcile_ready(plan.versions)
-                self.index.apply(plan.upserts, plan.removals)
-                indexing_seconds = max(perf_counter() - commit_start, 1e-9)
-                self.inventory = plan.inventory
-                self.state.update(ready=True, last_indexed_at=now(), last_scanned_at=now(),
-                                  scan_error=None, index_error=None, last_scan_seconds=ingestion_seconds)
-                result = {"indexed_at": self.state["last_indexed_at"], "workers": 1,
-                          "files": len(plan.versions), "read_files": len(plan.upserts), "bytes": total_bytes,
-                          "failed_files": plan.failed, "scanned_files": len(indexable),
-                          "file_types": plan.inventory.by_type(),
-                          "unsupported_files": len(plan.inventory.with_outcome(UNSUPPORTED)),
-                          "passages": self.index.passage_count(),
-                          "added": plan.added, "edited": plan.edited, "deleted": len(plan.removals),
-                          "ingestion_seconds": ingestion_seconds,
-                          "indexing_seconds": indexing_seconds,
-                          "total_seconds": perf_counter() - start,
-                          "ingestion_files_per_second": len(indexable) / ingestion_seconds,
-                          "ingestion_bytes_per_second": total_bytes / ingestion_seconds,
-                          "indexing_files_per_second": len(plan.upserts) / indexing_seconds,
-                          "indexing_passages_per_second": sum(len(d.passages) for d in plan.upserts) / indexing_seconds,
-                          "index_strategy": "incremental"}
-                self.state["last_index_run"] = result
-            self.telemetry.record_index(result)
-            return result
+            with self.index_lock:
+                with self.lock:
+                    old = self.index.versions()
+                blocked = self.queue.blocked_files()  # Uploads that the workers still own.
+                read_start = perf_counter()
+                plan = self.indexer.plan(old, skip=blocked)
+                ingestion_seconds = max(perf_counter() - read_start, 1e-9)
+                indexable = plan.inventory.indexable()
+                total_bytes = sum(f.size for f in indexable.values())
+                with self.lock:
+                    commit_start = perf_counter()
+                    self.queue.reconcile_ready(plan.versions)
+                    self.index.apply(plan.upserts, plan.removals)
+                    indexing_seconds = max(perf_counter() - commit_start, 1e-9)
+                    self.inventory = plan.inventory
+                    self.state.update(ready=True, last_indexed_at=now(), last_scanned_at=now(),
+                                      scan_error=None, index_error=None, last_scan_seconds=ingestion_seconds)
+                    result = {"indexed_at": self.state["last_indexed_at"], "workers": 1,
+                              "files": len(plan.versions), "read_files": len(plan.upserts), "bytes": total_bytes,
+                              "failed_files": plan.failed, "scanned_files": len(indexable),
+                              "file_types": plan.inventory.by_type(),
+                              "unsupported_files": len(plan.inventory.with_outcome(UNSUPPORTED)),
+                              "passages": self.index.passage_count(),
+                              "added": plan.added, "edited": plan.edited, "deleted": len(plan.removals),
+                              "ingestion_seconds": ingestion_seconds,
+                              "indexing_seconds": indexing_seconds,
+                              "total_seconds": perf_counter() - start,
+                              "ingestion_files_per_second": len(indexable) / ingestion_seconds,
+                              "ingestion_bytes_per_second": total_bytes / ingestion_seconds,
+                              "indexing_files_per_second": len(plan.upserts) / indexing_seconds,
+                              "indexing_passages_per_second": sum(len(d.passages) for d in plan.upserts) / indexing_seconds,
+                              "index_strategy": "incremental"}
+                    self.state["last_index_run"] = result
+                self.telemetry.record_index(result)
+                return result
         except Exception:
             with self.lock:
                 self.state["index_error"] = "Index refresh failed; previous snapshot retained"
@@ -341,7 +347,7 @@ class SearchService:
         # File extraction can run at the same time as other work. Publish is a
         # short serial section shared with full builds, so a rebuild cannot
         # overwrite a worker commit.
-        with self.operation_lock, self.lock:
+        with self.operation_lock, self.index_lock, self.lock:
             self.index.upsert(document)
             try:
                 self.queue.complete(job["id"], (perf_counter() - start) * 1000, len(document.passages))

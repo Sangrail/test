@@ -21,9 +21,16 @@ The steps:
   4. The best part is the answer. Other parts from other files that also
      state a value are returned as "also stated in", so a user sees conflicts.
 
-If the document of the best part lacks a question word, the status is
-"partial" and `missing_words` names the words. If no part states a
-value and matches enough question words, the status is "not_found".
+A question word is *bound* to the answer when it is in the sentence, the
+passage heading, the file path or the document title. Words elsewhere in
+the document do not describe the value: "Roof load is not specified. Floor
+load limit is 5 kN/m²." does not answer a roof load question.
+
+  found       every question word is bound to the answer
+  unverified  some question words are in the document, but not bound to the
+              answer (`unbound_words`); the value may be about something else
+  partial     some question words are not in the document (`missing_words`)
+  not_found   no part states a value and matches enough question words
 """
 from __future__ import annotations
 
@@ -40,8 +47,11 @@ MIN_COVERAGE = 0.5
 MAX_ALSO_STATED = 5
 
 UNIT = r"(?:kN/m²|kN/m2|kN/m|kNm|kN|kPa|MPa|GPa|ksi|psi|psf|lb/ft|kip|t|tonnes?|mm|cm|m|ft|in|%)"
+# A sign belongs to a number only at the start of a token: "-2 kN" is negative,
+# "B-104" and the range "1-2 kN" are not.
+SIGNED = r"(?<![\w.])[-−]?\d+(?:[.,]\d+)?|\b\d+(?:[.,]\d+)?"
 VALUE = re.compile(
-    rf"\b\d+(?:[.,]\d+)?\s?{UNIT}(?![\w/])"                       # 5 kN/m², 3.5 t, 150 kPa
+    rf"(?:{SIGNED})\s?{UNIT}(?![\w/])"                            # 5 kN/m², -2 kN/m², 3.5 t
     r"|\b[SC]\d{2,3}(?:/\d{2})?[A-Z0-9+]*\b"                      # S355J2+N, C30/37
     r"|\bB500[A-C]\b|\bGrade\s+(?:HPS\s+)?\d+W?\b|\bHL-93\b"      # B500B, Grade 50W, HL-93
     r"|\b(?:not approved|approved|pending|rejected|draft|prohibited|restricted)\b",
@@ -185,17 +195,29 @@ def widen(query: QueryPlan, best: Candidate) -> Candidate:
     return Candidate(part, best.passage, best.rank, best.coverage, best.line_hits, best.value, best.covered)
 
 
+def title(passages: list[Passage]) -> str:
+    """The document title: the heading at the top of the document, if it has one.
+
+    Readers drop a heading that has no text under it, so the first passage's heading
+    is the title only when that passage starts on the first lines of the first page;
+    otherwise it is a section heading ("Roof") and would bind words it does not
+    describe. Interim: readers will return the title themselves (reader manifests)."""
+    first = passages[0] if passages else None
+    return first.heading if first and first.page in (None, 1) and first.start_line <= 3 else ""
+
+
+def bound_context(text: str, passage: Passage, document_title: str) -> set[str]:
+    """Words that describe a sentence: the sentence, its heading, the file path and the document title."""
+    return stems(" ".join((text, passage.heading, re.sub(r"[^\w]+", " ", passage.file_id), document_title)))
+
+
 def answer(query: QueryPlan, passages: list[Passage],
-           document_text: Callable[[str], str] | None = None) -> dict:
+           document_passages: Callable[[str], list[Passage]] | None = None) -> dict:
     """Return the answer with its source.
 
-    document_text(file_id) gives all text of a document, to check that the
-    answer's document contains every question word (the same rule as a list).
-
-    status "found":     the sentence states a value and its document contains every question word.
-    status "partial":   the closest sentence; `missing_words` lists the question words it lacks.
-                        For example, a Cedar roof load is not an answer about Northgate.
-    status "not_found": no sentence states a value that matches the question.
+    document_passages(file_id) gives all passages of a document, for its title
+    and to tell unbound words (in the document) from missing words (not in it).
+    The statuses are described at the top of this module.
     """
     ranked = candidates(query, passages)
     if not ranked:
@@ -207,15 +229,23 @@ def answer(query: QueryPlan, passages: list[Passage],
         if candidate.passage.file_id not in seen and len(others) < MAX_ALSO_STATED:
             seen.add(candidate.passage.file_id)
             others.append(citation(candidate))
-    context = stems(best.part.text + " " + best.passage.heading + " " + re.sub(r"[^\w]+", " ", best.passage.file_id)
-                    + " " + (document_text(best.passage.file_id) if document_text else ""))
-    missing = [t.word for t, stemmed in zip(query.terms, term_stems(query)) if not matches(stemmed, context)]
-    result = {"type": "answer", "status": "partial" if missing else "found", **citation(best),
-              "also_stated_in": others}
+    document = document_passages(best.passage.file_id) if document_passages else [best.passage]
+    bound = bound_context(best.part.text, best.passage, title(document))
+    everywhere = bound | stems(" ".join(f"{p.heading} {p.text}" for p in document))
+    terms = list(zip(query.terms, term_stems(query)))
+    missing = [t.word for t, stemmed in terms if not matches(stemmed, everywhere)]
+    unbound = [t.word for t, stemmed in terms if matches(stemmed, everywhere) and not matches(stemmed, bound)]
+    status = "partial" if missing else "unverified" if unbound else "found"
+    result = {"type": "answer", "status": status, **citation(best), "also_stated_in": others}
     if missing:
         result["missing_words"] = missing
         result["message"] = ("No document you can read matches every word of the question. "
                              f"This closest match does not mention: {', '.join(missing)}.")
+    elif unbound:
+        result["unbound_words"] = unbound
+        result["message"] = ("This sentence states a value, but it does not say that it is about: "
+                             f"{', '.join(unbound)}. The document mentions those words elsewhere. "
+                             "Check the source before you use the value.")
     return result
 
 
@@ -242,7 +272,7 @@ UNITS = {
     "mm": ("length", 0.001), "cm": ("length", 0.01), "m": ("length", 1.0), "ft": ("length", 0.3048),
     "in": ("length", 0.0254),
 }
-QUANTITY = re.compile(r"(\d+(?:[.,]\d+)?)\s?(N/m²|N/m2|kN/m²|kN/m2|kPa|MPa|GPa|psf|psi|ksi|kip|kN|kg|"
+QUANTITY = re.compile(rf"({SIGNED})\s?(N/m²|N/m2|kN/m²|kN/m2|kPa|MPa|GPa|psf|psi|ksi|kip|kN|kg|"
                       r"tonnes?|t|mm|cm|m|ft|in|N)(?![\w/])", re.IGNORECASE)
 COMPARATORS = (
     (">=", r"at least|not less than|>="), ("<=", r"at most|not more than|no more than|<="),
@@ -258,7 +288,12 @@ LIST_QUESTION = re.compile(
     r"|^\s*(?:do|does|are|is)\s+(?:we|there)\b"
     r"|^\s*(?:which|what)\s+of\s+(?:those|these|them)\b|^\s*of\s+(?:those|these)\b"
     r"|\bdocuments?\s+(?:that|which|with|in|for|about|mentioning|containing)\b", re.IGNORECASE)
-MAX_LISTED = 200
+MAX_LISTED = 200  # documents on one page of a list answer
+
+
+def number(text: str) -> float:
+    """'-2', '−2' or '3,5' as a float."""
+    return float(text.replace("−", "-").replace(",", "."))
 
 
 @dataclass(frozen=True)
@@ -275,7 +310,7 @@ class Comparison:
             unit = UNITS.get(match.group(2).casefold())
             if not unit or unit[0] != self.kind:
                 continue
-            value = float(match.group(1).replace(",", ".")) * unit[1]
+            value = number(match.group(1)) * unit[1]
             if {">": value > self.base, ">=": value >= self.base, "<": value < self.base,
                     "<=": value <= self.base, "=": abs(value - self.base) < 1e-9}[self.operator]:
                 return match.group(0)
@@ -304,8 +339,8 @@ def understand(question: str, mode: str = "auto") -> Intent:
         operator = next((op for op, pattern in COMPARATORS if word and re.fullmatch(pattern, word)), None)
         if operator is None and not is_list:
             continue  # "Is the 7 kN/m² roof load approved?" names a value; it does not filter by it.
-        number = float(match.group(2).replace(",", "."))
-        comparison = Comparison(operator or "=", number, match.group(3), unit[0], number * unit[1])
+        value = number(match.group(2))
+        comparison = Comparison(operator or "=", value, match.group(3), unit[0], value * unit[1])
         search_text = (question[:match.start()] + " " + question[match.end():]).strip()
         break
     if mode == "auto":
@@ -320,11 +355,16 @@ def list_documents(query: QueryPlan, comparison: Comparison | None,
     """One entry per document: the part that best shows why the document matches.
 
     `documents` holds only documents the user may read that contain every query word.
+    With a comparison, the qualifying line must state the quantity and have every
+    question word bound to it (line, heading, file path or title), so a floor load
+    does not qualify a document for a roof load filter. All entries are returned;
+    the caller pages them (MAX_LISTED per page).
     """
     terms = term_stems(query)
     entries = []
     for file_id, passages in documents.items():
         best, best_key = None, None
+        document_title = title(passages)
         for passage in passages:
             context = stems(passage.heading + " " + re.sub(r"[^\w]+", " ", passage.file_id))
             for part in parts(passage):
@@ -332,8 +372,10 @@ def list_documents(query: QueryPlan, comparison: Comparison | None,
                 in_line = sum(matches(t, words) for t in terms)
                 in_context = sum(matches(t, context) and not matches(t, words) for t in terms)
                 compared = comparison.accepts(part.text) if comparison else None
-                if comparison and (not compared or not in_line):
-                    continue
+                if comparison:
+                    bound = bound_context(part.text, passage, document_title)
+                    if not compared or not in_line or not all(matches(t, bound) for t in terms):
+                        continue
                 value = compared or (VALUE.search(part.text) or [None])[0]
                 key = (in_line + 0.5 * in_context, value is not None, in_line, -part.start_line)
                 if best_key is None or key > best_key:
@@ -343,9 +385,9 @@ def list_documents(query: QueryPlan, comparison: Comparison | None,
             entries.append(best)
     entries.sort(key=lambda c: (-c.coverage, c.passage.file_id))
     return {"type": "list", "status": "found" if entries else "not_found",
-            "count": len(entries), "truncated": len(entries) > MAX_LISTED,
+            "count": len(entries),
             "criteria": {"all_words": [t.label() for t in query.terms],
                          "comparison": comparison.describe() if comparison else None},
-            "documents": [citation(c) for c in entries[:MAX_LISTED]],
+            "documents": [citation(c) for c in entries],
             **({} if entries else {"message": "No document you can read matches all of these words"
                                               + (" and the value condition." if comparison else ".")})}
