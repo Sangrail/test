@@ -99,15 +99,47 @@ ul.defs .chip { min-width: 28px; text-align: center; margin-right: 4px; text-ind
 .key dt:target, .key dt:target + dd { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .key h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 2px; }
 .key .group-note { font-size: 12px; color: var(--muted); margin: 0 0 4px; }
-#token, #qtoken { transition: transform 1.6s cubic-bezier(.45,.05,.25,1), opacity .6s; }
-#token rect { fill: var(--panel); stroke: var(--accent); stroke-width: 2; }
-#qtoken rect { fill: var(--accent); }
-#qtoken text { fill: #fff; font-weight: 700; }
-:root[data-theme="dark"] #qtoken text { fill: #0b0e13; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #qtoken text { fill: #0b0e13; } }
+.toon { border-bottom: 1px solid var(--line); background: var(--panel); }
+.toon .caprow { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center; justify-content: space-between; padding: 9px 16px 0; min-height: 40px; }
+.toon #cap { font-size: 15px; font-weight: 600; transition: opacity .4s; }
+.toon .cast { font-size: 12px; color: var(--muted); }
+.toonbox { overflow-x: auto; }
+.toonbox svg { display: block; width: 100%; min-width: 980px; height: auto; }
+#toon .ground { stroke: var(--line); stroke-width: 1.5; }
+#toon .face { fill: var(--soft); stroke: var(--ink); stroke-width: 1.4; }
+#toon .limb { stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; fill: none; }
+#toon .eye { fill: var(--ink); }
+#toon .mouth { fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; transition: d .5s; }
+#toon .tag { font-size: 9px; letter-spacing: .04em; }
+#toon .drawer-t { font-size: 11px; font-weight: 700; }
+#toon .drawer-v { font-size: 10.5px; fill: var(--muted); }
+#toon .drawer-v.old { fill: var(--no); font-weight: 700; }
+#toon .actor, #toon .body { transform-box: fill-box; transform-origin: 50% 100%; transition: filter .5s; }
+#toon .hi { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 70%, transparent)); }
+#toon .busy { animation: bob .45s ease-in-out 4 alternate; }
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+#toon .mover { transition: transform 1.3s cubic-bezier(.45,.05,.25,1), opacity .5s; }
+#toon .paper { fill: var(--panel); stroke: var(--ink); stroke-width: 1.5; transition: stroke .4s; }
+#toon .edited .paper { stroke: var(--no); stroke-width: 2.2; }
+#toon #t-tag { fill: var(--accent); }
+#toon .edited #t-tag { fill: var(--no); }
+#toon .q-bg { fill: var(--accent); }
+#toon .q-t { fill: #fff; font-size: 11.5px; font-weight: 700; }
+:root[data-theme="dark"] #toon .q-t { fill: #0b0e13; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #toon .q-t { fill: #0b0e13; } }
+#toon .ans-bg { fill: var(--panel); stroke: var(--ok); stroke-width: 1.8; }
+#toon .alt .ans-bg { stroke: var(--muted); }
+#toon .ans-t { font-size: 11.5px; font-weight: 700; }
+#toon .bubble { animation: pop .3s ease-out; }
+#toon .bubble path { fill: var(--panel); stroke: var(--ink); stroke-width: 1.3; }
+#toon .bubble text { font-size: 12.5px; }
+#toon .bubble.ok path { stroke: var(--ok); } #toon .bubble.ok text { fill: var(--ok); font-weight: 700; }
+#toon .bubble.no path { stroke: var(--no); } #toon .bubble.no text { fill: var(--no); font-weight: 700; }
+@keyframes pop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #toon .mover, #toon .mouth { transition: none !important; } #toon .busy, #toon .bubble { animation: none !important; } }
 .stamp { opacity: 0; transition: opacity .6s; }
 .stamp.on { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { #token, #qtoken, .node, .edge, .stamp { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .node, .edge, .stamp { transition: none !important; } }
 
 .stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 0; }
 @media (max-width: 900px) { .stage { grid-template-columns: 1fr; } }
@@ -261,6 +293,11 @@ footer a { color: var(--accent); }
     <span class="lg-s">structured: tables and facts</span>
   </div>
 
+  <div class="toon">
+    <div class="caprow"><span id="cap"></span><span class="cast">People are the actors · robots are the components · cabinets, the file and what it carries are the resources</span></div>
+    <div class="toonbox"><svg id="toon" viewBox="0 0 1260 340" role="img" aria-label="Cartoon of the step: the actors, components and resources, and what passes between them"></svg></div>
+  </div>
+
   <div class="mapbox">
 <svg id="map" viewBox="0 0 1260 510" role="img" aria-label="System map: repository, indexing line, stores, search service, front ends and users">
     <defs>
@@ -408,15 +445,7 @@ footer a { color: var(--accent); }
       <text x="545" y="54" text-anchor="middle" class="tag" style="fill:var(--accent)">FINGERPRINT CHECK: RE-HASH THE CITED FILE</text>
     </g>
 
-    <!-- tokens and stamps -->
-    <g id="token" transform="translate(44,270)">
-      <rect x="0" y="0" width="124" height="22" rx="11"/>
-      <text x="62" y="15" text-anchor="middle" class="lbl" font-weight="700">📄 roof-load.md</text>
-    </g>
-    <g id="qtoken" transform="translate(1114,238)" opacity="0">
-      <rect x="0" y="0" width="124" height="22" rx="11"/>
-      <text id="qlabel" x="62" y="15" text-anchor="middle" class="lbl">🔎 question</text>
-    </g>
+    <!-- stamps -->
     <g id="denied" class="stamp">
       <rect x="888" y="158" width="180" height="40" rx="6" style="fill:var(--no-bg);stroke:var(--no)"/>
       <text x="978" y="175" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">DENIED: specifications/</text>
@@ -522,12 +551,6 @@ footer a { color: var(--accent); }
   const kv = (rows, head) => `<div class="tablewrap"><table class="kv">${head ? `<tr>${head.map(h => `<th>${h}</th>`).join("")}</tr>` : ""}${rows.map(r => `<tr>${r.map((c, i) => (head ? `<td>${c}</td>` : (i === 0 ? `<th>${c}</th>` : `<td>${c}</td>`))).join("")}</tr>`).join("")}</table></div>`;
   const T = s => `<div class="ex-title">${s}</div>`;
 
-  // Token positions on the map (x, y of the token's top-left corner).
-  const P = {
-    repo: [44, 270], detect: [254, 130], reg: [470, 130], read: [300, 248],
-    facts: [300, 436], store: [684, 330], hidden: [684, 330],
-    jp: [1114, 238], kamal: [1114, 238], maya: [1114, 466]
-  };
 
   // Every code used on the page, with its meaning (from docs/constraints and docs/adr).
   const DEFS = {
@@ -605,7 +628,7 @@ footer a { color: var(--accent); }
   const STEPS = [
     {
       title: "The system at a glance",
-      on: [], edges: [], token: "repo", q: null,
+      on: [], edges: [],
       body: `<p>Files stay where they are, in the company's repository. An <b>indexing line</b> reads each file once and keeps two kinds of data in one index: <b>passages</b> of prose, found by their words, and <b>tables</b>, whose cells become typed <b>facts</b> that SQL can filter.</p>
              <p>A <b>search service</b> answers every question from that index. It applies the user's permissions first, quotes the source, and checks that the file on disc has not changed since it was indexed.</p>
              <p>Press <b>Play</b> to follow one file from the repository to two users' answers, through an edit and a refresh. Each step waits long enough to read; use Back and Next to go at your own pace.</p>`,
@@ -615,7 +638,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "A file lives in the repository",
-      on: ["n-repo", "n-perm"], edges: [], token: "repo", q: null,
+      on: ["n-repo", "n-perm"], edges: [],
       body: `<p><code>specifications/roof-load.md</code> is one of 149 files in the test repository, which takes the place of the company's own <span class="chip">C2</span>. The system reads files in place; nothing is uploaded <span class="chip">K12</span>.</p>
              <p>Who may read it belongs to the repository, not to the search: here, the folder rule for <code>specifications/</code> names JP and Maya. Kamal is not on it.</p>
              <p>In the MVP, those rules are a short list in <code>access.py</code>, a simple version of the repository's real permissions <span class="chip">G1</span>.</p>`,
@@ -625,7 +648,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "① Detect: file-level metadata",
-      on: ["n-repo", "n-detect"], edges: ["e-repo-det"], token: "detect", q: null,
+      on: ["n-repo", "n-detect"], edges: ["e-repo-det"],
       body: `<p>The scan lists every regular file and makes its path the <b>file ID</b>. The <b>detector</b> is the file-level metadata extractor: it reads the extension and at most the first 512 bytes.</p>
              <p>For formats with a signature (<code>%PDF-1.7</code>, a ZIP with <code>xl/workbook.xml</code>, a JT header, a DXF <code>$ACADVER</code>) the content decides the type and version. Markdown has no signature, so the extension decides.</p>
              <p>The detector does not decide whether the file can be read. That is the registry's job, next.</p>`,
@@ -635,7 +658,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "② Choose a reader, ③ fingerprint the bytes",
-      on: ["n-detect", "n-reg"], edges: ["e-det-reg"], token: "reg", q: null,
+      on: ["n-detect", "n-reg"], edges: ["e-det-reg"],
       body: `<p>The <b>reader registry</b> picks the first reader whose manifest reads this type and version and whose packages are installed: <code>markdown-text@2</code>. If none fitted, the file would be listed as <code>NO_READER</code> or <code>UNSUPPORTED_VERSION</code> and not indexed.</p>
              <p>Then the whole file is read and hashed. The <b>SHA-256 of its bytes</b> is its content fingerprint. It is stored with the document and on every passage, and every citation carries it.</p>
              <p>On the next refresh, a file with the same fingerprint and the same reader version is not read again.</p>`,
@@ -645,7 +668,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "④ Read: one file, two kinds of data",
-      on: ["n-reg", "n-read", "n-tab", "n-pass"], edges: ["e-reg-read", "e-read-tab", "e-read-pass"], token: "read", q: null,
+      on: ["n-reg", "n-read", "n-tab", "n-pass"], edges: ["e-reg-read", "e-read-tab", "e-read-pass"],
       body: `<p>The reader is the <b>file-specific extractor</b>. It returns one Extraction, and this file is <b>mixed</b>, so it has both parts:</p>
              <p><span class="pill u">unstructured</span> <b>3 passages</b>, split at headings and blank lines, each with its heading and line range.</p>
              <p><span class="pill s">structured</span> <b>1 table</b> named after the heading above it, "Roof load", with 4 columns and 1 row that cites line 9.</p>
@@ -659,7 +682,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "⑤ Facts: the table's cells become typed values",
-      on: ["n-tab", "n-facts"], edges: ["e-tab-facts"], token: "facts", q: null,
+      on: ["n-tab", "n-facts"], edges: ["e-tab-facts"],
       body: `<p>At index time, fixed <b>fact rules</b> read each cell with its column header and table name. This is a key-value table (<code>Parameter | Value | …</code>), so the row label names the parameter and the table name is the subject.</p>
              <p>"5 kN/m²" under "Maximum … roof load" becomes an <b>allowable distributed load</b>, a capacity, 5,000 N/m² in SI units. The approval cell becomes a <b>compliance status</b>, kept as written.</p>
              <p>Line 13, "Roof support beams: S355 structural steel.", is prose. It makes <b>no fact</b>: it is found by words, not by SQL.</p>`,
@@ -672,7 +695,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "Publish: one transaction, all or nothing",
-      on: ["n-pass", "n-store", "n-docs"], edges: ["e-read-pass", "e-tab-store", "e-fact-store", "e-pub"], token: "store", q: null,
+      on: ["n-pass", "n-store", "n-docs"], edges: ["e-read-pass", "e-tab-store", "e-fact-store", "e-pub"],
       body: `<p>The service writes everything for the file in <b>one transaction</b>: the document row with its fingerprint, the passages and their full-text entries, the table, its row and its facts, and the inventory record. If anything fails, the old index stays.</p>
              <p>The passages go into an <b>FTS5 inverted index</b> over the heading, the text and the words of the path. The table goes into the same three fixed tables as every other table; no file ever creates a database table.</p>
              <p>Across the test repository, this run indexed 145 files and 2,550 passages. The other four files were listed, not read.</p>`,
@@ -689,7 +712,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "JP signs in and asks a question",
-      on: ["n-jp", "n-fe", "n-svc", "n-acc", "n-perm", "n-pass"], edges: ["e-fe-jp", "e-svc-fe", "e-acc-svc", "e-perm-acc", "e-pass-svc"], token: "hidden", q: ["jp", "🔎 JP asks"],
+      on: ["n-jp", "n-fe", "n-svc", "n-acc", "n-perm", "n-pass"], edges: ["e-fe-jp", "e-svc-fe", "e-acc-svc", "e-perm-acc", "e-pass-svc"],
       body: `<p>JP is an engineering lead. Through the chat agent (or the web test page) JP asks: <b>"distributed roof load conditions"</b>.</p>
              <p>The service plans the words, finds <b>every file that contains one of them</b>, and asks the permission rules about those files. JP may read <code>specifications/</code>, so the file stays in.</p>
              <p>Only then does it rank, and only over permitted passages: BM25 statistics never see a file JP cannot read.</p>`,
@@ -704,7 +727,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "JP gets the file, quoted and cited",
-      on: ["n-jp", "n-fe", "n-svc", "n-pass", "n-store", "n-repo"], edges: ["e-fe-jp", "e-svc-fe", "e-pass-svc", "e-store-svc", "e-svc-repo"], token: "hidden", q: ["jp", "✅ 5 kN/m²"], stamps: ["t-hash-check"],
+      on: ["n-jp", "n-fe", "n-svc", "n-pass", "n-store", "n-repo"], edges: ["e-fe-jp", "e-svc-fe", "e-pass-svc", "e-store-svc", "e-svc-repo"], stamps: ["t-hash-check"],
       body: `<p>The best permitted passage is the table row on line 9. Before quoting it, the service <b>hashes the file on disc again</b>. It matches the fingerprint in the index, so the row is quoted exactly, with the file, the line and the fingerprint.</p>
              <p>The same value is reachable as a <b>fact</b>: the chat agent's SQL over the facts of JP's permitted files returns 5 kN/m² (5,000 N/m²), citing the same line.</p>
              <p>The search took about 50 ms. The audit log records the permission decision for every matched file, but no document text.</p>`,
@@ -719,7 +742,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "Kamal asks the same question, and never sees the file",
-      on: ["n-kamal", "n-fe", "n-svc", "n-acc", "n-perm"], edges: ["e-fe-kamal", "e-svc-fe", "e-acc-svc", "e-perm-acc"], token: "hidden", q: ["kamal", "🔎 Kamal asks"], stamps: ["denied"],
+      on: ["n-kamal", "n-fe", "n-svc", "n-acc", "n-perm"], edges: ["e-fe-kamal", "e-svc-fe", "e-acc-svc", "e-perm-acc"], stamps: ["denied"],
       body: `<p>Kamal, a structural engineer, asks exactly the same words. The file contains them, but the rule for <code>specifications/</code> does not name Kamal, so it is <b>dropped before ranking, limits, counts and pages</b>.</p>
              <p>Kamal's answer comes from a file Kamal may read: a Project Cedar load review that states the same limit in a sentence.</p>
              <p>Nothing in the response names the specification, quotes it, or counts it. Kamal's SQL over the same facts returns no rows. Only the index team can see the denial, in the audit log.</p>`,
@@ -732,7 +755,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "Someone edits the file on disc",
-      on: ["n-repo"], edges: [], token: "repo", q: null, stamps: ["edited"],
+      on: ["n-repo"], edges: [], stamps: ["edited"],
       body: `<p>Someone changes the limit in the specification from <b>5 kN/m² to 6 kN/m²</b> and saves it. The bytes change, so the SHA-256 changes: <code>09f6a3fd…</code> instead of <code>d3c37521…</code>.</p>
              <p>The index still holds the old passage, row and facts. The source is the file on disc as it is now <span class="chip">K3</span>, so the old text must not be quoted as if the file still said it.</p>
              <p>In the MVP nothing watches the repository: the change is caught at the next question, by the fingerprint check.</p>`,
@@ -742,7 +765,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "Before the refresh: the changed file is withheld",
-      on: ["n-jp", "n-fe", "n-svc", "n-repo"], edges: ["e-fe-jp", "e-svc-fe", "e-svc-repo"], token: "repo", q: ["jp", "🔎 JP asks again"], stamps: ["stale", "t-hash-check", "edited"],
+      on: ["n-jp", "n-fe", "n-svc", "n-repo"], edges: ["e-fe-jp", "e-svc-fe", "e-svc-repo"], stamps: ["stale", "t-hash-check", "edited"],
       body: `<p>JP asks again. The service picks the specification's row, hashes the file on disc, and finds that the bytes no longer match. It <b>leaves the file out</b>, names it in <code>changed_files</code>, and picks again from the remaining permitted files.</p>
              <p>JP gets the Cedar sentence instead, plus a notice that one file changed since indexing. A direct read of the specification is refused (409), and SQL leaves its rows out.</p>
              <p>JP is never shown the old 5 kN/m² from a file that now says 6.</p>`,
@@ -754,7 +777,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "The refresh: only the changed file is read again",
-      on: ["n-maya", "n-svc", "n-detect", "n-reg", "n-read", "n-tab", "n-facts", "n-pass", "n-store", "n-docs"], edges: ["e-maya-svc", "e-det-reg", "e-reg-read", "e-read-tab", "e-tab-facts", "e-read-pass", "e-tab-store", "e-fact-store", "e-pub"], token: "store", q: ["maya", "↻ Reindex"],
+      on: ["n-maya", "n-svc", "n-detect", "n-reg", "n-read", "n-tab", "n-facts", "n-pass", "n-store", "n-docs"], edges: ["e-maya-svc", "e-det-reg", "e-reg-read", "e-read-tab", "e-tab-facts", "e-read-pass", "e-tab-store", "e-fact-store", "e-pub"],
       body: `<p>A refresh runs when a process starts, or when the index team asks for one: Maya selects <b>Reindex</b> (<code>POST /index</code>). In production, the repository connector's change events would start it; that watcher is not built <span class="chip">G5</span>.</p>
              <p>The refresh hashes every file that has a reader. 144 fingerprints match and are skipped. One differs, so <b>only that file is read again</b>: same reader, new passages, new table row, new facts.</p>
              <p>One transaction deletes the old rows and writes the new ones. It took about 20 ms.</p>`,
@@ -764,7 +787,7 @@ footer a { color: var(--accent); }
     },
     {
       title: "After the refresh: the new value, for those allowed",
-      on: ["n-jp", "n-kamal", "n-fe", "n-svc", "n-pass", "n-store"], edges: ["e-fe-jp", "e-fe-kamal", "e-svc-fe", "e-pass-svc", "e-store-svc"], token: "hidden", q: ["jp", "✅ 6 kN/m²"],
+      on: ["n-jp", "n-kamal", "n-fe", "n-svc", "n-pass", "n-store"], edges: ["e-fe-jp", "e-fe-kamal", "e-svc-fe", "e-pass-svc", "e-store-svc"],
       body: `<p>JP asks again. The fingerprint on disc matches the index, so the specification is back: the row on line 9 now says <b>6 kN/m²</b>, cited with the new fingerprint. SQL returns 6,000 N/m².</p>
              <p>Kamal asks again and still gets nothing from the specification: the permission rule has not changed, and it applies on every request.</p>
              <p>That is the whole loop: read once, keep prose and tables apart but linked, filter by permission before anything is ranked or counted, quote only what the file says now.</p>`,
@@ -779,16 +802,288 @@ footer a { color: var(--accent); }
   ];
 
   const $ = id => document.getElementById(id);
-  const map = $("map"), token = $("token"), qtoken = $("qtoken");
+  const map = $("map");
+
+  // ---- The cartoon: actors (people), components (robots), resources (cabinets, the file and what it carries) ----
+  const toon = $("toon");
+  const GROUND = 292;
+  const PEOPLE = {
+    colleague: [36, "Colleague", "edits files", "#64748b"],
+    jp: [1124, "JP", "lead", "#2f6fde"],
+    kamal: [1180, "Kamal", "engineer", "#b4507a"],
+    maya: [1234, "Maya", "index team", "#0e7490"]
+  };
+  const ROBOTS = {
+    detector: [272, "Detector", "① TYPE, VERSION", "n-built", "🔍"],
+    registry: [376, "Registry", "② READER ③ HASH", "n-built", "🔏"],
+    reader: [480, "Reader", "④ MVP CONNECTOR", "n-stand", "✂️"],
+    facts: [584, "Fact rules", "⑤ MVP RULES", "n-stand", "🧮"],
+    service: [940, "Search service", "BUILT BY THE MVP", "n-built", "📚", true],
+    gate: [1046, "Gatekeeper", "PERMISSIONS · G1", "n-stand", "🛡️"]
+  };
+  // Where a speech bubble's tail points, and where the moving things stop.
+  const TIP = { doc: [128, 96], agent: [1178, 40] };
+  const AT = {
+    repo: [128, 144], det: [220, 268], reg: [324, 268], read: [428, 268],
+    slipsOut: [446, 118], tableOut: [514, 118], factsIn: [584, 118], factOut: [584, 82],
+    dp: [750, 177], dt: [750, 223], dd: [750, 267],
+    svc: [940, 96], lap: [1150, 74]
+  };
+  const MOUTH = {
+    neutral: cx => `M${cx - 6},212 Q${cx},212 ${cx + 6},212`,
+    happy: cx => `M${cx - 6},210 Q${cx},218 ${cx + 6},210`,
+    sad: cx => `M${cx - 6},214 Q${cx},207 ${cx + 6},214`
+  };
+  const label = (cx, name, tag, y = 312) =>
+    `<text class="ttl" x="${cx}" y="${y}" text-anchor="middle">${name}</text><text class="tag" x="${cx}" y="${y + 14}" text-anchor="middle">${tag}</text>`;
+
+  function person(id, [cx, name, role, color]) {
+    TIP[id] = [cx, 186];
+    return `<g id="a-${id}" class="actor">
+        <path class="limb" d="M${cx - 6},264 L${cx - 8},${GROUND - 2} M${cx + 6},264 L${cx + 8},${GROUND - 2} M${cx - 14},232 L${cx - 22},254 M${cx + 14},232 L${cx + 22},254"/>
+        <rect x="${cx - 15}" y="222" width="30" height="44" rx="12" style="fill:${color}"/>
+        <circle class="face" cx="${cx}" cy="205" r="15"/>
+        <circle class="eye" cx="${cx - 5}" cy="202" r="1.9"/><circle class="eye" cx="${cx + 5}" cy="202" r="1.9"/>
+        <path class="mouth" id="mouth-${id}" d="${MOUTH.neutral(cx)}"/>
+      </g>
+      <text class="ttl" x="${cx}" y="312" text-anchor="middle">${name}</text><text class="lbl muted" x="${cx}" y="326" text-anchor="middle" style="font-size:10.5px">${role}</text>`;
+  }
+  function robot(id, [cx, name, tag, cls, icon, big]) {
+    const hw = big ? 64 : 46, hh = big ? 44 : 34, bw = big ? 82 : 52, bh = big ? 58 : 46;
+    const by = GROUND - 8 - bh, hy = by - 4 - hh;
+    TIP[id] = [cx, hy - 18];
+    return `<g id="a-${id}" class="actor ${cls}">
+        <line class="limb" x1="${cx}" y1="${hy}" x2="${cx}" y2="${hy - 10}" style="stroke-width:2"/><circle cx="${cx}" cy="${hy - 13}" r="3.5" style="fill:var(--accent)"/>
+        <rect class="box" x="${cx - hw / 2}" y="${hy}" width="${hw}" height="${hh}" rx="10"/>
+        <rect class="eye" x="${cx - hw * .22 - 4}" y="${hy + hh * .3}" width="8" height="8" rx="4"/><rect class="eye" x="${cx + hw * .22 - 4}" y="${hy + hh * .3}" width="8" height="8" rx="4"/>
+        <path class="limb" d="M${cx - 8},${hy + hh * .74} H${cx + 8}" style="stroke-width:1.8"/>
+        <rect class="box" x="${cx - bw / 2}" y="${by}" width="${bw}" height="${bh}" rx="10"/>
+        <text x="${cx}" y="${by + bh / 2 + 8}" text-anchor="middle" style="font-size:${big ? 24 : 20}px">${icon}</text>
+        <rect x="${cx - bw / 2 + 4}" y="${GROUND - 8}" width="14" height="8" rx="3" style="fill:var(--muted)"/><rect x="${cx + bw / 2 - 18}" y="${GROUND - 8}" width="14" height="8" rx="3" style="fill:var(--muted)"/>
+      </g>${label(cx, name, tag)}`;
+  }
+  function drawer(key, y, h, title, fill, stroke) {
+    return `<rect x="700" y="${y}" width="100" height="${h}" rx="5" style="fill:${fill};stroke:${stroke}"/>
+      <text class="drawer-t" x="708" y="${y + 16}">${title}</text><text class="drawer-v" id="idx-${key}" x="708" y="${y + 32}">—</text>`;
+  }
+  function buildToon() {
+    const zones = [[8, 186, "REPOSITORY"], [204, 428, "INDEXING LINE"], [642, 210, "ONE INDEX"], [862, 232, "SEARCH SERVICE"], [1104, 148, "FRONT ENDS"]];
+    toon.innerHTML = `
+      ${zones.map(([x, w, t]) => `<rect class="zone" x="${x}" y="6" width="${w}" height="328" rx="10"/><text class="ztxt" x="${x + 12}" y="24">${t}</text>`).join("")}
+      <line class="ground" x1="12" y1="${GROUND}" x2="1248" y2="${GROUND}"/>
+      <g id="a-repo" class="actor n-exist">
+        <rect class="box" x="76" y="168" width="104" height="${GROUND - 168}" rx="6"/>
+        ${["projects", "registers", "specifications/"].map((t, k) => `<rect x="84" y="${176 + k * 38}" width="88" height="32" rx="4" style="fill:var(--panel);stroke:var(--muted)"/><rect x="118" y="${198 + k * 38}" width="20" height="4" rx="2" style="fill:var(--muted)"/><text x="128" y="${192 + k * 38}" text-anchor="middle" style="font-size:9.5px${k === 2 ? ";font-weight:700" : ""}">${t}</text>`).join("")}
+      </g>${label(128, "Repository", "EXISTS · C2")}
+      <g id="a-index" class="actor n-built">
+        <rect class="box" x="692" y="150" width="116" height="${GROUND - 150}" rx="6"/>
+        ${drawer("p", 156, 42, "Passages", "var(--u-bg)", "var(--u)")}
+        ${drawer("t", 202, 42, "Tables · facts", "var(--s-bg)", "var(--s)")}
+        ${drawer("d", 248, 40, "Documents", "var(--soft)", "var(--muted)")}
+      </g>${label(750, "One index", "SQLITE · C4")}
+      <g id="a-agent" class="actor n-exist">
+        <rect class="box" x="1132" y="44" width="92" height="60" rx="6"/>
+        <rect x="1140" y="54" width="52" height="10" rx="5" style="fill:var(--panel)"/><rect x="1164" y="70" width="52" height="10" rx="5" style="fill:var(--panel)"/>
+        <path d="M1126,104 H1230 L1236,112 H1120 Z" style="fill:var(--muted)"/>
+      </g>${label(1178, "Chat agent", "EXISTS · C5", 128)}
+      ${Object.entries(ROBOTS).map(([id, r]) => robot(id, r)).join("")}
+      ${Object.entries(PEOPLE).map(([id, p]) => person(id, p)).join("")}
+      <g id="m-slips" class="mover"><g class="body">${[-12, -2, 8].map(y => `<rect x="-23" y="${y}" width="46" height="7" rx="3.5" style="fill:var(--u-bg);stroke:var(--u)"/>`).join("")}</g></g>
+      <g id="m-table" class="mover"><g class="body"><rect x="-26" y="-17" width="52" height="34" rx="4" style="fill:var(--s-bg);stroke:var(--s);stroke-width:1.5"/><path d="M-26,-6 H26 M-26,5 H26 M-9,-17 V17 M8,-17 V17" style="stroke:var(--s)"/></g></g>
+      <g id="m-fact" class="mover"><g class="body"><rect x="-46" y="-11" width="92" height="22" rx="11" style="fill:var(--s-bg);stroke:var(--s);stroke-width:1.5"/><text id="t-fact" x="0" y="4" text-anchor="middle" style="font-size:11px;font-weight:700;fill:var(--s)">5,000 N/m²</text></g></g>
+      <g id="m-pick" class="mover"><g class="body"><rect x="-40" y="-10" width="80" height="20" rx="5" style="fill:var(--u-bg);stroke:var(--u);stroke-width:1.5"/><text id="t-pick" x="0" y="4" text-anchor="middle" style="font-size:10.5px;font-weight:700;fill:var(--u)">row · line 9</text></g></g>
+      <g id="m-q" class="mover"><g class="body"><rect class="q-bg" id="r-q" x="-62" y="-12" width="124" height="24" rx="12"/><text class="q-t" id="t-q" x="0" y="4" text-anchor="middle">question</text></g></g>
+      <g id="m-ans" class="mover"><g class="body"><rect class="ans-bg" id="r-ans" x="-66" y="-12" width="132" height="24" rx="6"/><text class="ans-t" id="t-ans" x="0" y="4" text-anchor="middle">answer</text></g></g>
+      <g id="m-doc" class="mover"><g class="body" id="doc-body"><g transform="scale(.85)">
+        <path class="paper" d="M-20,-26 H9 L20,-15 V26 H-20 Z"/><path d="M9,-26 V-15 H20" style="fill:none;stroke:var(--ink);stroke-width:1.2"/>
+        <text x="-14" y="-15" style="font-size:8px;font-weight:700;fill:var(--muted)">MD</text>
+        <text id="t-tag" x="0" y="-2" text-anchor="middle" style="font:700 9px ui-monospace,Menlo,monospace"></text>
+        <circle class="eye" cx="-7" cy="8" r="2"/><circle class="eye" cx="7" cy="8" r="2"/>
+        <path class="mouth" d="M-6,15 Q0,20 6,15"/>
+        <g id="doc-veil" style="opacity:0"><circle r="25" style="fill:none;stroke:var(--no);stroke-width:3"/><path d="M-18,-18 L18,18" style="stroke:var(--no);stroke-width:3"/></g>
+      </g></g>
+      </g>
+      <g id="bubbles"></g>`;
+  }
+
+  const IDX = {
+    empty: ["—", "—", "—"],
+    v1: ["+3 passages", "row 9 · 5 kN/m²", "fp d3c3…"],
+    stale: ["+3 passages", "5 kN/m² · old", "fp d3c3… · old"],
+    v2: ["+3 passages", "row 9 · 6 kN/m²", "09f6"]
+  };
+  const MOVERS = ["doc", "slips", "table", "fact", "pick", "q", "ans"];
+  const el = id => $("a-" + id) || $("m-" + id);
+  const bodyOf = id => $("a-" + id) || $("m-" + id).querySelector(".body");
+  function fit(text, rect, pad) {   // size a pill to its text
+    const w = text.getComputedTextLength() + pad * 2;
+    rect.setAttribute("x", -w / 2); rect.setAttribute("width", w);
+  }
+  function put(id, spot, animate) {
+    const m = $("m-" + id), [x, y] = AT[spot];
+    if (!animate) { m.style.transition = "none"; }
+    m.style.transform = `translate(${x}px, ${y}px)`;
+    m.style.opacity = 1;
+    if (!animate) { m.getBoundingClientRect(); m.style.transition = ""; }
+  }
+  function say(who, text, tone = "", secs = 2.7) {
+    const [tx, ty] = TIP[who];
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("class", `bubble ${tone}`);
+    g.innerHTML = `<path/><text>${esc(text)}</text>`;
+    $("bubbles").appendChild(g);
+    const t = g.querySelector("text"), w = t.getComputedTextLength() + 22, h = 26;
+    const x = Math.max(6, Math.min(1254 - w, tx - w / 2)), y = ty - 8 - h, r = 8;
+    const c = Math.max(x + r + 8, Math.min(x + w - r - 8, tx));
+    g.querySelector("path").setAttribute("d",
+      `M${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} H${c + 6} L${tx},${ty} L${c - 6},${y + h} H${x + r} Q${x},${y + h} ${x},${y + h - r} V${y + r} Q${x},${y} ${x + r},${y} Z`);
+    t.setAttribute("x", x + 11); t.setAttribute("y", y + 17);
+    later(() => g.remove(), secs * 1000);
+  }
+  function setTag(text) { $("t-tag").textContent = text; }   // the fingerprint, written on the paper
+  function setIdx(state) {
+    ["p", "t", "d"].forEach((k, n) => { const t = $("idx-" + k); t.textContent = IDX[state][n]; t.classList.toggle("old", state === "stale" && n > 0); });
+  }
+  function card(id, text, tone) {
+    $("t-" + id).textContent = text;
+    if (id === "q" || id === "ans") fit($("t-" + id), $("r-" + id), 12);
+    $("m-" + id).classList.toggle("alt", tone === "alt");
+  }
+  const ACT = {
+    cap: text => { $("cap").textContent = text; },
+    move: (id, spot) => put(id, spot, true),
+    show: (id, spot) => { put(id, spot, false); const m = $("m-" + id); m.style.opacity = 0; m.getBoundingClientRect(); m.style.opacity = 1; },
+    hide: id => { $("m-" + id).style.opacity = 0; },
+    say,
+    busy: id => { const b = bodyOf(id); b.classList.remove("busy"); b.getBoundingClientRect(); b.classList.add("busy"); },
+    hi: ids => { ids.forEach(id => el(id).classList.add("hi")); later(() => ids.forEach(id => el(id).classList.remove("hi")), 3000); },
+    mood: (who, m) => $("mouth-" + who).setAttribute("d", MOUTH[m](PEOPLE[who][0])),
+    card,
+    tag: setTag,
+    idx: setIdx,
+    edit: on => $("doc-body").classList.toggle("edited", on),
+    veil: on => { $("doc-veil").style.opacity = on ? 1 : 0; }
+  };
+  let timers = [];
+  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  function reset(init = {}) {
+    timers.forEach(clearTimeout); timers = [];
+    $("bubbles").innerHTML = "";
+    toon.querySelectorAll(".hi, .busy").forEach(n => n.classList.remove("hi", "busy"));
+    MOVERS.forEach(id => { put(id, "repo", false); $("m-" + id).style.opacity = 0; });
+    put("doc", init.doc || "repo", false);
+    Object.entries(init.show || {}).forEach(([id, spot]) => put(id, spot, false));
+    setTag(init.tag || "");
+    ACT.edit(!!init.edited); ACT.veil(false);
+    setIdx(init.idx || "empty");
+    card("fact", "5,000 N/m²");
+    Object.keys(PEOPLE).forEach(p => ACT.mood(p, "neutral"));
+    ACT.cap("");
+  }
+  // Beats: [seconds into the step, action, ...arguments]. One thing moves or speaks at a time.
+  const TAG1 = "d3c3";
+  const TOON = [
+    { beats: [
+      [0.3, "cap", "The actors: the people who ask, edit and look after the index"], [0.3, "hi", ["jp", "kamal", "maya", "colleague"]],
+      [3.8, "cap", "The components do the work: the indexing line, the search service and its gatekeeper, the company's chat agent"],
+      [3.8, "hi", ["detector", "registry", "reader", "facts", "service", "gate", "agent"]],
+      [7.8, "cap", "The resources they work on: the repository, the file, and one index"], [7.8, "hi", ["repo", "doc", "index"]],
+      [11.4, "cap", "Press Play to follow one file to two users, through an edit and a refresh"], [11.4, "say", "jp", "I need the roof load limit."] ] },
+    { beats: [
+      [0.3, "cap", "The file lives in the repository and is read in place, never uploaded"], [0.3, "hi", ["repo", "doc"]],
+      [3.6, "cap", "Who may read it is the repository's rule; the gatekeeper holds a copy"], [3.6, "say", "gate", "specifications/: JP and Maya only"],
+      [7.0, "mood", "kamal", "sad"], [7.0, "say", "kamal", "Not me, then."] ] },
+    { beats: [
+      [0.3, "cap", "① The file goes to the detector"], [0.3, "move", "doc", "det"],
+      [2.2, "busy", "detector"], [2.2, "say", "detector", "Markdown, by the extension"],
+      [5.4, "cap", "The detector reads the extension and at most 512 bytes: type, version, size"] ] },
+    { init: { doc: "det" }, beats: [
+      [0.3, "cap", "② The registry picks a reader for this type and version"], [0.3, "move", "doc", "reg"],
+      [2.2, "busy", "registry"], [2.2, "say", "registry", "Reader: markdown-text@2"],
+      [5.4, "cap", "③ Then it hashes every byte: the SHA-256 is the file's fingerprint"], [5.4, "say", "registry", "Fingerprint d3c37521…"], [5.6, "tag", TAG1] ] },
+    { init: { doc: "reg", tag: TAG1 }, beats: [
+      [0.3, "cap", "④ The reader, a simple connector built for the MVP, reads the file"], [0.3, "move", "doc", "read"],
+      [2.2, "busy", "reader"], [2.2, "say", "reader", "Prose here, a table there"],
+      [5.0, "show", "slips", "slipsOut"], [5.0, "cap", "Unstructured: 3 passages of prose, each with its heading and lines"],
+      [8.0, "show", "table", "tableOut"], [8.0, "cap", "Structured: 1 table, \"Roof load\", whose row cites line 9"] ] },
+    { init: { doc: "read", tag: TAG1, show: { slips: "slipsOut", table: "tableOut" } }, beats: [
+      [0.3, "cap", "⑤ The table goes to the fact rules"], [0.3, "move", "table", "factsIn"],
+      [2.2, "busy", "facts"], [2.2, "say", "facts", "5 kN/m² is a load limit"],
+      [5.0, "show", "fact", "factOut"], [5.0, "cap", "Each cell becomes a typed fact: parameter, value, unit, SI value"],
+      [8.2, "cap", "The prose on line 13 makes no fact: it is found by its words"] ] },
+    { init: { doc: "read", tag: TAG1, show: { slips: "slipsOut", table: "factsIn", fact: "factOut" } }, beats: [
+      [0.3, "cap", "Publish: everything for the file goes into the index in one transaction"],
+      [0.3, "move", "slips", "dp"], [0.9, "move", "table", "dt"], [1.5, "move", "fact", "dt"],
+      [3.0, "idx", "v1"], [3.0, "hide", "slips"], [3.0, "hide", "table"], [3.0, "hide", "fact"], [3.0, "hi", ["index"]],
+      [4.8, "cap", "The file itself goes back: the repository stays the source"], [4.8, "move", "doc", "repo"],
+      [8.0, "cap", "Permissions are not stored in the index; they apply on every request"] ] },
+    { init: { idx: "v1", tag: TAG1 }, beats: [
+      [0.3, "cap", "JP asks through the chat agent, in plain words"], [0.3, "say", "jp", "Distributed roof load conditions?"],
+      [3.2, "card", "q", "🔎 roof load conditions"], [3.2, "show", "q", "lap"],
+      [5.0, "move", "q", "svc"], [5.0, "cap", "The search service finds every file that holds one of the words"], [6.4, "busy", "service"],
+      [7.8, "cap", "Permissions come first, before anything is ranked or counted"], [7.8, "say", "gate", "JP may read specifications/ ✓", "ok"],
+      [10.8, "say", "service", "Rank only what JP may read"] ] },
+    { init: { idx: "v1", tag: TAG1 }, beats: [
+      [0.3, "cap", "The best passage JP may read: the table row on line 9"], [0.3, "show", "pick", "dp"], [0.6, "move", "pick", "svc"],
+      [2.6, "cap", "Before quoting it, the service re-hashes the file on disc"], [2.6, "say", "service", "Re-hash roof-load.md…"], [2.6, "hi", ["doc"]],
+      [5.2, "say", "service", "Fingerprint matches ✓", "ok"], [5.2, "tag", "d3c3 ✓"],
+      [7.8, "hide", "pick"], [7.8, "card", "ans", "✅ 5 kN/m² · line 9"], [7.8, "show", "ans", "svc"], [8.0, "move", "ans", "lap"],
+      [10.8, "mood", "jp", "happy"], [10.8, "say", "jp", "Quoted, with the file and line."],
+      [10.8, "cap", "The exact words, the file, the line and the fingerprint, in about 50 ms"] ] },
+    { init: { idx: "v1", tag: TAG1 }, beats: [
+      [0.3, "cap", "Kamal asks exactly the same words"], [0.3, "say", "kamal", "Distributed roof load conditions?"],
+      [3.2, "card", "q", "🔎 Kamal asks"], [3.2, "show", "q", "lap"], [4.8, "move", "q", "svc"],
+      [6.4, "say", "gate", "Kamal is not on the list ✗", "no"], [6.4, "veil", true],
+      [6.4, "cap", "The specification is dropped before ranking, limits, counts and pages"],
+      [9.4, "hide", "q"], [9.4, "card", "ans", "5 kN/m² · Project Cedar", "alt"], [9.4, "show", "ans", "svc"], [9.6, "move", "ans", "lap"],
+      [12.6, "cap", "Kamal's answer comes from a file Kamal may read; nothing names the specification"] ] },
+    { init: { idx: "v1", tag: TAG1 }, beats: [
+      [0.3, "cap", "A colleague edits the file on disc and saves it"], [0.3, "say", "colleague", "Make that 6 kN/m²"],
+      [3.0, "busy", "doc"], [3.0, "edit", true], [3.0, "tag", "09f6"],
+      [5.6, "cap", "New bytes, new fingerprint, but the index still holds the old 5 kN/m²"], [5.6, "idx", "stale"],
+      [8.8, "cap", "Nothing watches the repository in the MVP: the next question catches it"] ] },
+    { init: { idx: "stale", tag: "09f6", edited: true }, beats: [
+      [0.3, "cap", "JP asks again, before any refresh"], [0.3, "say", "jp", "Roof load conditions, again?"],
+      [3.0, "card", "q", "🔎 JP asks again"], [3.0, "show", "q", "lap"], [4.6, "move", "q", "svc"],
+      [6.2, "say", "service", "Re-hash roof-load.md…"], [6.2, "hi", ["doc"]],
+      [8.8, "say", "service", "Bytes changed: leave it out", "no"],
+      [8.8, "cap", "The changed file is withheld and named in changed_files; reading it is refused (409)"],
+      [11.6, "hide", "q"], [11.6, "card", "ans", "5 kN/m² · Cedar · 1 changed", "alt"], [11.6, "show", "ans", "svc"], [11.8, "move", "ans", "lap"],
+      [14.6, "cap", "JP is never shown the old 5 kN/m² from a file that now says 6"] ] },
+    { init: { idx: "stale", tag: "09f6", edited: true }, beats: [
+      [0.3, "cap", "Maya, on the index team, asks for a refresh"], [0.3, "say", "maya", "Reindex, please"],
+      [2.8, "card", "q", "↻ Reindex"], [2.8, "show", "q", "lap"], [3.0, "move", "q", "svc"],
+      [4.6, "busy", "service"], [4.6, "say", "service", "144 unchanged, 1 changed"],
+      [4.6, "cap", "Every readable file is hashed again; only the changed one is read"],
+      [7.4, "hide", "q"], [7.4, "move", "doc", "det"], [8.8, "move", "doc", "reg"], [10.2, "move", "doc", "read"], [11.2, "busy", "reader"],
+      [11.6, "show", "slips", "slipsOut"], [11.6, "show", "table", "tableOut"], [11.6, "card", "fact", "6,000 N/m²"], [12.2, "show", "fact", "factOut"],
+      [13.4, "move", "slips", "dp"], [13.6, "move", "table", "dt"], [13.8, "move", "fact", "dt"],
+      [15.2, "idx", "v2"], [15.2, "hide", "slips"], [15.2, "hide", "table"], [15.2, "hide", "fact"], [15.2, "hi", ["index"]],
+      [15.2, "edit", false], [15.2, "tag", "09f6"],
+      [16.0, "move", "doc", "repo"], [16.0, "cap", "One transaction swaps the old rows for the new, in about 20 ms"] ] },
+    { init: { idx: "v2", tag: "09f6" }, beats: [
+      [0.3, "cap", "JP asks once more"], [0.3, "say", "jp", "Roof load conditions?"],
+      [2.8, "card", "q", "🔎 JP asks"], [2.8, "show", "q", "lap"], [4.4, "move", "q", "svc"],
+      [6.0, "say", "service", "Fingerprint matches ✓", "ok"], [6.0, "hi", ["doc"]],
+      [8.6, "hide", "q"], [8.6, "card", "ans", "✅ 6 kN/m² · line 9"], [8.6, "show", "ans", "svc"], [8.8, "move", "ans", "lap"],
+      [11.6, "mood", "jp", "happy"], [11.6, "cap", "The new value, quoted with the new fingerprint"],
+      [14.0, "say", "gate", "Kamal: still not on the list ✗", "no"], [14.0, "veil", true],
+      [14.0, "cap", "The rule has not changed, so Kamal still never sees the file"] ] }
+  ];
+  function playScene(k) {
+    const sc = TOON[k];
+    reset(sc.init);
+    const pace = Number($("pace").value);
+    sc.beats.forEach(([t, act, ...args]) => later(() => ACT[act](...args), t * 1000 * pace));
+  }
+
   let i = 0, playing = false, timer = null, startedAt = 0, duration = 0, elapsed = 0, raf = 0;
 
   // Reading time: about 3.3 words a second, plus time to look at the map and the exhibit.
   function dwell(step) {
     const words = (step.body + step.ex).replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
-    return Math.min(32, Math.max(14, 6 + words / 3.3)) * 1000 * Number($("pace").value);
-  }
-  function place(el, key) {
-    const [x, y] = P[key]; el.setAttribute("transform", `translate(${x},${y})`);
+    const scene = Math.max(...TOON[STEPS.indexOf(step)].beats.map(b => b[0])) + 7;
+    return Math.max(scene, Math.min(32, Math.max(14, 6 + words / 3.3))) * 1000 * Number($("pace").value);
   }
   function render() {
     const s = STEPS[i];
@@ -802,11 +1097,8 @@ footer a { color: var(--accent); }
     map.querySelectorAll(".node").forEach(n => n.classList.toggle("on", s.on.includes(n.id)));
     map.querySelectorAll(".edge").forEach(e => e.classList.toggle("on", s.edges.includes(e.id)));
     map.querySelectorAll(".stamp").forEach(e => e.classList.toggle("on", (s.stamps || []).includes(e.id)));
-    token.style.opacity = s.token === "hidden" ? 0 : 1;
-    if (s.token !== "hidden") place(token, s.token);
-    if (s.q) { qtoken.style.opacity = 1; place(qtoken, s.q[0]); $("qlabel").textContent = s.q[1]; }
-    else qtoken.style.opacity = 0;
     document.querySelectorAll("#chapters button").forEach((b, k) => b.classList.toggle("on", k === i));
+    playScene(i);
     duration = dwell(s); elapsed = 0; startedAt = performance.now(); $("bar").style.width = "0%";
   }
   function tick(now) {
@@ -854,6 +1146,7 @@ footer a { color: var(--accent); }
     root.dataset.theme = dark ? "light" : "dark";
   });
   buildKey();
+  buildToon();
   decorate(document.querySelector(".cards"));
   decorate(document.querySelector(".codes-note"));
   decorate(document.querySelector(".below"));
