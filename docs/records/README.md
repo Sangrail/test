@@ -151,6 +151,8 @@ uv run --frozen python -m design_records mcp
 
 ## Weaknesses and what comes next
 
+[LIVING-SPEC-PLAN.md](LIVING-SPEC-PLAN.md) plans how to answer these, in phases.
+
 A first cut, built in a few hours of an MVP, and it should be judged as one. An independent review of the approach (29 October 2026) found the core sound (append-only versions, links pinned to the item version, `needs_review`) and these weaknesses, most important first:
 
 1. **The source does not merge.** The database is binary in git. Two branches that change records conflict on it, and git cannot resolve the conflict; `design.sql` helps review, not merging. The review recommends a deterministic text dump as the source, with SQLite built from it, and decision numbers allocated at merge time. The product owner chose the database as the source. With one writer this holds; with several, it is the first thing to break.
