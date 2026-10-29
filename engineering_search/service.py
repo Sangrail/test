@@ -23,7 +23,7 @@ from time import perf_counter
 from uuid import uuid4
 
 from .access import PermissionStore
-from .adapters import Telemetry
+from .adapters import Admission, Busy, Telemetry
 from .answer import MAX_LISTED, answer as pick_answer, list_documents, manifest, understand
 from .core import AuditStore, SearchIndex, evidence_manifest
 from .indexing import Indexer, Inventory, SourceFile, coverage_report
@@ -51,13 +51,15 @@ class ServiceError(Exception):
 class SearchService:
     def __init__(self, root: Path, index: SearchIndex, audit: AuditStore, permissions: PermissionStore,
                  queue: JobQueue, telemetry: Telemetry | None = None, indexer: Indexer | None = None,
-                 index_lock: AbstractContextManager | None = None):
+                 index_lock: AbstractContextManager | None = None, admission: Admission | None = None):
         self.root = root.resolve()
         # Held from reading the index versions to publishing the changes, so another
         # process that shares the index file cannot publish a plan made from stale versions.
         self.index_lock = index_lock if index_lock is not None else nullcontext()
         self.index, self.audit, self.permissions, self.queue = index, audit, permissions, queue
         self.telemetry = telemetry if telemetry is not None else Telemetry()
+        # The front ends admit each search, read and SQL query only if it can finish within the budget.
+        self.admission = admission if admission is not None else Admission()
         # The indexing line: finds, classifies and reads the files. The service publishes its plans.
         self.indexer = indexer if indexer is not None else Indexer(self.root)
         # lock protects the index and the state. operation_lock allows one scan,
@@ -72,6 +74,19 @@ class SearchService:
         if index.versions():  # A persisted index is searchable straight away.
             self.state.update(ready=True, last_indexed_at=getattr(index, "indexed_at", lambda: None)())
             self.inventory = self.stored_inventory() or None
+
+    def admit(self):
+        """A ticket to hold for one search, read or SQL query (`with service.admit(): ...`).
+
+        Raises ServiceError 503, with retry_after_seconds, if the request cannot be
+        answered within the time budget. The front end calls this where the request
+        arrives, before it waits for a thread, so all of its waiting counts."""
+        try:
+            return self.admission.admit()
+        except Busy as busy:
+            raise ServiceError(503, {"message": f"The search service is busy ({busy.waiting} requests ahead). "
+                                                f"Try again in {busy.retry_after_seconds} s.",
+                                     "busy": True, "retry_after_seconds": busy.retry_after_seconds}) from None
 
     # Audit ---------------------------------------------------------------
 
@@ -415,7 +430,8 @@ class SearchService:
                     "unreadable_files": len(inventory.with_status(*FAILED)) if inventory is not None else None,
                     "indexed_files": len(versions), "pending_changes": changes,
                     "searchable_passages": self.index.passage_count(),
-                    "documents": rows, "watcher_enabled": False, "indexer_workers": 1}
+                    "documents": rows, "watcher_enabled": False, "indexer_workers": 1,
+                    "admission": self.admission.snapshot()}
 
     # Uploads -------------------------------------------------------------
 

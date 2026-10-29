@@ -8,6 +8,7 @@ from pathlib import Path
 import sqlite3
 import statistics
 import threading
+import time
 from threading import Lock
 
 
@@ -31,6 +32,75 @@ class FileLock:
         stream = self._held.stream
         fcntl.flock(stream, fcntl.LOCK_UN)
         stream.close()
+
+
+class Busy(Exception):
+    """The request cannot be answered within the time budget. Retry after `retry_after_seconds`."""
+    def __init__(self, retry_after_seconds: int, waiting: int) -> None:
+        super().__init__(f"busy: {waiting} requests ahead, retry after {retry_after_seconds} s")
+        self.retry_after_seconds, self.waiting = retry_after_seconds, waiting
+
+
+class Admission:
+    """Admit a request only if it can be answered within the time budget; refuse it at once otherwise.
+
+    A process serves requests one at a time (SearchService.lock), so a new
+    request waits for every request ahead of it. With n = requests in flight + 1,
+    its expected time is n x mean + 2 x sqrt(n) x spread: the sum of n service
+    times, with a margin for their spread. Over the budget, it is refused with a
+    retry time, so the caller learns now, not after the budget.
+
+    The service time is learnt: a request's own time runs from the later of its
+    arrival and the previous departure, to its departure. The mean and the
+    spread (mean absolute deviation) are exponential moving averages, so one
+    slow request raises them for a while."""
+    def __init__(self, budget_seconds: float = 8.0, initial_service_seconds: float = 0.2,
+                 clock=time.perf_counter, smoothing: float = 0.05) -> None:
+        self.budget, self._estimate, self._clock, self._smoothing = (
+            budget_seconds, initial_service_seconds, clock, smoothing)
+        self._spread = 0.0
+        self._lock = Lock()
+        self._in_flight = 0
+        self._last_departure = float("-inf")
+        self._refused = 0
+
+    def admit(self) -> "_Ticket":
+        """A ticket to hold while the request runs (`with admission.admit(): ...`). Raises Busy."""
+        with self._lock:
+            n = self._in_flight + 1
+            expected = n * self._estimate + 2 * math.sqrt(n) * self._spread
+            if expected > self.budget:
+                self._refused += 1
+                raise Busy(max(1, math.ceil(expected - self.budget)), self._in_flight)
+            self._in_flight += 1
+            return _Ticket(self, self._clock())
+
+    def _depart(self, arrived: float) -> None:
+        with self._lock:
+            left = self._clock()
+            own = left - max(arrived, self._last_departure)
+            self._last_departure = left
+            self._spread += self._smoothing * (abs(own - self._estimate) - self._spread)
+            self._estimate += self._smoothing * (own - self._estimate)
+            self._in_flight -= 1
+
+    def snapshot(self) -> dict:
+        with self._lock:
+            return {"budget_seconds": self.budget, "in_flight": self._in_flight,
+                    "service_seconds": self._estimate, "spread_seconds": self._spread,
+                    "refused_total": self._refused,
+                    "capacity": int(self.budget // self._estimate) if self._estimate > 0 else None}
+
+
+class _Ticket:
+    def __init__(self, admission: Admission, arrived: float) -> None:
+        self._admission, self._arrived = admission, arrived
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self._admission._depart(self._arrived)
 
 
 class SQLiteAuditStore:

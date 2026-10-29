@@ -90,6 +90,31 @@ class UploadRequest(BaseModel):
         return value
 
 
+class AdmissionMiddleware:
+    """Admit a search, SQL query or evidence read only if it can be answered within the time budget.
+
+    It runs before the route waits for a worker thread, so time spent waiting for
+    a thread counts against the budget. A refused request gets 503 with a
+    Retry-After header at once, and no evidence."""
+    PATHS = (("POST", "/search"), ("POST", "/sql"), ("GET", "/evidence/"))
+
+    def __init__(self, app, service: SearchService):
+        self.app, self.service = app, service
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or not any(scope["method"] == method and scope["path"].startswith(path)
+                                              for method, path in self.PATHS):
+            return await self.app(scope, receive, send)
+        try:
+            ticket = self.service.admit()
+        except ServiceError as error:
+            response = JSONResponse({"detail": error.detail}, status_code=error.status,
+                                    headers={"Retry-After": str(error.detail["retry_after_seconds"])})
+            return await response(scope, receive, send)
+        with ticket:
+            await self.app(scope, receive, send)
+
+
 class SearchTimingMiddleware:
     def __init__(self, app, telemetry: Telemetry, audit: AuditStore):
         self.app, self.telemetry, self.audit = app, telemetry, audit
@@ -132,7 +157,7 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
                queue: JobQueue | None = None, worker_count: int | None = None,
                permissions: PermissionStore | None = None,
                index_on_start: bool = False, audit_reader: AuditReader | None = None,
-               index_lock=None) -> FastAPI:
+               index_lock=None, admission=None) -> FastAPI:
     root = (root or Path(os.environ.get("DOCUMENT_ROOT", "test-repository"))).resolve()
     audit = audit if audit is not None else SQLiteAuditStore(
         Path(os.environ.get("AUDIT_DB", ".runtime/audit.sqlite3")))
@@ -148,7 +173,7 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
         permissions=permissions if permissions is not None else MockPermissionStore(),
         queue=queue if queue is not None else SQLiteJobQueue(
             Path(os.environ.get("QUEUE_DB", f".runtime/queue-{namespace}.sqlite3"))),
-        telemetry=telemetry, index_lock=index_lock)
+        telemetry=telemetry, index_lock=index_lock, admission=admission)
     sessions = DemoSessions()
     pool = WorkerPool(service.queue, service.index_upload, worker_count)
 
@@ -169,6 +194,7 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
                   "Choose a demo user at /search. Index and audit APIs require Maya's index-team role. This is not production authentication.",
                   lifespan=lifespan)
     app.add_middleware(SearchTimingMiddleware, telemetry=service.telemetry, audit=audit)
+    app.add_middleware(AdmissionMiddleware, service=service)  # Outermost: refuses before any other work.
     app.state.service, app.state.worker_pool, app.state.sessions = service, pool, sessions
     app.state.index, app.state.telemetry = service.index, service.telemetry
     static = Path(__file__).parent / "static"

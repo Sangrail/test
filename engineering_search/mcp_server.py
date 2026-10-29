@@ -58,6 +58,9 @@ There are two ways in. Choose by the question.
    Select file_id, table_no, row_no and line so each row can be cited; use
    get_document_evidence to show the exact row and passage for a citation.
 
+If a tool returns an error with "busy": true, the service is at capacity: tell
+the user, with retry_after_seconds, and do not retry in a loop.
+
 Quote values exactly and cite file and line (and page or sheet). Do not guess
 or calculate values. Use read_evidence to read a whole page or file. Tables
 come only from files a reader could read: say so if the user may need data
@@ -86,7 +89,8 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         if mode not in ("auto", "answer", "list"):
             return {"error": "mode must be auto, answer or list"}
         try:
-            result = service.search(user, question, max(1, min(limit, 50)), max(1, page), mode, within)
+            with service.admit():
+                result = service.search(user, question, max(1, min(limit, 50)), max(1, page), mode, within)
         except ServiceError as error:
             return {"error": error.detail}
         keep = ("answer", "searched_for", "ignored_words", "matched_passages", "page", "total_pages",
@@ -97,7 +101,8 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
     def read_evidence(file_id: str, page: int | None = None) -> dict:
         """Read all indexed passages of one file, or of one page of a PDF."""
         try:
-            return service.read(user, file_id, page)
+            with service.admit():
+                return service.read(user, file_id, page)
         except ServiceError as error:
             return {"error": error.detail}
 
@@ -126,7 +131,8 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         Example: SELECT subject, material_grade, allowable_load_kn_m2, file_id, table_no, row_no, line
         FROM components WHERE material_grade LIKE 'S355%' AND allowable_load_kn_m2 < 5"""
         try:
-            return service.query_sql(user, sql, max(1, min(limit, 500)))
+            with service.admit():
+                return service.query_sql(user, sql, max(1, min(limit, 500)))
         except ServiceError as error:
             return {"error": error.detail}
 
@@ -135,7 +141,8 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         """The evidence for one table row from a query_sql result: column names, cells as read,
         line, page (or sheet), the typed facts, the file's SHA-256 version and the verbatim passage."""
         try:
-            return service.table_row_evidence(user, file_id, table_no, row_no)
+            with service.admit():
+                return service.table_row_evidence(user, file_id, table_no, row_no)
         except ServiceError as error:
             return {"error": error.detail}
 

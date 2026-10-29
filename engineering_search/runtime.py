@@ -7,12 +7,18 @@
 
 <id> is taken from the document folder path, so two document folders never
 share an index.
+
+SEARCH_BUDGET_SECONDS (default 8) is the time within which a search, read or
+SQL query must be answered; a request that cannot be is refused at once with a
+retry time (adapters.Admission). 8 s leaves 2 s of the 10 s target for the
+network and the chat client.
 """
 import hashlib
+import os
 from pathlib import Path
 
 from .access import MockPermissionStore
-from .adapters import FileLock, SQLiteAuditStore
+from .adapters import Admission, FileLock, SQLiteAuditStore
 from .app import create_app
 from .jobs import SQLiteJobQueue
 from .service import SearchService
@@ -28,7 +34,8 @@ def stores(documents: Path, state: Path) -> dict:
             "index": SQLiteSearchIndex(state / f"index-{namespace}.sqlite3"),
             "index_lock": FileLock(state / f"index-{namespace}.lock"),
             "audit": SQLiteAuditStore(state / "audit.sqlite3"),
-            "queue": SQLiteJobQueue(state / f"queue-{namespace}.sqlite3")}
+            "queue": SQLiteJobQueue(state / f"queue-{namespace}.sqlite3"),
+            "admission": Admission(float(os.environ.get("SEARCH_BUDGET_SECONDS", "8")))}
 
 
 def build_service(documents: Path, state: Path) -> SearchService:
