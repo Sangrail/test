@@ -2,7 +2,7 @@
 
     scan()          find every file, detect its type and version, choose a reader
     plan(indexed)   compare the scan with the index; extract new and changed files
-    extract(path)   read one file into a Document (also used for uploads)
+    extract(path)   read one file into a Document: passages, tables and facts (also for uploads)
 
 The detector and the reader registry are injected (defaults: ContentDetector
 and default_registry()). The indexer reads files. It never writes the index,
@@ -20,6 +20,7 @@ from typing import Mapping
 
 from ..core import Document
 from .detect import HEAD_BYTES, ContentDetector, Detector
+from .facts import extract_facts
 from .inventory import Inventory, SourceFile
 from .readers import Reader, ReaderError, ReaderRegistry, default_registry
 from .status import CLASSIFIED, INDEXED, READ_ERROR, READER_CRASH
@@ -116,15 +117,18 @@ class Indexer:
         if reader is None:
             raise UnsupportedFileType(f"{source.file_type} file: {source.status}")
         extraction = reader.read(source.file_id, source.version, raw)
-        return (Document(source.file_id, source.version, extraction.passages),
+        document = Document(source.file_id, source.version, extraction.passages, extraction.tables,
+                            extract_facts(extraction.tables))
+        return (document,
                 replace(source, status=extraction.status, warnings=extraction.warnings))
 
     def plan(self, indexed: Mapping[str, str], skip: set[str] = frozenset(),
              previous: Mapping[str, SourceFile] | None = None) -> IndexPlan:
         """Scan, then work out what to change in an index that holds `indexed` (file ID -> version).
 
-        Only new and changed files are extracted, and files whose extraction status
-        is not known (`previous`, the last published inventory). A file that cannot
+        Only new and changed files are extracted, files whose extraction status is
+        not known (`previous`, the last published inventory), and files whose
+        chosen reader or reader version changed. A file that cannot
         be read or extracted is reported in `failed` with its status and is not in the
         index after publish. Files in `skip` (uploads that the workers still own) are
         not touched.
@@ -142,7 +146,8 @@ class Indexer:
                 continue
             known = previous.get(source.file_id)
             if (indexed.get(source.file_id) == source.version and known is not None
-                    and known.version == source.version and known.status in INDEXED - {CLASSIFIED}):
+                    and known.version == source.version and known.reader == source.reader
+                    and known.status in INDEXED - {CLASSIFIED}):
                 versions[source.file_id] = source.version
                 inventory.record(replace(source, status=known.status, warnings=known.warnings))
                 continue

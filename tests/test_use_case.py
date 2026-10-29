@@ -17,12 +17,14 @@ and check that:
   - a user never gets an answer from a file that they cannot read.
 """
 import hashlib
+from io import BytesIO
 import logging
 from pathlib import Path
 import re
 from time import perf_counter
 
 from fastapi.testclient import TestClient
+from openpyxl import load_workbook
 from pypdf import PdfReader
 import pytest
 
@@ -65,9 +67,17 @@ def assert_from_source(source):
     """Check the cited text against the file itself, without the service's extraction code."""
     raw = (REPOSITORY / source["file_id"]).read_bytes()
     assert source["source_version"] == hashlib.sha256(raw).hexdigest()
+    if source["file_id"].endswith(".xlsx"):
+        # For a workbook, page is the sheet number and the lines are sheet rows.
+        sheet = load_workbook(BytesIO(raw), data_only=True).worksheets[source["page"] - 1]
+        lines = [" ".join(str(c.value) for c in row if c.value is not None)
+                 for row in sheet.iter_rows(max_row=source["end_line"])]
+        cited = flat(" ".join(lines[source["start_line"] - 1:source["end_line"]]))
+        assert flat(source["text"].replace("|", " ")) in cited
+        assert source["value"] and source["value"] in source["text"]
+        return
     if source["page"]:
         logging.getLogger("pypdf").setLevel(logging.ERROR)
-        from io import BytesIO
         lines = PdfReader(BytesIO(raw)).pages[source["page"] - 1].extract_text().splitlines()
     else:
         lines = raw.decode("utf-8").splitlines()

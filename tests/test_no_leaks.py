@@ -22,6 +22,7 @@ from pathlib import Path
 import re
 
 from fastapi.testclient import TestClient
+from openpyxl import load_workbook
 from pypdf import PdfReader
 import pytest
 
@@ -34,13 +35,15 @@ from engineering_search.service import ServiceError
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = ROOT / "test-repository"
 NORTHGATE = "project-northgate/northgate-warehouse-structural-calculations.pdf"
+ROOF_SCHEDULE = "project-harbour/harbour-roof-schedule.xlsx"
 
 # Written out by hand from the access rules, so that a wrong rule fails the test.
 CANNOT_READ = {
     "jp": set(),
     "kamal": {"specifications/bridge.md", "specifications/roof-load.md", "specifications/roof-load-draft.md",
               NORTHGATE, "project-cedar/06-material-certificate.md", "project-cedar/07-compliance-approval.md",
-              "project-cedar/08-environmental-review.md", "project-cedar/10-restricted-incident.md"},
+              "project-cedar/08-environmental-review.md", "project-cedar/10-restricted-incident.md",
+              ROOF_SCHEDULE},
     "maya": {"project-cedar/03-roof-load.md", "project-cedar/04-beam-capacity.md", "project-cedar/05-foundation.md",
              "project-cedar/09-bridge-load.md", "project-cedar/10-restricted-incident.md"},
 }
@@ -53,13 +56,19 @@ def flat(text: str) -> str:
 
 def file_text(file_id: str) -> str:
     raw = (REPOSITORY / file_id).read_bytes()
+    if file_id.endswith(".xlsx"):
+        book = load_workbook(BytesIO(raw), data_only=True)
+        return "\n".join(" | ".join("" if c is None else str(c) for c in row)
+                         for sheet in book.worksheets for row in sheet.iter_rows(values_only=True))
     if file_id.endswith(".pdf"):
         logging.getLogger("pypdf").setLevel(logging.ERROR)
         return "\n".join(page.extract_text() for page in PdfReader(BytesIO(raw)).pages)
     return raw.decode("utf-8")
 
 
-ALL_FILES = sorted(str(p.relative_to(REPOSITORY)) for p in REPOSITORY.rglob("*") if p.suffix in (".md", ".pdf"))
+# Every file that has a reader, so every file that can be in a response.
+ALL_FILES = sorted(str(p.relative_to(REPOSITORY)) for p in REPOSITORY.rglob("*")
+                   if p.suffix in (".md", ".pdf", ".csv", ".xlsx"))
 TEXT = {file_id: file_text(file_id) for file_id in ALL_FILES}
 FLAT = {file_id: flat(text) for file_id, text in TEXT.items()}
 

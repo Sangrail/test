@@ -1,0 +1,8 @@
+Component,Type,Location,Material grade,Allowable UDL (kN/m²),Design imposed load (kN/m²),Status
+B-101,Beam,Level 1 grid A,S275,5.5,,Approved
+B-104,Beam,Level 2 grid C,S355J2,4.5,,Approved
+B-105,Beam,Level 2 grid D,S355,6.0,,Approved
+B-106,Beam,Mezzanine edge,S355J2+N,3.5,,Pending
+C-201,Column,Grid C2,S355,,,Approved
+F-021,Floor slab,Level 1,C30/37,,3.2,Approved
+F-022,Floor slab,Level 2,C30/37,7.5,2.5,Approved

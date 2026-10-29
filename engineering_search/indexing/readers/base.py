@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from importlib.util import find_spec
 from typing import Protocol
 
-from ...core import Passage
+from ...core import Passage, Table
 from ..status import INDEXED_FULL
 
 
@@ -65,6 +65,7 @@ class Extraction:
     passages: tuple[Passage, ...]
     status: str = INDEXED_FULL
     warnings: tuple[str, ...] = field(default=())
+    tables: tuple[Table, ...] = field(default=())  # rows and columns, for facts and SQL
 
 
 class ReaderError(Exception):

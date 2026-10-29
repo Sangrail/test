@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi==0.116.1",
     "mcp==1.27.2",
+    "openpyxl==3.1.5",
     "pypdf==6.21.4",
     "uvicorn==0.35.0",
 ]

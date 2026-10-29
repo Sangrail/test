@@ -1,0 +1,5 @@
+Project,Component,Material grade,Allowable UDL (kN/m²),Status
+Harbour,B-104,S355J2,4.5,Approved
+Cedar,CB-12,S355,4.8,Approved
+Cedar,CB-14,S355,5.6,Approved
+Riverside,RG-02,S355J2+N,3.9,Pending

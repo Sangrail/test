@@ -41,15 +41,13 @@ from typing import Callable
 
 from .core import Passage
 from .query import QueryPlan
+from .units import QUANTITY, SIGNED, number, to_si
 
 PASSAGES_TO_READ = 8
 MIN_COVERAGE = 0.5
 MAX_ALSO_STATED = 5
 
 UNIT = r"(?:kN/m²|kN/m2|kN/m|kNm|kN|kPa|MPa|GPa|ksi|psi|psf|lb/ft|kip|t|tonnes?|mm|cm|m|ft|in|%)"
-# A sign belongs to a number only at the start of a token: "-2 kN" is negative,
-# "B-104" and the range "1-2 kN" are not.
-SIGNED = r"(?<![\w.])[-−]?\d+(?:[.,]\d+)?|\b\d+(?:[.,]\d+)?"
 VALUE = re.compile(
     rf"(?:{SIGNED})\s?{UNIT}(?![\w/])"                            # 5 kN/m², -2 kN/m², 3.5 t
     r"|\b[SC]\d{2,3}(?:/\d{2})?[A-Z0-9+]*\b"                      # S355J2+N, C30/37
@@ -261,19 +259,6 @@ def manifest(result: dict) -> dict:
 
 # List questions and number comparisons ------------------------------------
 
-# Factor to the base unit of each kind of quantity. kPa and kN/m² are the same.
-UNITS = {
-    "n/m²": ("pressure", 0.001), "n/m2": ("pressure", 0.001), "kn/m²": ("pressure", 1.0),
-    "kn/m2": ("pressure", 1.0), "kpa": ("pressure", 1.0), "mpa": ("pressure", 1000.0),
-    "gpa": ("pressure", 1e6), "psf": ("pressure", 0.04788), "psi": ("pressure", 6.89476),
-    "ksi": ("pressure", 6894.76),
-    "n": ("force", 0.001), "kn": ("force", 1.0), "kip": ("force", 4.44822),
-    "kg": ("mass", 0.001), "t": ("mass", 1.0), "tonne": ("mass", 1.0), "tonnes": ("mass", 1.0),
-    "mm": ("length", 0.001), "cm": ("length", 0.01), "m": ("length", 1.0), "ft": ("length", 0.3048),
-    "in": ("length", 0.0254),
-}
-QUANTITY = re.compile(rf"({SIGNED})\s?(N/m²|N/m2|kN/m²|kN/m2|kPa|MPa|GPa|psf|psi|ksi|kip|kN|kg|"
-                      r"tonnes?|t|mm|cm|m|ft|in|N)(?![\w/])", re.IGNORECASE)
 COMPARATORS = (
     (">=", r"at least|not less than|>="), ("<=", r"at most|not more than|no more than|<="),
     (">", r"greater than|more than|higher than|larger than|above|over|exceeding|exceeds|>"),
@@ -291,26 +276,21 @@ LIST_QUESTION = re.compile(
 MAX_LISTED = 200  # documents on one page of a list answer
 
 
-def number(text: str) -> float:
-    """'-2', '−2' or '3,5' as a float."""
-    return float(text.replace("−", "-").replace(",", "."))
-
-
 @dataclass(frozen=True)
 class Comparison:
     operator: str
     number: float
     unit: str
-    kind: str
-    base: float
+    kind: str     # dimension, e.g. "pressure"
+    base: float   # the value in the SI unit of that dimension
 
     def accepts(self, text: str) -> str | None:
         """Return the first quantity in text that meets the comparison, or None."""
         for match in QUANTITY.finditer(text):
-            unit = UNITS.get(match.group(2).casefold())
-            if not unit or unit[0] != self.kind:
+            measured = to_si(number(match.group(1)), match.group(2))
+            if not measured or measured[0] != self.kind:
                 continue
-            value = number(match.group(1)) * unit[1]
+            value = measured[1]
             if {">": value > self.base, ">=": value >= self.base, "<": value < self.base,
                     "<=": value <= self.base, "=": abs(value - self.base) < 1e-9}[self.operator]:
                 return match.group(0)
@@ -332,15 +312,14 @@ def understand(question: str, mode: str = "auto") -> Intent:
     is_list = bool(LIST_QUESTION.search(question))
     comparison, search_text = None, question
     for match in COMPARISON.finditer(question):
-        unit = UNITS.get(match.group(3).casefold())
-        if unit is None:
+        measured = to_si(number(match.group(2)), match.group(3))
+        if measured is None:
             continue
         word = (match.group(1) or "").casefold()
         operator = next((op for op, pattern in COMPARATORS if word and re.fullmatch(pattern, word)), None)
         if operator is None and not is_list:
             continue  # "Is the 7 kN/m² roof load approved?" names a value; it does not filter by it.
-        value = number(match.group(2))
-        comparison = Comparison(operator or "=", value, match.group(3), unit[0], value * unit[1])
+        comparison = Comparison(operator or "=", number(match.group(2)), match.group(3), *measured)
         search_text = (question[:match.start()] + " " + question[match.end():]).strip()
         break
     if mode == "auto":

@@ -1,4 +1,5 @@
-"""MCP server: lets a chat agent (Claude Desktop, Claude Code, others) search the documents.
+"""MCP server: lets a chat agent (Claude Code, Codex, Pi, others) search the documents and
+query their tables with constrained SQL.
 
 It calls the same SearchService (service.py) as the web page, with the same
 index, permissions and audit log. It does not start the web app. It talks MCP over stdio, so the chat client starts
@@ -23,28 +24,44 @@ from .access import USERS
 from .runtime import build_service
 from .service import ServiceError
 
-INSTRUCTIONS = """Answer questions about engineering documents (Markdown and PDF).
-Call search_evidence with the user's question in plain language.
-- For one value (a load limit, a material, an approval status), the result has
-  answer.type "answer": a sentence or table row copied exactly from a document,
-  with its file, page (PDF), lines and SHA-256 file version.
-- For "which documents..." questions, answer.type is "list": one entry per
-  matching document, each with the exact line that qualifies it. Comparisons
-  such as "greater than 5 kN/m²" are applied by the service.
-  A list holds at most 200 documents per page; answer.count is the total, and
-  `page` 2, 3... returns the next documents when answer.truncated is true.
-- For a follow-up about a previous list ("of those, which..."), pass the
-  file_id values of that list as `within`.
-Quote values exactly and cite file and page. answer.status is one of:
-- "found": the cited sentence states the value and names what it is about.
-- "unverified": the document contains every question word, but the cited
-  sentence does not name some of them (unbound_words), e.g. a load that may be
-  for the floor, not the roof. Give the value only with that warning.
-- "partial": the closest match lacks some question words (missing_words). Say
-  which, and do not present it as the answer.
-- "not_found": say that no readable document states it.
-Do not guess or calculate values.
-Use read_evidence to read a whole page or file around a result."""
+INSTRUCTIONS = """Answer questions about engineering documents: Markdown, PDF, CSV and XLSX.
+There are two ways in. Choose by the question.
+
+1. Unstructured (text): search_evidence with the question in plain language.
+   For one value (a load limit, a material, an approval status) answer.type is
+   "answer": a sentence or row copied exactly from a document, with file, page,
+   lines and SHA-256 file version. For "which documents..." answer.type is
+   "list", one entry per document with the line that qualifies it; comparisons
+   such as "greater than 5 kN/m²" are applied by the service. A list holds at
+   most 200 documents per page; answer.count is the total; pass page 2, 3...
+   when answer.truncated is true. For "of those, which...", pass the file_id
+   values of the previous list as `within`.
+   answer.status is one of:
+   - "found": the cited sentence states the value and names what it is about.
+   - "unverified": the document has every question word, but the cited sentence
+     does not name some of them (unbound_words), e.g. a load that may be for the
+     floor, not the roof. Give the value only with that warning.
+   - "partial": the closest match lacks some question words (missing_words).
+     Say which; do not present it as the answer.
+   - "not_found": say that no readable document states it.
+
+2. Structured (tables): for filters, joins and counts over component schedules,
+   registers and tables ("which S355 components have an allowable load under
+   5 kN/m²?"), write ONE SQLite SELECT and run it with query_sql. Call
+   describe_schema first (and describe_table for columns). The `components`
+   view has one row per table row: subject, project, material_grade,
+   allowable_load_kn_m2 (a capacity), imposed_load_kn_m2 (a demand),
+   compliance_status, file_id, line, page. `facts` has one row per typed cell,
+   with si_value in SI units (Pa for pressure). Only rows from files the user
+   may read are present. Never compare a capacity with a demand. Match grades
+   with LIKE 'S355%'. Normalise units, not intent: 5 N/m² is not 5 kN/m².
+   Select file_id, table_no, row_no and line so each row can be cited; use
+   get_document_evidence to show the exact row and passage for a citation.
+
+Quote values exactly and cite file and line (and page or sheet). Do not guess
+or calculate values. Use read_evidence to read a whole page or file. Tables
+come only from files a reader could read: say so if the user may need data
+from scans or CAD files, which are not read."""
 
 
 def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
@@ -84,7 +101,45 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         except ServiceError as error:
             return {"error": error.detail}
 
-    if user["role"] == "index_team":  # The report names files, so other users do not get the tool.
+    @server.tool()
+    def describe_schema() -> dict:
+        """The tables that query_sql can read, with a description of each, and notes on units and citations."""
+        return service.sql_schema(user)
+
+    @server.tool()
+    def list_tables() -> list[str]:
+        """The names of the tables and views that query_sql can read."""
+        return list(service.sql_schema(user)["tables"])
+
+    @server.tool()
+    def describe_table(table: str) -> dict:
+        """The columns of one table or view, with type, meaning and units."""
+        try:
+            return service.sql_schema(user, table)
+        except ServiceError as error:
+            return {"error": error.detail}
+
+    @server.tool()
+    def query_sql(sql: str, limit: int = 100) -> dict:
+        """Run ONE SQLite SELECT over the structured data (tables and typed facts) of the files the
+        user may read. Returns columns, rows, row_count and truncated. Limit: 1 to 500 rows.
+        Example: SELECT subject, material_grade, allowable_load_kn_m2, file_id, table_no, row_no, line
+        FROM components WHERE material_grade LIKE 'S355%' AND allowable_load_kn_m2 < 5"""
+        try:
+            return service.query_sql(user, sql, max(1, min(limit, 500)))
+        except ServiceError as error:
+            return {"error": error.detail}
+
+    @server.tool()
+    def get_document_evidence(file_id: str, table_no: int, row_no: int) -> dict:
+        """The evidence for one table row from a query_sql result: column names, cells as read,
+        line, page (or sheet), the typed facts, the file's SHA-256 version and the verbatim passage."""
+        try:
+            return service.table_row_evidence(user, file_id, table_no, row_no)
+        except ServiceError as error:
+            return {"error": error.detail}
+
+    if user["role"] == "index_team":  # Obviously MVP - not secure!!! The report names files, so other users do not get the tool.
         @server.tool()
         def get_index_coverage(gaps_limit: int = 50) -> dict:
             """Index coverage: files by type, format version, status, folder and capability,
@@ -101,6 +156,9 @@ def main():
     parser.add_argument("--documents", type=Path,
                         default=Path(os.environ.get("DOCUMENT_ROOT", "test-repository")))
     parser.add_argument("--state-dir", type=Path, default=Path(os.environ.get("STATE_DIR", ".runtime")))
+
+    # Obviously, we're simulating the user here. In reality, the MCP server would
+    # get the logged-in user or the authenticated user for the person requesting the service.
     parser.add_argument("--user", default=os.environ.get("SEARCH_USER", "jp"),
                         help="Whose file permissions apply (pretend login)")
     args = parser.parse_args()

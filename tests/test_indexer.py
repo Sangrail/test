@@ -47,7 +47,7 @@ def test_the_scan_lists_every_file_by_type_and_hashes_only_files_with_a_reader(t
     assert set(inventory.with_status(NO_READER)) == {"sub/plan.dwg", "readme.txt"}
     assert set(inventory.with_status(UNSUPPORTED_FORMAT)) == {"data.xyz"}
     a, pdf, dwg = inventory.files["a.md"], inventory.files["sub/b.PDF"], inventory.files["sub/plan.dwg"]
-    assert a.status == CLASSIFIED and len(a.version) == 64 and a.size == 12 and a.reader == "markdown-text@1"
+    assert a.status == CLASSIFIED and len(a.version) == 64 and a.size == 12 and a.reader == "markdown-text@2"
     assert pdf.format_version == "1.4" and pdf.reader == "pdf-text-pypdf@1"
     assert dwg.status == NO_READER and dwg.version is None and dwg.size == 2
 
@@ -74,11 +74,13 @@ def test_the_scan_skips_hidden_files_hidden_folders_and_symbolic_links(tmp_path)
     assert set(Indexer(tmp_path).scan().files) == {"a.md"}
 
 
-def test_the_test_repository_has_markdown_pdf_and_two_text_files_without_a_reader():
+def test_the_test_repository_has_every_kind_of_file_and_gap():
     inventory = Indexer(TEST_REPOSITORY).scan()
-    assert inventory.by_type() == {"markdown": 133, "pdf": 5, "text": 2}
-    assert len(inventory.indexable()) == 138
-    assert set(inventory.with_status(NO_READER)) == {"TEST-DATA.txt", "public-fhwa/SOURCES.txt"}
+    assert inventory.by_type() == {"csv": 2, "excel": 1, "jt": 2, "markdown": 135, "pdf": 6, "text": 2}
+    assert len(inventory.indexable()) == 144
+    assert set(inventory.with_status(NO_READER)) == {"TEST-DATA.txt", "public-fhwa/SOURCES.txt",
+                                                     "project-harbour/cad/hangar-frame.jt"}
+    assert set(inventory.with_status(FORMAT_MISMATCH)) == {"project-harbour/cad/old-export.jt"}
 
 
 def test_a_plan_extracts_only_new_and_changed_files_and_removes_deleted_ones(tmp_path):

@@ -13,8 +13,10 @@ from typing import Iterable
 from ..detect import UNKNOWN, FileSignature
 from ..status import CLASSIFIED, DEPENDENCY_MISSING, NO_READER, UNSUPPORTED_FORMAT, UNSUPPORTED_VERSION
 from .base import Reader
+from .csv import CsvReader
 from .markdown import MarkdownReader
 from .pdf import PdfTextReader
+from .xlsx import XlsxReader
 
 
 @dataclass(frozen=True)
@@ -52,4 +54,6 @@ def default_registry() -> ReaderRegistry:
     return ReaderRegistry([
         MarkdownReader(),
         PdfTextReader(),
+        CsvReader(),
+        XlsxReader(),
     ])

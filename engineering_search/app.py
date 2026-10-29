@@ -67,6 +67,13 @@ class SearchResponse(BaseModel):
     answer: dict
 
 
+class SqlRequest(BaseModel):
+    sql: str = Field(min_length=1, max_length=4000,
+                     examples=["SELECT subject, material_grade, allowable_load_kn_m2, file_id, line FROM components "
+                               "WHERE material_grade LIKE 'S355%' AND allowable_load_kn_m2 < 5"])
+    limit: int = Field(default=100, ge=1, le=500)
+
+
 class LoginRequest(BaseModel):
     user_id: str
 
@@ -283,12 +290,29 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
         request.scope["audit_request_id"] = result["request_id"]
         return result
 
+    @app.get("/sql/schema", summary="Tables and columns that POST /sql accepts")
+    def sql_schema(request: Request, table: str | None = None):
+        return service.sql_schema(require_user(request), table)
+
+    @app.post("/sql", responses={400: {"description": "Statement refused or failed"}},
+              summary="Run one SELECT over the structured data of the files the user may read")
+    def sql(body: SqlRequest, request: Request):
+        result = service.query_sql(require_user(request), body.sql, body.limit)
+        request.scope["audit_request_id"] = result["request_id"]
+        return result
+
+    @app.get("/evidence/{file_id:path}/tables/{table_no}/rows/{row_no}",
+             summary="One table row as evidence: columns, cells, line, page, file version and passage")
+    def table_row(file_id: str, table_no: int, row_no: int, request: Request):
+        return service.table_row_evidence(require_user(request), file_id, table_no, row_no)
+
     @app.get("/demo/documents", summary="Indexed documents the selected user may read")
     def readable_documents(request: Request):
         user = require_user(request)
         file_ids, readable = service.readable_files(user)
-        types = {"Markdown": sum(f.endswith(".md") for f in readable),
-                 "PDF": sum(f.endswith(".pdf") for f in readable)}
+        names = {"md": "Markdown", "pdf": "PDF", "csv": "CSV", "xlsx": "Excel"}
+        types = {name: sum(f.lower().endswith("." + suffix) for f in readable) for suffix, name in names.items()}
+        types = {name: count for name, count in types.items() if count}
         return {"documents": [{"file_id": f, "title": f} for f in sorted(readable)],
                 "by_type": types,
                 # Only readable counts: a user does not learn how many files they cannot read.

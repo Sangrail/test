@@ -111,7 +111,7 @@ def test_the_first_installed_reader_for_a_type_is_chosen(tmp_path):
 
     (tmp_path / "a.md").write_text("# A\n\nText.\n")
     chosen = Indexer(tmp_path, registry=ReaderRegistry([Preferred(), MarkdownReader()])).scan().files["a.md"]
-    assert chosen.reader == "markdown-text@1"  # The preferred reader is not installed.
+    assert chosen.reader == "markdown-text@2"  # The preferred reader is not installed.
 
 
 def test_pdf_pages_without_text_are_reported_not_hidden(tmp_path):

@@ -5,6 +5,8 @@ One file (or memory) holds:
   passages      the verbatim passages returned as evidence
   passages_fts  FTS5 inverted index over heading, text and file name
   files         the last published inventory: every file found, with its status (JSON)
+  source_tables, table_rows, facts
+                tables read from documents, their rows, and typed facts from the rows
 
 A search looks words up in the inverted index. It never scans passage text.
 """
@@ -42,6 +44,39 @@ CREATE TABLE IF NOT EXISTS passages (
 );
 CREATE INDEX IF NOT EXISTS passages_by_file ON passages(file_id);
 CREATE TABLE IF NOT EXISTS files (file_id TEXT PRIMARY KEY, record TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS source_tables (
+    file_id TEXT NOT NULL REFERENCES documents(file_id) ON DELETE CASCADE,
+    table_no INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    columns TEXT NOT NULL,
+    PRIMARY KEY (file_id, table_no)
+);
+CREATE TABLE IF NOT EXISTS table_rows (
+    file_id TEXT NOT NULL REFERENCES documents(file_id) ON DELETE CASCADE,
+    table_no INTEGER NOT NULL,
+    row_no INTEGER NOT NULL,
+    line INTEGER NOT NULL,
+    page INTEGER,
+    cells TEXT NOT NULL,
+    PRIMARY KEY (file_id, table_no, row_no)
+);
+CREATE TABLE IF NOT EXISTS facts (
+    id INTEGER PRIMARY KEY,
+    file_id TEXT NOT NULL REFERENCES documents(file_id) ON DELETE CASCADE,
+    table_no INTEGER NOT NULL,
+    row_no INTEGER NOT NULL,
+    column_name TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    parameter TEXT NOT NULL,
+    role TEXT NOT NULL,
+    value TEXT NOT NULL,
+    number REAL,
+    unit TEXT,
+    si_value REAL,
+    dimension TEXT,
+    project TEXT
+);
+CREATE INDEX IF NOT EXISTS facts_by_file ON facts(file_id);
 CREATE VIRTUAL TABLE IF NOT EXISTS passages_fts USING fts5(
     heading, text, source, tokenize = 'porter unicode61');
 """
@@ -87,6 +122,17 @@ class SQLiteSearchIndex:
                 (p.file_id, p.source_version, p.heading, p.start_line, p.end_line, p.page, p.text)).lastrowid
             self._db.execute("INSERT INTO passages_fts (rowid, heading, text, source) VALUES (?, ?, ?, ?)",
                              (rowid, p.heading, p.text, source))
+        for t in document.tables:
+            self._db.execute("INSERT INTO source_tables VALUES (?, ?, ?, ?)",
+                             (document.file_id, t.table, t.name, json.dumps(t.columns)))
+            self._db.executemany("INSERT INTO table_rows VALUES (?, ?, ?, ?, ?, ?)",
+                                 [(document.file_id, t.table, r.row, r.line, r.page, json.dumps(r.cells))
+                                  for r in t.rows])
+        self._db.executemany(
+            "INSERT INTO facts (file_id, table_no, row_no, column_name, subject, parameter, role, value,"
+            " number, unit, si_value, dimension, project) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(document.file_id, f.table, f.row, f.column, f.subject, f.parameter, f.role, f.value,
+              f.number, f.unit, f.si_value, f.dimension, f.project) for f in document.facts])
 
     def apply(self, upserts: list[Document], removals: list[str], files: list[dict] | None = None) -> None:
         """Publish all changes in one transaction, or none of them.
@@ -129,6 +175,33 @@ class SQLiteSearchIndex:
     def versions(self) -> dict[str, str]:
         with self._lock:
             return dict(self._db.execute("SELECT file_id, source_version FROM documents"))
+
+    def structured(self, files: set[str]) -> dict[str, list[tuple]]:
+        """The tables, rows and facts of `files` only, as rows for a projection.
+
+        Keys and columns:
+          documents  (file_id, source_version, passages)
+          tables     (file_id, table_no, name, columns_json)
+          rows       (file_id, table_no, row_no, line, page, cells_json)
+          facts      (file_id, table_no, row_no, column_name, subject, parameter, role, value,
+                      number, unit, si_value, dimension, project)
+        """
+        queries = {
+            "documents": "SELECT d.file_id, d.source_version, d.passages FROM documents d",
+            "tables": "SELECT d.file_id, d.table_no, d.name, d.columns FROM source_tables d",
+            "rows": "SELECT d.file_id, d.table_no, d.row_no, d.line, d.page, d.cells FROM table_rows d",
+            "facts": "SELECT d.file_id, d.table_no, d.row_no, d.column_name, d.subject, d.parameter, d.role,"
+                     " d.value, d.number, d.unit, d.si_value, d.dimension, d.project FROM facts d",
+        }
+        if not files:
+            return {name: [] for name in queries}
+        with self._lock:
+            self._db.execute("CREATE TEMP TABLE IF NOT EXISTS scope (file_id TEXT PRIMARY KEY)")
+            self._db.execute("DELETE FROM temp.scope")
+            self._db.executemany("INSERT INTO temp.scope VALUES (?)", [(f,) for f in files])
+            return {name: self._db.execute(f"{sql} JOIN temp.scope s ON s.file_id = d.file_id"
+                                           " ORDER BY 1, 2, 3").fetchall()
+                    for name, sql in queries.items()}
 
     def files(self) -> list[dict]:
         """The last published inventory."""

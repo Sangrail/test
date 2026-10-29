@@ -76,6 +76,8 @@ ACCESS_RULES: dict[str, set[str]] = {
     "project-cedar/08-environmental-review.md":   JP_AND_MAYA,
     "project-cedar/09-bridge-load.md":            JP_AND_KAMAL,
     "project-cedar/10-restricted-incident.md":    JP_ONLY,
+    # project-harbour/ inherits WHOLE_REPOSITORY, except the roof schedule.
+    "project-harbour/harbour-roof-schedule.xlsx": JP_AND_MAYA,
 }
 
 

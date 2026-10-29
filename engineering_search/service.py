@@ -13,6 +13,8 @@ from __future__ import annotations
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict
 from datetime import datetime, timezone
+import hashlib
+import json
 import logging
 import os
 from pathlib import Path
@@ -31,6 +33,7 @@ from .indexing.status import (FAILED, INDEXED, INDEXED_PARTIAL, NO_EXTRACTABLE_C
 PARTLY_READ = {INDEXED_PARTIAL, NO_TEXT_LAYER, NO_EXTRACTABLE_CONTENT}  # indexed, with gaps
 from .jobs import JobQueue
 from .query import plan
+from .sql import Projection, SqlError, describe
 
 log = logging.getLogger(__name__)
 
@@ -182,6 +185,87 @@ class SearchService:
                                "evidence": evidence_manifest(passages)})
             return {"request_id": request_id, "file_id": file_id, "page": page,
                     "evidence": [asdict(p) for p in passages]}
+
+    # Structured queries ----------------------------------------------------
+
+    def query_sql(self, user: dict, sql: str, limit: int = 100) -> dict:
+        """Run one client-written SELECT over the structured rows of the files the user may read.
+
+        The projection is built from the permitted files only, before the
+        statement runs (sql.py). The audit event records a hash of the statement,
+        the scope and the files in the result, never the rows."""
+        request_id = str(uuid4())
+        with self.lock:
+            if not self.state["ready"]:
+                raise ServiceError(409, "Build the index with POST /index first")
+            indexed = set(self.index.versions())
+            try:
+                policy = self.permissions.evaluate(user["subject"], indexed)
+            except Exception:
+                raise ServiceError(503, "Permissions unavailable; evidence withheld") from None
+            allowed = indexed & set(policy.allowed)
+            file_types = {f: s.file_type for f, s in (self.inventory.files if self.inventory else {}).items()}
+            projection = Projection(self.index.structured(allowed), file_types)
+        try:
+            try:
+                result = projection.query(sql, limit=limit)
+            except SqlError as error:
+                self.commit_audit(self._sql_event(request_id, user, policy, sql, allowed, indexed, None, str(error)))
+                raise ServiceError(400, str(error)) from None
+            cited = sorted({row[result["columns"].index("file_id")] for row in result["rows"]}
+                           if "file_id" in result["columns"] else set())
+            self.commit_audit(self._sql_event(request_id, user, policy, sql, allowed, indexed, result, None, cited))
+        finally:
+            projection.close()
+        return {"request_id": request_id, "scope": {"readable_files": len(allowed)}, **result}
+
+    def _sql_event(self, request_id, user, policy, sql, allowed, indexed, result, error, cited=()):
+        return {"event": "sql_query_executed" if error is None else "sql_query_refused",
+                "request_id": request_id, "timestamp": now(), "actor_subject": user["subject"],
+                "identity_issuer": "local-demo", "authorisation": "enforced_demo_policy",
+                "permission_version": policy.version,
+                "sql_sha256": hashlib.sha256(sql.encode()).hexdigest(), "sql_characters": len(sql),
+                "files_in_scope": len(allowed), "files_excluded_by_policy": len(indexed - allowed),
+                "returned_rows": result["row_count"] if result else 0, "result_files": list(cited),
+                "error": error}
+
+    def sql_schema(self, user: dict, table: str | None = None) -> dict:
+        """The tables and columns that query_sql accepts. Holds no document data."""
+        try:
+            return describe(table)
+        except SqlError as error:
+            raise ServiceError(404, str(error)) from None
+
+    def table_row_evidence(self, user: dict, file_id: str, table_no: int, row_no: int) -> dict:
+        """One table row as evidence: the column names, the cells as read, its line and page,
+        the file version, and the passage that holds the row (verbatim text), if the user may read it."""
+        request_id = str(uuid4())
+        with self.lock:
+            try:
+                policy = self.permissions.evaluate(user["subject"], {file_id})
+            except Exception:
+                raise ServiceError(503, "Permissions unavailable; evidence withheld") from None
+            data = self.index.structured({file_id} & set(policy.allowed))
+            table = next((t for t in data["tables"] if t[1] == table_no), None)
+            row = next((r for r in data["rows"] if r[1] == table_no and r[2] == row_no), None)
+            if table is None or row is None:
+                raise ServiceError(404, "No readable evidence for that file, table and row")
+            line, page = row[3], row[4]
+            passage = next((p for p in self.index.passages(file_id, page)
+                            if p.start_line <= line <= p.end_line), None)
+            version = data["documents"][0][1]
+            facts = [dict(zip(("column_name", "subject", "parameter", "role", "value", "number", "unit",
+                               "si_value", "dimension", "row_project"), f[3:]))
+                     for f in data["facts"] if f[1] == table_no and f[2] == row_no]
+            self.commit_audit({"event": "evidence_read", "request_id": request_id, "timestamp": now(),
+                               "actor_subject": user["subject"], "identity_issuer": "local-demo",
+                               "permission_version": policy.version, "file_id": file_id, "page": page,
+                               "evidence": [{"file_id": file_id, "table_no": table_no, "row_no": row_no,
+                                             "line": line, "page": page, "source_version": version}]})
+            return {"request_id": request_id, "file_id": file_id, "source_version": version,
+                    "table_no": table_no, "table_name": table[2], "row_no": row_no, "line": line, "page": page,
+                    "columns": json.loads(table[3]), "cells": json.loads(row[5]), "facts": facts,
+                    "passage": asdict(passage) if passage else None}
 
     def readable_files(self, user: dict) -> tuple[set[str], set[str]]:
         """Return (all indexed files, the files that the user can read)."""
