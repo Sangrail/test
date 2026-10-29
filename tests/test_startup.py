@@ -38,4 +38,4 @@ def test_unreadable_file_is_skipped_at_startup(tmp_path):
     with TestClient(app):
         assert set(app.state.index.versions()) == {"valid.md"}
         failed = app.state.telemetry.snapshot()["index_runs"][-1]["failed_files"]
-        assert failed == [{"file_id": "invalid.md", "error": "UnicodeDecodeError"}]
+        assert failed == [{"file_id": "invalid.md", "error": "MALFORMED"}]

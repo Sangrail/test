@@ -84,6 +84,15 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         except ServiceError as error:
             return {"error": error.detail}
 
+    if user["role"] == "index_team":  # The report names files, so other users do not get the tool.
+        @server.tool()
+        def get_index_coverage(gaps_limit: int = 50) -> dict:
+            """Index coverage: files by type, format version, status, folder and capability,
+            the readers and what they can extract, and the files that were not fully read,
+            with the reason and a hint (up to gaps_limit of them)."""
+            report = service.coverage()
+            return {**report, "gaps": report["gaps"][:max(0, gaps_limit)], "gaps_total": len(report["gaps"])}
+
     return server
 
 

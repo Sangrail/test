@@ -24,7 +24,11 @@ from .access import PermissionStore
 from .adapters import Telemetry
 from .answer import MAX_LISTED, answer as pick_answer, list_documents, manifest, understand
 from .core import AuditStore, SearchIndex, evidence_manifest
-from .indexing import INDEXABLE, UNREADABLE, UNSUPPORTED, Indexer, Inventory
+from .indexing import Indexer, Inventory, SourceFile, coverage_report
+from .indexing.status import (FAILED, INDEXED, INDEXED_PARTIAL, NO_EXTRACTABLE_CONTENT, NO_TEXT_LAYER,
+                              NOT_SUPPORTED)
+
+PARTLY_READ = {INDEXED_PARTIAL, NO_TEXT_LAYER, NO_EXTRACTABLE_CONTENT}  # indexed, with gaps
 from .jobs import JobQueue
 from .query import plan
 
@@ -60,10 +64,11 @@ class SearchService:
         self.state = {"ready": False, "last_indexed_at": None, "last_scanned_at": None,
                       "operation": None, "scan_error": None, "index_error": None,
                       "last_index_run": None, "last_scan_seconds": None}
-        # The files found by the last scan, with their file types.
+        # The files found by the last scan or refresh, with their types and statuses.
         self.inventory: Inventory | None = None
         if index.versions():  # A persisted index is searchable straight away.
             self.state.update(ready=True, last_indexed_at=getattr(index, "indexed_at", lambda: None)())
+            self.inventory = self.stored_inventory() or None
 
     # Audit ---------------------------------------------------------------
 
@@ -189,6 +194,9 @@ class SearchService:
 
     # Index operations ----------------------------------------------------
 
+    def stored_inventory(self) -> Inventory:
+        return Inventory(SourceFile(**record) for record in self.index.files())
+
     def _begin(self, operation: str):
         if not self.operation_lock.acquire(blocking=False):
             raise ServiceError(409, "A scan or index build is already running")
@@ -232,16 +240,18 @@ class SearchService:
             with self.index_lock:
                 with self.lock:
                     old = self.index.versions()
+                    previous = self.stored_inventory().files
                 blocked = self.queue.blocked_files()  # Uploads that the workers still own.
                 read_start = perf_counter()
-                plan = self.indexer.plan(old, skip=blocked)
+                plan = self.indexer.plan(old, skip=blocked, previous=previous)
                 ingestion_seconds = max(perf_counter() - read_start, 1e-9)
                 indexable = plan.inventory.indexable()
                 total_bytes = sum(f.size for f in indexable.values())
                 with self.lock:
                     commit_start = perf_counter()
                     self.queue.reconcile_ready(plan.versions)
-                    self.index.apply(plan.upserts, plan.removals)
+                    self.index.apply(plan.upserts, plan.removals,
+                                     [asdict(f) for f in plan.inventory.files.values()])
                     indexing_seconds = max(perf_counter() - commit_start, 1e-9)
                     self.inventory = plan.inventory
                     self.state.update(ready=True, last_indexed_at=now(), last_scanned_at=now(),
@@ -250,7 +260,8 @@ class SearchService:
                               "files": len(plan.versions), "read_files": len(plan.upserts), "bytes": total_bytes,
                               "failed_files": plan.failed, "scanned_files": len(indexable),
                               "file_types": plan.inventory.by_type(),
-                              "unsupported_files": len(plan.inventory.with_outcome(UNSUPPORTED)),
+                              "unsupported_files": len(plan.inventory.with_status(*NOT_SUPPORTED)),
+                              "file_statuses": plan.inventory.by_status(),
                               "passages": self.index.passage_count(),
                               "added": plan.added, "edited": plan.edited, "deleted": len(plan.removals),
                               "ingestion_seconds": ingestion_seconds,
@@ -273,11 +284,20 @@ class SearchService:
         finally:
             self._end()
 
+    def coverage(self) -> dict:
+        """What the last refresh read, how fully, and why the other files were not read.
+
+        Names files, so the callers allow only the index team."""
+        with self.lock:
+            inventory = self.inventory if self.inventory is not None else self.stored_inventory()
+            return {"indexed_at": self.state["last_indexed_at"], "document_root": str(self.root),
+                    **coverage_report(inventory, self.indexer.registry)}
+
     def status(self) -> dict:
         """The index state, and each file found by the last scan compared with the index.
 
-        Files that cannot be indexed (no reader for the type, or unreadable)
-        are listed with that status. They are not pending changes.
+        Files that cannot be indexed (no reader for the type or version, or
+        unreadable) are listed with their status. They are not pending changes.
         """
         with self.lock:
             versions = self.index.versions()
@@ -287,14 +307,16 @@ class SearchService:
             if inventory is not None:
                 for file_id in sorted(inventory.files.keys() | versions.keys()):
                     source = inventory.files.get(file_id)
-                    status = ("deleted" if source is None else source.outcome if source.outcome != INDEXABLE
+                    status = ("deleted" if source is None else source.status if source.status not in INDEXED
                               else "added" if file_id not in versions
                               else "edited" if source.version != versions[file_id]
+                              else source.status if source.status in PARTLY_READ
                               else "indexed")
                     if status in changes:
                         changes[status] += 1
                     rows.append({"file_id": file_id, "status": status,
                                  "file_type": source.file_type if source else None,
+                                 "format_version": source.format_version if source else None,
                                  "bytes": source.size if source else None})
             state = self.state
             index_status = (state["operation"] or
@@ -305,8 +327,8 @@ class SearchService:
             return {**state, "status": index_status, "document_root": str(self.root),
                     "source_files": len(inventory.indexable()) if inventory is not None else None,
                     "file_types": inventory.by_type() if inventory is not None else None,
-                    "unsupported_files": len(inventory.with_outcome(UNSUPPORTED)) if inventory is not None else None,
-                    "unreadable_files": len(inventory.with_outcome(UNREADABLE)) if inventory is not None else None,
+                    "unsupported_files": len(inventory.with_status(*NOT_SUPPORTED)) if inventory is not None else None,
+                    "unreadable_files": len(inventory.with_status(*FAILED)) if inventory is not None else None,
                     "indexed_files": len(versions), "pending_changes": changes,
                     "searchable_passages": self.index.passage_count(),
                     "documents": rows, "watcher_enabled": False, "indexer_workers": 1}
@@ -348,7 +370,7 @@ class SearchService:
         # short serial section shared with full builds, so a rebuild cannot
         # overwrite a worker commit.
         with self.operation_lock, self.index_lock, self.lock:
-            self.index.upsert(document)
+            self.index.upsert(document, asdict(source))
             try:
                 self.queue.complete(job["id"], (perf_counter() - start) * 1000, len(document.passages))
             except Exception:

@@ -309,6 +309,11 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
     def index_status():
         return {**service.status(), "upload_workers": worker_count}
 
+    @app.get("/index/coverage", summary="Coverage by file type, version, status, folder and capability, "
+                                        "with each file that was not fully read and why (index team only)")
+    def index_coverage():
+        return service.coverage()
+
     @app.post("/scan", summary="Rescan source files and detect changes without reindexing")
     def rescan():
         return {**service.scan(), "upload_workers": worker_count}

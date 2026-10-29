@@ -120,11 +120,11 @@ def test_failed_index_can_be_retried_without_duplicate_passages(tmp_path):
     class OnceBrokenIndex(SQLiteSearchIndex):
         fail = True
 
-        def upsert(self, document):
+        def upsert(self, document, file=None):
             if self.fail:
                 self.fail = False
                 raise OSError("Injected write failure")
-            return super().upsert(document)
+            return super().upsert(document, file)
 
     root, queue, app = setup(tmp_path, index=OnceBrokenIndex())
     with TestClient(app) as client:

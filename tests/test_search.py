@@ -59,7 +59,7 @@ def test_add_edit_delete_and_unreadable_file_is_skipped(tmp_path):
     assert len(client.post("/search", json={"query": "7"}).json()["evidence"]) == 1
     (root / "bad.md").write_bytes(b"\xff")
     result = client.post("/index").json()
-    assert result["failed_files"] == [{"file_id": "bad.md", "error": "UnicodeDecodeError"}]
+    assert result["failed_files"] == [{"file_id": "bad.md", "error": "MALFORMED"}]
     assert len(client.post("/search", json={"query": "7"}).json()["evidence"]) == 1
     (root / "bad.md").unlink()
     file.unlink()
@@ -128,13 +128,13 @@ def test_validation_readiness_openapi_and_symlink_boundary(tmp_path):
     outside = tmp_path / "outside.md"
     outside.write_text("# Outside\n\nRestricted value.\n")
     (root / "link.md").symlink_to(outside)
-    (root / "broken.pdf").write_text("Not a real PDF")
+    (root / "broken.pdf").write_text("%PDF-1.4 then not a real PDF")
     assert client.post("/search", json={"query": "roof"}).status_code == 409
     assert client.post("/search", json={"query": "?!"}).status_code == 422
     assert client.post("/search", json={"query": "roof", "limit": 0}).status_code == 422
     indexed = client.post("/index").json()
     assert indexed["files"] == 0
-    assert indexed["failed_files"] == [{"file_id": "broken.pdf", "error": "PdfStreamError"}]
+    assert indexed["failed_files"] == [{"file_id": "broken.pdf", "error": "MALFORMED"}]
     assert client.post("/search", json={"query": "restricted"}).json()["evidence"] == []
     assert client.get("/docs").status_code == 200
     assert "/search" in client.get("/openapi.json").json()["paths"]
@@ -181,7 +181,8 @@ def test_status_lists_file_types_and_files_that_cannot_be_indexed(tmp_path):
     assert status["status"] == "up_to_date"  # An unsupported file is not a pending change.
     assert status["source_files"] == 1 and status["unsupported_files"] == 1
     rows = {r["file_id"]: r for r in status["documents"]}
-    assert rows["plan.dwg"] == {"file_id": "plan.dwg", "status": "unsupported", "file_type": "dwg", "bytes": 2}
+    assert rows["plan.dwg"] == {"file_id": "plan.dwg", "status": "NO_READER", "file_type": "dwg",
+                                "format_version": None, "bytes": 2}
     assert rows["roof.md"]["status"] == "indexed" and rows["roof.md"]["file_type"] == "markdown"
 
 

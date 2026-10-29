@@ -1,52 +1,134 @@
 """File type detection.
 
-A detector names the type of a file, for example "markdown", "pdf" or "dwg".
-It does not decide if the type can be indexed: the indexer does that, from
-the readers that it has. Thus a DWG file is detected as "dwg" and reported
-as unsupported, not lost as an unknown file.
+A detector names the type of a file, for example "markdown", "pdf" or "jt",
+and its format version when the content states one. It does not decide if the
+type can be indexed: the reader registry does that. Thus a DWG file is detected
+as "dwg" and reported as NO_READER, not lost as an unknown file.
 
-The MVP detects by file extension only. It does not read the file. A later
-detector can read the first bytes of the file (libmagic, python-magic) and
-also find the format version (ADR 0003). It only has to implement Detector.
+ContentDetector (the default) treats the extension as a hint and checks the
+first bytes for the formats that have a signature:
+
+    PDF    "%PDF-1.7"                        -> pdf, version 1.7
+    XLSX   ZIP with xl/workbook.xml          -> excel
+    DOCX   ZIP with word/document.xml        -> word
+    JT     "Version 9.5 JT" in the 80-byte header -> jt, version 9.5
+
+When the content has a signature, the content decides the type. When the
+extension claims a signed format but the signature is absent, the status is
+FORMAT_MISMATCH (or INVALID_HEADER if the header starts right but is broken).
+Text formats (Markdown, CSV) have no signature; the extension decides.
+
+The JT probe reads the version string only. It is not a JT parser, and a
+detected version says nothing about whether a reader can read the file.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Mapping, Protocol
+import zipfile
+
+from .status import FORMAT_MISMATCH, INVALID_HEADER
 
 MARKDOWN = "markdown"
 PDF = "pdf"
+CSV = "csv"
+EXCEL = "excel"
+WORD = "word"
+JT = "jt"
 UNKNOWN = "unknown"
 
-# Extension -> file type. Only Markdown and PDF have readers in the MVP. The
-# other types are named so that the inventory can report them by type.
+# Extension -> file type. The registry decides which types have a reader.
 EXTENSIONS: Mapping[str, str] = {
     ".md": MARKDOWN,
     ".pdf": PDF,
+    ".csv": CSV,
     ".txt": "text",
-    ".docx": "word",
-    ".xlsx": "excel",
+    ".docx": WORD,
+    ".xlsx": EXCEL,
     ".dwg": "dwg",
     ".dxf": "dxf",
-    ".jt": "jt",
+    ".jt": JT,
     ".catpart": "catia",
     ".catproduct": "catia",
     ".catdrawing": "catia",
     ".ifc": "ifc",
 }
 
+HEAD_BYTES = 512  # the most a detector reads from a file
+PDF_HEADER = re.compile(rb"^%PDF-(\d+\.\d+)")
+# The JT file header starts with an 80-character version string, e.g.
+# "Version 9.5 JT" padded with spaces. Checked against public descriptions of
+# the format only; confirm against the Siemens JT specification before production.
+JT_HEADER = re.compile(rb"^Version (\d+)\.(\d+)\s+JT")
+SIGNED = {PDF, EXCEL, WORD, JT}  # file types whose content has a signature
+OOXML = {"xl/workbook.xml": EXCEL, "word/document.xml": WORD}
+
+
+@dataclass(frozen=True)
+class FileSignature:
+    file_type: str
+    format_version: str | None = None
+    status: str | None = None     # FORMAT_MISMATCH or INVALID_HEADER; None when the type is clear
+    observation: str = ""         # short, safe evidence for the coverage report
+
 
 class Detector(Protocol):
-    def detect(self, path: Path) -> str:
-        """Return the file type of path, or UNKNOWN."""
+    def detect(self, path: Path, head: bytes) -> FileSignature:
+        """Name the type of path. head is its first HEAD_BYTES bytes."""
         ...
 
 
 class ExtensionDetector:
-    """Detect the file type from the file extension. Case does not matter."""
+    """Detect the file type from the file extension only. Case does not matter."""
 
     def __init__(self, extensions: Mapping[str, str] = EXTENSIONS):
         self.extensions = {suffix.casefold(): file_type for suffix, file_type in extensions.items()}
 
-    def detect(self, path: Path) -> str:
-        return self.extensions.get(path.suffix.casefold(), UNKNOWN)
+    def detect(self, path: Path, head: bytes = b"") -> FileSignature:
+        return FileSignature(self.extensions.get(path.suffix.casefold(), UNKNOWN))
+
+
+class ContentDetector:
+    """The extension as a hint, checked against the content signature."""
+
+    def __init__(self, extensions: Mapping[str, str] = EXTENSIONS):
+        self.by_extension = ExtensionDetector(extensions)
+
+    def detect(self, path: Path, head: bytes) -> FileSignature:
+        hint = self.by_extension.detect(path).file_type
+        found = probe(path, head)
+        if found is not None:
+            if found.status and hint in OOXML.values():  # an .xlsx or .docx whose ZIP is broken
+                return FileSignature(hint, None, found.status, found.observation)
+            if hint in SIGNED and found.file_type != hint:
+                return FileSignature(hint, None, FORMAT_MISMATCH,
+                                     f"extension says {hint}, content is {found.file_type}")
+            return found
+        if hint in SIGNED:
+            broken = (hint == PDF and head.startswith(b"%PDF")) or (hint == JT and head.startswith(b"Version"))
+            return FileSignature(hint, None, INVALID_HEADER if broken else FORMAT_MISMATCH,
+                                 f"no {hint} signature in the first bytes")
+        return FileSignature(hint)
+
+
+def probe(path: Path, head: bytes) -> FileSignature | None:
+    """The type that the content signature shows, or None if it shows none."""
+    if match := PDF_HEADER.match(head):
+        version = match.group(1).decode()
+        return FileSignature(PDF, version, observation=f"%PDF-{version}")
+    if match := JT_HEADER.match(head[:80]):
+        version = f"{int(match.group(1))}.{int(match.group(2))}"
+        return FileSignature(JT, version, observation=f"header 'Version {version} JT'")
+    if head.startswith(b"PK\x03\x04"):
+        try:
+            with zipfile.ZipFile(path) as archive:
+                names = set(archive.namelist())
+        except (zipfile.BadZipFile, OSError):
+            return FileSignature("zip", status=INVALID_HEADER, observation="broken ZIP container")
+        for member, file_type in OOXML.items():
+            if member in names:
+                return FileSignature(file_type, observation=f"ZIP with {member}")
+        return FileSignature("zip", observation="ZIP container")
+    return None

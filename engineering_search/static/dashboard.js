@@ -63,6 +63,14 @@ function render(data) {
 function renderRows() {
   if (!current) return;
   const term = $('file-filter').value.toLocaleLowerCase();
+  // Index statuses (indexing/status.py) -> badge text and badge style.
+  const STATUS_LABELS = {indexed: ['Indexed', 'indexed'], added: ['New', 'added'], edited: ['Modified', 'edited'],
+    deleted: ['Deleted', 'deleted'], INDEXED_PARTIAL: ['Partly read', 'edited'], NO_TEXT_LAYER: ['No text (scan)', 'unreadable'],
+    NO_EXTRACTABLE_CONTENT: ['Nothing to index', 'unsupported'], UNSUPPORTED_FORMAT: ['Unknown type', 'unsupported'],
+    NO_READER: ['No reader', 'unsupported'], UNSUPPORTED_VERSION: ['Version not supported', 'unsupported'],
+    DEPENDENCY_MISSING: ['Reader not installed', 'unsupported'], FORMAT_MISMATCH: ['Wrong extension', 'unreadable'],
+    INVALID_HEADER: ['Broken header', 'unreadable'], READ_ERROR: ['Cannot read', 'unreadable'],
+    MALFORMED: ['Malformed', 'unreadable'], ENCRYPTED: ['Encrypted', 'unreadable'], READER_CRASH: ['Reader failed', 'unreadable']};
   const rows = current.documents.filter(row => row.file_id.toLocaleLowerCase().includes(term) && (!$('changes-only').checked || ['added','edited','deleted'].includes(row.status)));
   page = Math.max(0, Math.min(page, Math.ceil(rows.length/pageSize)-1));
   const fragment = document.createDocumentFragment();
@@ -71,8 +79,9 @@ function renderRows() {
     const name = document.createElement('td'); name.textContent = row.file_id;
     const size = document.createElement('td'); size.textContent = [row.file_type, row.bytes == null ? null : `${(row.bytes/1024).toFixed(1)} KB`].filter(Boolean).join(' · ') || '—';
     const state = document.createElement('td');
-    const badge = document.createElement('span'); badge.className = `badge ${row.status}`;
-    badge.textContent = {indexed:'Indexed', added:'New', edited:'Modified', deleted:'Deleted', unsupported:'No reader', unreadable:'Cannot read'}[row.status];
+    const [label, kind] = STATUS_LABELS[row.status] || [row.status, 'unsupported'];
+    const badge = document.createElement('span'); badge.className = `badge ${kind}`; badge.textContent = label;
+    if (row.format_version) size.textContent += ` ${row.format_version}`;
     state.append(badge); tr.append(name, size, state); fragment.append(tr);
   }
   $('document-rows').replaceChildren(fragment);

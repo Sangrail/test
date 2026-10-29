@@ -4,12 +4,14 @@ One file (or memory) holds:
   documents     one row per source file and version
   passages      the verbatim passages returned as evidence
   passages_fts  FTS5 inverted index over heading, text and file name
+  files         the last published inventory: every file found, with its status (JSON)
 
 A search looks words up in the inverted index. It never scans passage text.
 """
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 import re
 import sqlite3
@@ -39,6 +41,7 @@ CREATE TABLE IF NOT EXISTS passages (
     text TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS passages_by_file ON passages(file_id);
+CREATE TABLE IF NOT EXISTS files (file_id TEXT PRIMARY KEY, record TEXT NOT NULL);
 CREATE VIRTUAL TABLE IF NOT EXISTS passages_fts USING fts5(
     heading, text, source, tokenize = 'porter unicode61');
 """
@@ -85,8 +88,15 @@ class SQLiteSearchIndex:
             self._db.execute("INSERT INTO passages_fts (rowid, heading, text, source) VALUES (?, ?, ?, ?)",
                              (rowid, p.heading, p.text, source))
 
-    def apply(self, upserts: list[Document], removals: list[str]) -> None:
-        """Publish all changes in one transaction, or none of them."""
+    def apply(self, upserts: list[Document], removals: list[str], files: list[dict] | None = None) -> None:
+        """Publish all changes in one transaction, or none of them.
+
+        files, if given, replaces the stored inventory (one dict per file, with a "file_id").
+        """
+        self._publish(upserts, removals, files, replace_files=True)
+
+    def _publish(self, upserts: list[Document], removals: list[str], files: list[dict] | None,
+                 replace_files: bool) -> None:
         with self._lock:
             self._db.execute("BEGIN IMMEDIATE")
             try:
@@ -95,6 +105,11 @@ class SQLiteSearchIndex:
                 for document in upserts:
                     self._delete(document.file_id)
                     self._insert(document)
+                if files is not None:
+                    if replace_files:
+                        self._db.execute("DELETE FROM files")
+                    self._db.executemany("INSERT OR REPLACE INTO files VALUES (?, ?)",
+                                         [(f["file_id"], json.dumps(f, sort_keys=True)) for f in files])
                 self._db.execute("INSERT OR REPLACE INTO meta VALUES ('indexed_at', ?)",
                                  (datetime.now(timezone.utc).isoformat(),))
                 self._db.execute("COMMIT")
@@ -102,8 +117,9 @@ class SQLiteSearchIndex:
                 self._db.execute("ROLLBACK")
                 raise
 
-    def upsert(self, document: Document) -> None:
-        self.apply([document], [])
+    def upsert(self, document: Document, file: dict | None = None) -> None:
+        """Publish one document and, if given, its inventory record, in one transaction."""
+        self._publish([document], [], None if file is None else [file], replace_files=False)
 
     def remove(self, file_id: str) -> None:
         self.apply([], [file_id])
@@ -113,6 +129,11 @@ class SQLiteSearchIndex:
     def versions(self) -> dict[str, str]:
         with self._lock:
             return dict(self._db.execute("SELECT file_id, source_version FROM documents"))
+
+    def files(self) -> list[dict]:
+        """The last published inventory."""
+        with self._lock:
+            return [json.loads(record) for (record,) in self._db.execute("SELECT record FROM files ORDER BY file_id")]
 
     def passage_count(self) -> int:
         with self._lock:
