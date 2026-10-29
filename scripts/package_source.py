@@ -8,10 +8,11 @@ ROOT = Path(__file__).resolve().parents[1]
 TOP_LEVEL = ("README.md", "ARCHITECTURE.md", "RUNNING.md", "TODO.md", "GLOSSARY.md",
              "design/system-design.svg", "design/system-design.png", "design/make_diagram.py",
              "design/code-architecture.svg", "design/code-architecture.png", "design/make_architecture.py",
-             "pyproject.toml", "uv.lock", ".gitignore")
+             "pyproject.toml", "uv.lock", ".gitignore", "AGENTS.md", "CLAUDE.md", ".mcp.json", ".pi/mcp.json")
 PATTERNS = ("engineering_search/*.py", "engineering_search/indexing/*.py", "engineering_search/indexing/readers/*.py", "engineering_search/static/*.html",
             "engineering_search/static/*.css", "engineering_search/static/*.js",
             "test-repository/**/*.md", "test-repository/**/*.pdf", "test-repository/**/*.txt",
+            "test-repository/**/*.csv", "test-repository/**/*.xlsx", "test-repository/**/*.jt",
             "evaluation/*.json", "evaluation/*.md", "evaluation/results/*.json", "scripts/*.py", "tests/*.py",
             "design/*.md", "docs/*.md", "docs/adr/*.md")
 
