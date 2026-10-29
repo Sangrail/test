@@ -337,7 +337,7 @@ SELECT project, count(DISTINCT file_id) AS files, count(*) AS facts
 FROM facts GROUP BY project ORDER BY project
 ```
 
-JP: Harbour 4 files and 45 facts, Cedar 1 and 6, Riverside 1 and 3, and 121 files with no project (the generated test files). Kamal: Harbour 3 and 30, because the roof schedule is not in Kamal's data.
+JP: Harbour 5 files and 48 facts (3 of them from the title block of the DXF drawing), Cedar 1 and 6, Riverside 1 and 3, and 121 files with no project (the generated test files). Kamal: Harbour 4 and 33, because the roof schedule is not in Kamal's data.
 
 **A demand, not a capacity.** An imposed load is what a component must carry, not what it can carry. Do not compare it with an allowable load.
 

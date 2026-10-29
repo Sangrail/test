@@ -14,6 +14,7 @@ from ..detect import UNKNOWN, FileSignature
 from ..status import CLASSIFIED, DEPENDENCY_MISSING, NO_READER, UNSUPPORTED_FORMAT, UNSUPPORTED_VERSION
 from .base import Reader
 from .csv import CsvReader
+from .dxf import DxfTextReader
 from .markdown import MarkdownReader
 from .pdf import PdfTextReader
 from .xlsx import XlsxReader
@@ -56,4 +57,5 @@ def default_registry() -> ReaderRegistry:
         PdfTextReader(),
         CsvReader(),
         XlsxReader(),
+        DxfTextReader(),
     ])

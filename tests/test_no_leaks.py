@@ -68,7 +68,7 @@ def file_text(file_id: str) -> str:
 
 # Every file that has a reader, so every file that can be in a response.
 ALL_FILES = sorted(str(p.relative_to(REPOSITORY)) for p in REPOSITORY.rglob("*")
-                   if p.suffix in (".md", ".pdf", ".csv", ".xlsx"))
+                   if p.suffix in (".md", ".pdf", ".csv", ".xlsx", ".dxf"))
 TEXT = {file_id: file_text(file_id) for file_id in ALL_FILES}
 FLAT = {file_id: flat(text) for file_id, text in TEXT.items()}
 
@@ -132,7 +132,9 @@ def assert_no_leak(user: str, response: dict, secrets: list[str], question: str 
     for source in sources(response):
         assert source["file_id"] in readable, f"{user} got {source['file_id']}"
         if source.get("text"):
-            assert flat(source["text"]) in FLAT[source["file_id"]], f"text not from {source['file_id']}"
+            # A DXF attribute is quoted as "TAG | value": the tag and the value are on separate lines of the file.
+            parts = source["text"].split(" | ") if source["file_id"].endswith(".dxf") else [source["text"]]
+            assert all(flat(part) in FLAT[source["file_id"]] for part in parts), f"text not from {source['file_id']}"
     everything = flat(" \n ".join(strings(response)))
     for file_id in CANNOT_READ[user]:
         assert file_id.lower() not in everything, f"{user} saw the name {file_id}"

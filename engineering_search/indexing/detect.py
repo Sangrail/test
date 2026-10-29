@@ -12,6 +12,8 @@ first bytes for the formats that have a signature:
     XLSX   ZIP with xl/workbook.xml          -> excel
     DOCX   ZIP with word/document.xml        -> word
     JT     "Version 9.5 JT" in the 80-byte header -> jt, version 9.5
+    DXF    "0 SECTION" pairs, $ACADVER AC1009      -> dxf, version AC1009 (ASCII);
+           "AutoCAD Binary DXF"                    -> dxf, version "binary"
 
 When the content has a signature, the content decides the type. When the
 extension claims a signed format but the signature is absent, the status is
@@ -37,6 +39,7 @@ CSV = "csv"
 EXCEL = "excel"
 WORD = "word"
 JT = "jt"
+DXF = "dxf"
 UNKNOWN = "unknown"
 
 # Extension -> file type. The registry decides which types have a reader.
@@ -48,7 +51,7 @@ EXTENSIONS: Mapping[str, str] = {
     ".docx": WORD,
     ".xlsx": EXCEL,
     ".dwg": "dwg",
-    ".dxf": "dxf",
+    ".dxf": DXF,
     ".jt": JT,
     ".catpart": "catia",
     ".catproduct": "catia",
@@ -62,7 +65,12 @@ PDF_HEADER = re.compile(rb"^%PDF-(\d+\.\d+)")
 # "Version 9.5 JT" padded with spaces. Checked against public descriptions of
 # the format only; confirm against the Siemens JT specification before production.
 JT_HEADER = re.compile(rb"^Version (\d+)\.(\d+)\s+JT")
-SIGNED = {PDF, EXCEL, WORD, JT}  # file types whose content has a signature
+# An ASCII DXF starts with group code 0 and SECTION (after optional 999 comments);
+# the HEADER section names the release in $ACADVER, for example AC1009 (R12).
+DXF_START = re.compile(rb"^\s*(?:999\r?\n[^\n]*\n\s*)*0\r?\nSECTION\r?\n")
+DXF_VERSION = re.compile(rb"\$ACADVER\r?\n\s*1\r?\n(AC\d{4})")
+DXF_BINARY = b"AutoCAD Binary DXF"
+SIGNED = {PDF, EXCEL, WORD, JT, DXF}  # file types whose content has a signature
 OOXML = {"xl/workbook.xml": EXCEL, "word/document.xml": WORD}
 
 
@@ -121,6 +129,12 @@ def probe(path: Path, head: bytes) -> FileSignature | None:
     if match := JT_HEADER.match(head[:80]):
         version = f"{int(match.group(1))}.{int(match.group(2))}"
         return FileSignature(JT, version, observation=f"header 'Version {version} JT'")
+    if head.startswith(DXF_BINARY):
+        return FileSignature(DXF, "binary", observation="binary DXF sentinel")
+    if DXF_START.match(head):
+        version = DXF_VERSION.search(head)
+        found = version.group(1).decode() if version else None
+        return FileSignature(DXF, found, observation=f"DXF sections, $ACADVER {found or 'not in the first bytes'}")
     if head.startswith(b"PK\x03\x04"):
         try:
             with zipfile.ZipFile(path) as archive:

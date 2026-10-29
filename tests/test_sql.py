@@ -96,8 +96,8 @@ def test_the_example_queries_in_the_mcp_guide(client):
     assert [(s, json.loads(cells), line) for s, cells, line in joined] == [
         ("B-106", ["B-106", "Beam", "Mezzanine edge", "S355J2+N", "3.5", "", "Pending"], 5)]
     by_project = "SELECT project, count(DISTINCT file_id), count(*) FROM facts WHERE project = 'Harbour' GROUP BY project"
-    assert rows(client, "jp", by_project) == [["Harbour", 4, 45]]
-    assert rows(client, "kamal", by_project) == [["Harbour", 3, 30]]  # Without the roof schedule's 15 facts.
+    assert rows(client, "jp", by_project) == [["Harbour", 5, 48]]  # 3 facts from the DXF title block
+    assert rows(client, "kamal", by_project) == [["Harbour", 4, 33]]  # Without the roof schedule's 15 facts.
     demands = "SELECT subject FROM components WHERE imposed_load_kn_m2 IS NOT NULL ORDER BY subject"
     assert rows(client, "kamal", demands) == [["F-021"], ["F-022"]]
     # 5 N/m² is 0.005 kN/m²: units are normalised, intent is not.
@@ -120,7 +120,7 @@ def test_statements_that_write_escape_or_run_away_are_refused_and_audited(client
     assert response.status_code == 400, response.text
     event = last_audit(client)
     assert event["event"] == "sql_query_refused" and event["returned_rows"] == 0
-    assert rows(client, "jp", "SELECT count(*) FROM documents") == [[144]]  # Nothing was changed.
+    assert rows(client, "jp", "SELECT count(*) FROM documents") == [[145]]  # Nothing was changed.
 
 
 def test_the_row_limit_truncates(client):

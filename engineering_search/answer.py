@@ -68,7 +68,8 @@ def stem(word: str) -> str:
 
 
 def stems(text: str) -> set[str]:
-    return {stem(w) for w in re.findall(r"\w+", text.casefold())}
+    # Letters and digits only, as the full-text index splits words: "CRANE_SAFE_WORKING_LOAD" is four words.
+    return {stem(w) for w in re.findall(r"[^\W_]+", text.casefold())}
 
 
 @dataclass(frozen=True)

@@ -35,6 +35,7 @@ from engineering_search.jobs import SQLiteJobQueue
 REPOSITORY = Path(__file__).resolve().parents[1] / "test-repository"
 NORTHGATE = "project-northgate/northgate-warehouse-structural-calculations.pdf"
 RIVERSIDE = "project-riverside/riverside-footbridge-load-rating.pdf"
+DRAWING = "project-harbour/cad/hangar-frame-ga.dxf"  # a CAD drawing: the value is in its title block
 TIME_LIMIT_SECONDS = 10
 
 
@@ -76,6 +77,16 @@ def assert_from_source(source):
         assert flat(source["text"].replace("|", " ")) in cited
         assert source["value"] and source["value"] in source["text"]
         return
+    if source["file_id"].endswith(".dxf"):
+        # A DXF passage is the tag and the value of one title-block attribute. The cited line
+        # holds the value; the tag is in the same entity, before the next entity starts.
+        lines = raw.decode().splitlines()
+        tag, value = source["text"].split(" | ")
+        assert source["start_line"] == source["end_line"] and lines[source["start_line"] - 1] == value
+        rest_of_entity = lines[source["start_line"]:]
+        assert tag in rest_of_entity[:rest_of_entity.index("  0")]  # "  0" starts the next entity
+        assert source["value"] and source["value"] in source["text"]
+        return
     if source["page"]:
         logging.getLogger("pypdf").setLevel(logging.ERROR)
         lines = PdfReader(BytesIO(raw)).pages[source["page"] - 1].extract_text().splitlines()
@@ -105,6 +116,9 @@ def test_repository_has_more_than_100_documents(client):
     ("What is the approval status of the Riverside footbridge?", RIVERSIDE, 3, "APPROVED"),
     # The value and its status are in two sentences; the answer must hold both.
     ("Is the proposed 7 kN/m² roof load approved?", "specifications/roof-load-draft.md", None, "not approved"),
+    # From a CAD drawing, without opening it: the title block of a DXF.
+    ("What is the safe working load of the Harbour hangar crane?", DRAWING, None, "50 kN"),
+    ("What is the approval status of drawing HB-S-201?", DRAWING, None, "Approved"),
 ])
 def test_one_value_is_answered_from_its_exact_source(client, question, file_id, page, value):
     answer = ask(client, "jp", question)

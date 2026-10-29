@@ -76,8 +76,8 @@ def test_the_scan_skips_hidden_files_hidden_folders_and_symbolic_links(tmp_path)
 
 def test_the_test_repository_has_every_kind_of_file_and_gap():
     inventory = Indexer(TEST_REPOSITORY).scan()
-    assert inventory.by_type() == {"csv": 2, "excel": 1, "jt": 2, "markdown": 135, "pdf": 6, "text": 2}
-    assert len(inventory.indexable()) == 144
+    assert inventory.by_type() == {"csv": 2, "dxf": 1, "excel": 1, "jt": 2, "markdown": 135, "pdf": 6, "text": 2}
+    assert len(inventory.indexable()) == 145
     assert set(inventory.with_status(NO_READER)) == {"TEST-DATA.txt", "public-fhwa/SOURCES.txt",
                                                      "project-harbour/cad/hangar-frame.jt"}
     assert set(inventory.with_status(FORMAT_MISMATCH)) == {"project-harbour/cad/old-export.jt"}

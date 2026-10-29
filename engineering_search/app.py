@@ -336,7 +336,7 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
     def readable_documents(request: Request):
         user = require_user(request)
         file_ids, readable = service.readable_files(user)
-        names = {"md": "Markdown", "pdf": "PDF", "csv": "CSV", "xlsx": "Excel"}
+        names = {"md": "Markdown", "pdf": "PDF", "csv": "CSV", "xlsx": "Excel", "dxf": "DXF"}
         types = {name: sum(f.lower().endswith("." + suffix) for f in readable) for suffix, name in names.items()}
         types = {name: count for name, count in types.items() if count}
         return {"documents": [{"file_id": f, "title": f} for f in sorted(readable)],
