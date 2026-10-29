@@ -223,8 +223,13 @@ def answer(query: QueryPlan, passages: list[Passage],
     """
     ranked = candidates(query, passages)
     if not ranked:
+        # Say why there is no answer. Permissions are never the reason given: the user
+        # searched only what they may read, and must learn nothing about the rest.
         return {"type": "answer", "status": "not_found",
-                "message": "No document you can read states this. The closest passages are below."}
+                "message": ("No sentence or table row that contains these words also states a value "
+                            "(a load, a material grade or an approval status), so there is no single answer. "
+                            "The passages that contain the words are below." if passages else
+                            "None of the documents searched contain these words.")}
     best = widen(query, ranked[0])
     others, seen = [], {best.passage.file_id}
     for candidate in ranked[1:]:
@@ -241,7 +246,7 @@ def answer(query: QueryPlan, passages: list[Passage],
     result = {"type": "answer", "status": status, **citation(best), "also_stated_in": others}
     if missing:
         result["missing_words"] = missing
-        result["message"] = ("No document you can read matches every word of the question. "
+        result["message"] = ("No document searched matches every word of the question. "
                              f"This closest match does not mention: {', '.join(missing)}.")
     elif unbound:
         result["unbound_words"] = unbound
@@ -372,5 +377,5 @@ def list_documents(query: QueryPlan, comparison: Comparison | None,
             "criteria": {"all_words": [t.label() for t in query.terms],
                          "comparison": comparison.describe() if comparison else None},
             "documents": [citation(c) for c in entries],
-            **({} if entries else {"message": "No document you can read matches all of these words"
+            **({} if entries else {"message": "No document searched matches all of these words"
                                               + (" and the value condition." if comparison else ".")})}

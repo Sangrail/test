@@ -191,11 +191,13 @@ default_tools_approval_mode = "approve"
 
 The first start indexes the documents, so the default start timeout can be too short. Without the approval mode, `codex exec` cannot call the tools, because it cannot ask you to approve them. Check with `codex mcp list`.
 
-To ask one question without changing your configuration, as was done to verify this guide:
+To ask one question without changing your configuration, as was done to verify this guide, run this in the repository folder. `--directory "$PWD"` tells `uv` where the server's code is; to run it from another folder, put the repository's full path there instead of `$PWD`, and add `--skip-git-repo-check` if that folder is not a git repository:
 
 ```bash
-codex exec --ephemeral -s read-only -c 'mcp_servers.engineering_search.command="uv"' -c 'mcp_servers.engineering_search.args=["run","--frozen","python","-m","engineering_search.mcp_server","--user","kamal"]' -c 'mcp_servers.engineering_search.startup_timeout_sec=120' -c 'mcp_servers.engineering_search.default_tools_approval_mode="approve"' "Which S355 components have an allowable load under 5 kN/m²? Cite file and line."
+codex exec --ephemeral -s read-only -c 'mcp_servers.engineering_search.command="uv"' -c "mcp_servers.engineering_search.args=[\"run\",\"--frozen\",\"--directory\",\"$PWD\",\"python\",\"-m\",\"engineering_search.mcp_server\",\"--user\",\"kamal\"]" -c 'mcp_servers.engineering_search.startup_timeout_sec=120' -c 'mcp_servers.engineering_search.default_tools_approval_mode="approve"' "Use only the engineering_search tools. Which S355 components have an allowable load under 5 kN/m²? Cite file and line." 2>/dev/null
 ```
+
+`codex exec` writes its progress to the error stream: its reasoning, every shell command it runs and their output, and each tool call. Codex is a coding agent, so without "Use only the engineering_search tools" it first searches the folder it was started in. `2>/dev/null` hides the progress, so you see only the final answer; leave it off to watch the tool calls. For Kamal the answer is five components (B-104, B-106, CB-12, M-401, RG-02), with B-104 in two files and no R-310 (question 10 in [Questions to ask](#5-questions-to-ask)).
 
 ### Pi
 
@@ -366,6 +368,7 @@ No rows, for every user.
 | `claude mcp list` shows `Failed to connect` | The server cannot start. Copy the command from `claude mcp get <name>` and run it in a terminal. Read the error |
 | Codex says the tool call was cancelled or not approved | `codex exec` cannot ask for approval. Set `default_tools_approval_mode = "approve"` for the server |
 | Codex says the server did not start in time | The first start indexes the documents. Set `startup_timeout_sec = 120` |
+| Codex searches the current folder or another connector (Google Drive, for example), or says it found no S355 | The search server did not start, so Codex has no search tools and improvises. Usually the server command has no `--directory` and Codex was started outside the repository folder, so `uv` cannot find the code (`No module named 'engineering_search'`). Give `uv run` the repository's full path with `--directory`, and check `codex mcp list` |
 | Pi does not list the server | The project is not trusted, so Pi does not read `.pi/mcp.json`. Trust it, pass `--approve`, or add the server to `~/.pi/agent/mcp.json` |
 | `spawn uv ENOENT` or `command not found: uv` | The client cannot find `uv`. Use the full path from `which uv` as the command |
 | `query_sql` returns an error | The statement was refused: not one `SELECT`, too long, a forbidden table or function, or over the step budget. The error says which. The agent can correct the SQL and try again |

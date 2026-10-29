@@ -200,3 +200,5 @@ def test_the_document_overview_does_not_count_forbidden_files(client, user):
     assert sum(overview["by_type"].values()) == len(readable)
     assert sum(folder["readable"] for folder in overview["by_folder"]) == len(readable)
     assert all("files" not in folder for folder in overview["by_folder"])
+    # Every readable type has a column, so each folder's types add up to its readable files.
+    assert all(sum(folder["types"].values()) == folder["readable"] for folder in overview["by_folder"])

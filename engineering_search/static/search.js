@@ -53,8 +53,8 @@ function setUser(next) {
   $('search-identity').textContent = user ? `Searching as ${user.name} · file permissions enforced` : 'Sign in to search your permitted documents.';
   $('my-documents').hidden = true;
 }
-// Categorical slots 1 and 2. The legend and the table give the same numbers as text.
-const TYPE_COLOURS = {Markdown: '#2a78d6', PDF: '#eb6834'};
+// One categorical colour per type. The legend and the table give the same numbers as text.
+const TYPE_COLOURS = {Markdown: '#2a78d6', PDF: '#eb6834', CSV: '#1a9e77', Excel: '#7b5bd6', DXF: '#c58a00', Other: '#8a958f'};
 function svgNode(tag, attributes) {
   const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
   for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
@@ -96,9 +96,15 @@ async function accessibleFiles() {
   if (identity !== user?.id) return;
   $('my-documents-title').textContent = `${user.name} can search ${data.documents.length} documents`;
   typeChart(data.by_type);
+  // A column for each type the user can read, so each row's types add up to its total.
+  const types = Object.keys(data.by_type);
+  const header = el('tr');
+  header.append(el('th', '', 'Folder'), ...types.map(type => el('th', '', type)), el('th', '', 'Files you can read'));
+  $('folder-head').replaceChildren(header);
   $('folder-rows').replaceChildren(...data.by_folder.map(folder => {
     const row = el('tr');
-    row.append(el('td', '', folder.folder), el('td', '', `${folder.markdown}`), el('td', '', `${folder.pdf}`), el('td', '', `${folder.readable}`));
+    row.append(el('td', '', folder.folder), ...types.map(type => el('td', '', `${folder.types[type] ?? 0}`)),
+               el('td', '', `${folder.readable}`));
     return row;
   }));
   $('my-documents').hidden = false;
@@ -233,7 +239,7 @@ function renderResults(data, elapsed) {
   const first = (data.page-1)*data.limit+1, last = first+data.evidence.length-1;
   $('searched-for').textContent = `Searched for: ${data.searched_for}${data.ignored_words.length ? ` · ignored: ${data.ignored_words.join(', ')}` : ''}`;
   notice(data.changed_files?.length ? `Not quoted: ${data.changed_files.join(', ')} changed on disc after indexing. Ask the index team to refresh the index.` : '', true);
-  $('search-message').textContent = data.evidence.length ? `Showing ${first}–${last} of ${data.matched_passages} permitted passages available to ${data.user.name}.` : data.matched_passages ? 'No passages on this page. Results have changed; go back or search again.' : 'No matching passages in documents you can read. Try other words.';
+  $('search-message').textContent = data.evidence.length ? `Showing ${first}–${last} of ${data.matched_passages} permitted passages available to ${data.user.name}.` : data.matched_passages ? 'No passages on this page. Results have changed; go back or search again.' : 'No passages contain these words. Try other words.';
   currentPage = data.page; totalPages = data.total_pages;
   $('search-pagination').hidden = !data.matched_passages;
   $('page-summary').textContent = data.page <= totalPages ? `Page ${data.page} of ${totalPages}` : `Page ${data.page} is no longer available`;

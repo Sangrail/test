@@ -317,14 +317,23 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
         user = require_user(request)
         file_ids, readable = service.readable_files(user)
         names = {"md": "Markdown", "pdf": "PDF", "csv": "CSV", "xlsx": "Excel", "dxf": "DXF"}
-        types = {name: sum(f.lower().endswith("." + suffix) for f in readable) for suffix, name in names.items()}
+
+        def type_of(file_id: str) -> str:
+            return names.get(file_id.rsplit(".", 1)[-1].lower(), "Other")
+
+        def folder_of(file_id: str) -> str:
+            return file_id.split("/")[0] + "/" if "/" in file_id else "(top level)"
+
+        order = [*names.values(), "Other"]
+        types = {name: sum(type_of(f) == name for f in readable) for name in order}
         types = {name: count for name, count in types.items() if count}
         return {"documents": [{"file_id": f, "title": f} for f in sorted(readable)],
                 "by_type": types,
                 # Only readable counts: a user does not learn how many files they cannot read.
+                # Each folder counts every type in by_type, so its types add up to its readable files.
                 "by_folder": [{"folder": f["folder"], "readable": f["readable"],
-                               "markdown": sum(d.startswith(f["folder"]) and d.endswith(".md") for d in readable),
-                               "pdf": sum(d.startswith(f["folder"]) and d.endswith(".pdf") for d in readable)}
+                               "types": {name: sum(folder_of(d) == f["folder"] and type_of(d) == name
+                                                   for d in readable) for name in types}}
                               for f in folder_access(file_ids, readable) if f["readable"]]}
 
     # Index team: index operations and audit ---------------------------------

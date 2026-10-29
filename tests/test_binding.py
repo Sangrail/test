@@ -109,3 +109,18 @@ def test_a_refresh_waits_while_another_process_holds_the_index_lock(tmp_path):
         assert not finished.is_set(), "the refresh published while another process held the lock"
     worker.join(timeout=10)
     assert finished.is_set() and set(search.index.versions()) == {"a.md", "b.md"}
+
+
+def test_no_answer_says_why_and_never_blames_permissions(tmp_path):
+    # "Hangar" is in the drawing note and in a file name next to a value, but no sentence
+    # holds both the word and a value: there is no single answer, though passages match.
+    search = service(tmp_path, {"hangar-frame.md": "# Hangar frame\n\nThe hangar frame is a portal.\n\n"
+                                                    "## Crane\n\nSafe working load 50 kN.\n"})
+    words = search.search(JP, "hangar", mode="answer")
+    assert words["answer"]["status"] == "not_found" and words["evidence"]
+    assert "states a value" in words["answer"]["message"]
+    nothing = search.search(JP, "zeppelin", mode="answer")
+    assert nothing["answer"]["status"] == "not_found" and not nothing["evidence"]
+    assert nothing["answer"]["message"] == "None of the documents searched contain these words."
+    for result in (words, nothing):
+        assert "read" not in result["answer"]["message"] and "permission" not in result["answer"]["message"]
