@@ -2,7 +2,7 @@
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4A5568"/></marker></defs>
 <rect width="1680" height="1305" fill="#FFFFFF"/>
 <text x="30" y="44" font-size="24" font-weight="700" fill="#1A202C">Engineering evidence search: MVP system design</text>
-<text x="30" y="70" font-size="13" fill="#4A5568">A chat agent or the web page calls one search function · FTS5 inverted index · permissions before answers, counts and pages · each answer is exact text from one file, with its source</text>
+<text x="30" y="70" font-size="13" fill="#4A5568">Two ways in, one service: text questions through the FTS5 index, table questions through SQL that the chat agent writes · permissions before any limit, count or join · every answer cites its file</text>
 <rect x="1065" y="34" width="22" height="14" rx="3" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
 <text x="1093" y="45" font-size="11" fill="#4A5568">MVP, built</text>
 <rect x="1215" y="34" width="22" height="14" rx="3" fill="#F3EEFC" stroke="#6B46C1" stroke-width="1.5"/>
@@ -12,7 +12,7 @@
 <rect x="1515" y="34" width="22" height="14" rx="3" fill="#EDEFF2" stroke="#6B7280" stroke-width="1.5"/>
 <text x="1543" y="45" font-size="11" fill="#4A5568">Existing (brief)</text>
 <rect x="15" y="95" width="1650" height="360" rx="12" fill="#F7FAFE"/>
-<text x="30" y="117" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">QUERY PLANE · ONLINE · EACH QUESTION IN UNDER 10 S</text>
+<text x="30" y="117" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4A5568">QUERY PLANE · ANSWERED WITHIN THE 8 S BUDGET, OR REFUSED AT ONCE (503 BUSY, RETRY-AFTER)</text>
 <rect x="30" y="130" width="200" height="300" rx="8" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
 <text x="42" y="154" font-size="14" font-weight="700" fill="#1A202C">Engineering lead</text>
 <text x="42" y="174" font-size="12" fill="#4A5568">Asks in plain language:</text>
@@ -28,18 +28,19 @@
 <rect x="267" y="130" width="200" height="140" rx="8" fill="#EDEFF2" stroke="#6B7280" stroke-width="1.5"/>
 <text x="279" y="154" font-size="14" font-weight="700" fill="#1A202C">Chat-agent shell</text>
 <text x="457" y="262" font-size="10" text-anchor="end" font-style="italic" fill="#6B7280">existing</text>
-<text x="279" y="174" font-size="12" fill="#4A5568">Claude Code, Claude</text>
-<text x="279" y="191" font-size="12" fill="#4A5568">Desktop (MCP client),</text>
-<text x="279" y="208" font-size="12" fill="#4A5568">or the web page /search</text>
-<text x="279" y="225" font-size="12" fill="#4A5568">Its LLM picks the tool</text>
-<text x="279" y="242" font-size="12" fill="#4A5568">and writes the reply</text>
+<text x="279" y="174" font-size="12" fill="#4A5568">Claude Code, Codex, Pi</text>
+<text x="279" y="191" font-size="12" fill="#4A5568">(MCP clients), or the</text>
+<text x="279" y="208" font-size="12" fill="#4A5568">web page /search</text>
+<text x="279" y="225" font-size="12" fill="#4A5568">Its LLM picks the tool,</text>
+<text x="279" y="242" font-size="12" fill="#4A5568">writes SQL and the reply</text>
 <rect x="504" y="130" width="200" height="140" rx="8" fill="#F3EEFC" stroke="#6B46C1" stroke-width="1.5"/>
 <text x="516" y="154" font-size="14" font-weight="700" fill="#1A202C">MCP server · HTTP API</text>
-<text x="516" y="174" font-size="12" fill="#4A5568">mcp_server.py, stdio</text>
-<text x="516" y="191" font-size="12" fill="#4A5568">search_evidence(question,</text>
-<text x="516" y="208" font-size="12" fill="#4A5568">mode, within, page)</text>
-<text x="516" y="225" font-size="12" fill="#4A5568">read_evidence(file_id, page)</text>
-<text x="516" y="242" font-size="12" fill="#4A5568">--user flag: not verified ⚠</text>
+<text x="516" y="174" font-size="12" fill="#4A5568">stdio · admit() per call</text>
+<text x="516" y="191" font-size="12" fill="#4A5568">Text: search_evidence,</text>
+<text x="516" y="208" font-size="12" fill="#4A5568">read_evidence · Tables:</text>
+<text x="516" y="225" font-size="12" fill="#4A5568">query_sql, describe_schema,</text>
+<text x="516" y="242" font-size="12" fill="#4A5568">get_document_evidence</text>
+<text x="516" y="284" font-size="11" fill="#9B2C2C">--user flag: not verified ⚠</text>
 <rect x="741" y="130" width="200" height="140" rx="8" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
 <text x="753" y="154" font-size="14" font-weight="700" fill="#1A202C">Understand and plan</text>
 <text x="753" y="174" font-size="12" fill="#4A5568">One value, or a list?</text>
@@ -48,26 +49,26 @@
 <text x="753" y="225" font-size="12" fill="#4A5568">“&gt; 5 kN/m²” → number</text>
 <text x="753" y="242" font-size="12" fill="#4A5568">comparison, with units</text>
 <rect x="978" y="130" width="200" height="140" rx="8" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
-<text x="990" y="154" font-size="14" font-weight="700" fill="#1A202C">FTS5 index lookup</text>
-<text x="990" y="174" font-size="12" fill="#4A5568">One MATCH, no file scans</text>
-<text x="990" y="191" font-size="12" fill="#4A5568">Most question words first,</text>
-<text x="990" y="208" font-size="12" fill="#4A5568">then BM25</text>
-<text x="990" y="225" font-size="12" fill="#4A5568">Up to 1,000 passages</text>
-<text x="990" y="242" font-size="12" fill="#4A5568">List: files with all words</text>
+<text x="990" y="154" font-size="14" font-weight="700" fill="#1A202C">Permissions</text>
+<text x="990" y="174" font-size="12" fill="#4A5568">Files with a query word,</text>
+<text x="990" y="191" font-size="12" fill="#4A5568">then the rules: repository,</text>
+<text x="990" y="208" font-size="12" fill="#4A5568">folder or file, most</text>
+<text x="990" y="225" font-size="12" fill="#4A5568">specific wins · before any</text>
+<text x="990" y="242" font-size="12" fill="#4A5568">limit or count · fail closed</text>
 <rect x="1215" y="130" width="200" height="140" rx="8" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
-<text x="1227" y="154" font-size="14" font-weight="700" fill="#1A202C">Permissions</text>
-<text x="1227" y="174" font-size="12" fill="#4A5568">Rules on the repository,</text>
-<text x="1227" y="191" font-size="12" fill="#4A5568">a folder or one file</text>
-<text x="1227" y="208" font-size="12" fill="#4A5568">Most specific rule wins</text>
-<text x="1227" y="225" font-size="12" fill="#4A5568">Before answer, counts</text>
-<text x="1227" y="242" font-size="12" fill="#4A5568">and pages · fail closed</text>
+<text x="1227" y="154" font-size="14" font-weight="700" fill="#1A202C">FTS5 index lookup</text>
+<text x="1227" y="174" font-size="12" fill="#4A5568">One MATCH, no file scans</text>
+<text x="1227" y="191" font-size="12" fill="#4A5568">Permitted files only,</text>
+<text x="1227" y="208" font-size="12" fill="#4A5568">inside the query</text>
+<text x="1227" y="225" font-size="12" fill="#4A5568">Up to 1,000 passages,</text>
+<text x="1227" y="242" font-size="12" fill="#4A5568">most words first, BM25</text>
 <rect x="1452" y="130" width="200" height="140" rx="8" fill="#EAF2FD" stroke="#2B6CB0" stroke-width="1.5"/>
 <text x="1464" y="154" font-size="14" font-weight="700" fill="#1A202C">Answer step</text>
 <text x="1464" y="174" font-size="12" fill="#4A5568">Value: exact sentence</text>
-<text x="1464" y="191" font-size="12" fill="#4A5568">or table row</text>
-<text x="1464" y="208" font-size="12" fill="#4A5568">found · partial · not found</text>
-<text x="1464" y="225" font-size="12" fill="#4A5568">List: matching files,</text>
-<text x="1464" y="242" font-size="12" fill="#4A5568">number filters</text>
+<text x="1464" y="191" font-size="12" fill="#4A5568">or row, bound to the</text>
+<text x="1464" y="208" font-size="12" fill="#4A5568">subject: found · unverified</text>
+<text x="1464" y="225" font-size="12" fill="#4A5568">· partial · not found</text>
+<text x="1464" y="242" font-size="12" fill="#4A5568">List: bound lines, paged</text>
 <path d="M230 192 H267" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
 <path d="M467 192 H504" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
 <path d="M704 192 H741" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
@@ -89,10 +90,12 @@
 <text x="279" y="388" font-size="12" fill="#4A5568">Says what was searched</text>
 <text x="279" y="405" font-size="12" fill="#4A5568">“Not found” when no</text>
 <text x="279" y="422" font-size="12" fill="#4A5568">readable file states it</text>
-<rect x="504" y="362" width="440" height="62" rx="8" fill="#FFFFFF" stroke="#A0AEC0" stroke-dasharray="5 4"/>
-<text x="516" y="382" font-size="12" font-weight="700" fill="#1A202C">Measured on 138 files (17 test questions)</text>
-<text x="516" y="399" font-size="11.5" fill="#4A5568">Search p50 16 ms, p95 70 ms · acceptance test: each question &lt; 10 s</text>
-<text x="516" y="415" font-size="11.5" fill="#4A5568">The chat agent adds its own LLM time</text>
+<rect x="504" y="347" width="520" height="87" rx="8" fill="#F3EEFC" stroke="#6B46C1" stroke-width="1.5"/>
+<text x="516" y="365" font-size="12.5" font-weight="700" fill="#1A202C">Table questions: the chat agent writes SQL (ADR 0016)</text>
+<text x="516" y="382" font-size="11" fill="#4A5568">query_sql → permissions on every file → in-memory projection of</text>
+<text x="516" y="396" font-size="11" fill="#4A5568">the permitted rows only → authoriser, query_only, step budget,</text>
+<text x="516" y="410" font-size="11" fill="#4A5568">≤ 500 rows → audit (SQL hash, no rows) · rows cite file and line</text>
+<text x="516" y="424" font-size="11" fill="#4A5568">Safe, not necessarily right: the SQL is scored by evaluation (ADR 0019)</text>
 <path d="M1552 270 V310" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
 <path d="M1452 336 H467" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
 <text x="840" y="329" font-size="11" text-anchor="middle" fill="#4A5568">answer · file · page · lines · SHA-256 version · request ID</text>
@@ -100,21 +103,21 @@
 <path d="M367 270 V310" stroke="#6B7280" stroke-width="1.2" stroke-dasharray="3 3"/>
 <rect x="267" y="475" width="1385" height="205" rx="12" fill="#FFFDF8" stroke="#B7791F" stroke-width="1.5"/>
 <text x="480" y="499" font-size="13" font-weight="700" fill="#1A202C">State folder (.runtime/)</text>
-<text x="645" y="499" font-size="12" fill="#4A5568">SQLite files · the web service and MCP server can share them</text>
+<text x="645" y="499" font-size="12" fill="#4A5568">SQLite files · the web service and MCP servers share them · index-&lt;id&gt;.lock: one process publishes at a time</text>
 <rect x="287" y="545" width="170" height="118" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
 <text x="299" y="569" font-size="13" font-weight="700" fill="#1A202C">audit.sqlite3</text>
-<text x="299" y="589" font-size="12" fill="#4A5568">Search and read events</text>
+<text x="299" y="589" font-size="12" fill="#4A5568">Search, read, SQL events</text>
 <text x="299" y="606" font-size="12" fill="#4A5568">Permission decisions</text>
-<text x="299" y="623" font-size="12" fill="#4A5568">Answer sources</text>
+<text x="299" y="623" font-size="12" fill="#4A5568">Sources, SQL hashes</text>
 <text x="299" y="640" font-size="12" fill="#4A5568">No document text</text>
 <rect x="470" y="545" width="170" height="118" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
 <text x="482" y="569" font-size="13" font-weight="700" fill="#1A202C">queue-&lt;id&gt;.sqlite3</text>
 <text x="482" y="589" font-size="12" fill="#4A5568">Upload jobs</text>
 <text x="482" y="606" font-size="12" fill="#4A5568">State, attempts, errors</text>
 <text x="482" y="623" font-size="12" fill="#4A5568">Upload workers</text>
-<rect x="653" y="515" width="604" height="155" rx="10" fill="none" stroke="#B7791F" stroke-width="1.2"/>
+<rect x="653" y="515" width="799" height="155" rx="10" fill="none" stroke="#B7791F" stroke-width="1.2"/>
 <text x="665" y="534" font-size="13" font-weight="700" fill="#1A202C">index-&lt;id&gt;.sqlite3</text>
-<text x="815" y="534" font-size="12" fill="#4A5568">structured + keyword store · WAL · one transaction per update</text>
+<text x="815" y="534" font-size="12" fill="#4A5568">keyword + structured store · WAL · one transaction per update</text>
 <rect x="663" y="545" width="140" height="118" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
 <text x="675" y="569" font-size="13" font-weight="700" fill="#1A202C">documents</text>
 <text x="675" y="589" font-size="12" fill="#4A5568">file_id</text>
@@ -131,16 +134,16 @@
 <text x="971" y="606" font-size="12" fill="#4A5568">index: heading,</text>
 <text x="971" y="623" font-size="12" fill="#4A5568">text, path words</text>
 <rect x="1107" y="545" width="140" height="118" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
-<text x="1119" y="569" font-size="13" font-weight="700" fill="#1A202C">meta</text>
-<text x="1119" y="589" font-size="12" fill="#4A5568">time of the</text>
-<text x="1119" y="606" font-size="12" fill="#4A5568">last change</text>
-<rect x="1270" y="545" width="175" height="118" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5" stroke-dasharray="6 4"/>
-<text x="1282" y="569" font-size="13" font-weight="700" fill="#1A202C">metadata + facts</text>
-<text x="1435" y="655" font-size="10" text-anchor="end" font-style="italic" fill="#B7791F">phase 2</text>
-<text x="1282" y="589" font-size="12" fill="#4A5568">project, revision, status</text>
-<text x="1282" y="606" font-size="12" fill="#4A5568">subject, value, unit</text>
-<text x="1282" y="623" font-size="12" fill="#4A5568">with exact source</text>
-<text x="1282" y="640" font-size="12" fill="#4A5568">design/EXTRACTION.md</text>
+<text x="1119" y="569" font-size="13" font-weight="700" fill="#1A202C">files</text>
+<text x="1119" y="589" font-size="12" fill="#4A5568">inventory: type,</text>
+<text x="1119" y="606" font-size="12" fill="#4A5568">version, reader,</text>
+<text x="1119" y="623" font-size="12" fill="#4A5568">status, warnings</text>
+<rect x="1257" y="545" width="185" height="118" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5"/>
+<text x="1269" y="569" font-size="13" font-weight="700" fill="#1A202C">tables + facts</text>
+<text x="1269" y="589" font-size="12" fill="#4A5568">source_tables, table_rows</text>
+<text x="1269" y="606" font-size="12" fill="#4A5568">facts: subject, parameter,</text>
+<text x="1269" y="623" font-size="12" fill="#4A5568">role, value, SI value,</text>
+<text x="1269" y="640" font-size="12" fill="#4A5568">project · file, row, line</text>
 <rect x="1458" y="545" width="180" height="118" rx="8" fill="#FFF6E5" stroke="#B7791F" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="1470" y="569" font-size="13" font-weight="700" fill="#1A202C">vectors</text>
 <text x="1628" y="655" font-size="10" text-anchor="end" font-style="italic" fill="#B7791F">phase 3</text>
@@ -154,9 +157,9 @@
 <text x="42" y="606" font-size="12" fill="#4A5568">Later: synced from the</text>
 <text x="42" y="623" font-size="12" fill="#4A5568">repository&#x27;s own</text>
 <text x="42" y="640" font-size="12" fill="#4A5568">file permissions</text>
-<path d="M130 545 V450 H1275 V270" fill="none" stroke="#4A5568" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<path d="M130 545 V450 H1038 V270" fill="none" stroke="#4A5568" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
 <text x="600" y="444" font-size="11" text-anchor="middle" fill="#4A5568">access rules</text>
-<path d="M1078 270 V515" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M1315 270 V515" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
 <path d="M1602 430 V463 H372 V545" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
 <text x="1350" y="457" font-size="11" text-anchor="middle" fill="#4A5568">write before release</text>
 <rect x="15" y="700" width="1650" height="172" rx="12" fill="#F5FBF7"/>
@@ -164,10 +167,10 @@
 <rect x="30" y="735" width="200" height="122" rx="8" fill="#EDEFF2" stroke="#6B7280" stroke-width="1.5"/>
 <text x="42" y="759" font-size="14" font-weight="700" fill="#1A202C">Document repository</text>
 <text x="220" y="849" font-size="10" text-anchor="end" font-style="italic" fill="#6B7280">existing</text>
-<text x="42" y="779" font-size="12" fill="#4A5568">test-repository/: 138 files</text>
-<text x="42" y="796" font-size="12" fill="#4A5568">133 Markdown, 5 PDF</text>
-<text x="42" y="813" font-size="12" fill="#4A5568">Later: DXF, DWG, JT,</text>
-<text x="42" y="830" font-size="12" fill="#4A5568">CATIA · no OCR in MVP</text>
+<text x="42" y="779" font-size="12" fill="#4A5568">test-repository/: 148 files</text>
+<text x="42" y="796" font-size="12" fill="#4A5568">MD, PDF, CSV, XLSX</text>
+<text x="42" y="813" font-size="12" fill="#4A5568">Scans and JT reported,</text>
+<text x="42" y="830" font-size="12" fill="#4A5568">not read · no OCR</text>
 <rect x="267" y="735" width="200" height="122" rx="8" fill="#E9F7EF" stroke="#2F855A" stroke-width="1.5"/>
 <text x="279" y="759" font-size="14" font-weight="700" fill="#1A202C">Change detection</text>
 <text x="279" y="779" font-size="12" fill="#4A5568">SHA-256 of each file</text>
@@ -181,11 +184,11 @@
 <text x="516" y="813" font-size="12" fill="#4A5568">Retries, failed jobs</text>
 <text x="516" y="830" font-size="12" fill="#4A5568">shown in /admin</text>
 <rect x="741" y="735" width="200" height="122" rx="8" fill="#E9F7EF" stroke="#2F855A" stroke-width="1.5"/>
-<text x="753" y="759" font-size="14" font-weight="700" fill="#1A202C">Readers (core.py)</text>
-<text x="753" y="779" font-size="12" fill="#4A5568">Markdown: headings,</text>
-<text x="753" y="796" font-size="12" fill="#4A5568">blank lines, code fences</text>
-<text x="753" y="813" font-size="12" fill="#4A5568">PDF: pypdf text layer,</text>
-<text x="753" y="830" font-size="12" fill="#4A5568">page by page</text>
+<text x="753" y="759" font-size="14" font-weight="700" fill="#1A202C">Detect and read</text>
+<text x="753" y="779" font-size="12" fill="#4A5568">Type from content,</text>
+<text x="753" y="796" font-size="12" fill="#4A5568">extension a hint</text>
+<text x="753" y="813" font-size="12" fill="#4A5568">Registry: Markdown, PDF,</text>
+<text x="753" y="830" font-size="12" fill="#4A5568">CSV, XLSX · version kept</text>
 <rect x="978" y="735" width="200" height="122" rx="8" fill="#EDEFF2" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="990" y="759" font-size="14" font-weight="700" fill="#1A202C">Extraction connectors</text>
 <text x="1168" y="849" font-size="10" text-anchor="end" font-style="italic" fill="#6B7280">existing · later</text>
@@ -194,17 +197,17 @@
 <text x="990" y="813" font-size="12" fill="#4A5568">formats</text>
 <text x="990" y="830" font-size="12" fill="#4A5568">Not used in the MVP</text>
 <rect x="1215" y="735" width="200" height="122" rx="8" fill="#E9F7EF" stroke="#2F855A" stroke-width="1.5"/>
-<text x="1227" y="759" font-size="14" font-weight="700" fill="#1A202C">Passages</text>
-<text x="1227" y="779" font-size="12" fill="#4A5568">Exact text, heading</text>
-<text x="1227" y="796" font-size="12" fill="#4A5568">Line range, PDF page</text>
-<text x="1227" y="813" font-size="12" fill="#4A5568">At most 15 lines (PDF)</text>
-<text x="1227" y="830" font-size="12" fill="#4A5568">File version (SHA-256)</text>
+<text x="1227" y="759" font-size="14" font-weight="700" fill="#1A202C">Passages, tables, facts</text>
+<text x="1227" y="779" font-size="12" fill="#4A5568">Exact text, lines, page</text>
+<text x="1227" y="796" font-size="12" fill="#4A5568">Table rows with lines</text>
+<text x="1227" y="813" font-size="12" fill="#4A5568">Facts from table cells</text>
+<text x="1227" y="830" font-size="12" fill="#4A5568">Status for every file</text>
 <rect x="1452" y="735" width="200" height="122" rx="8" fill="#E9F7EF" stroke="#2F855A" stroke-width="1.5"/>
 <text x="1464" y="759" font-size="14" font-weight="700" fill="#1A202C">Publish</text>
-<text x="1464" y="779" font-size="12" fill="#4A5568">All changes in one</text>
-<text x="1464" y="796" font-size="12" fill="#4A5568">transaction</text>
-<text x="1464" y="813" font-size="12" fill="#4A5568">Unreadable files are</text>
-<text x="1464" y="830" font-size="12" fill="#4A5568">skipped and reported</text>
+<text x="1464" y="779" font-size="12" fill="#4A5568">One transaction, under</text>
+<text x="1464" y="796" font-size="12" fill="#4A5568">the index lock</text>
+<text x="1464" y="813" font-size="12" fill="#4A5568">Gaps in the coverage</text>
+<text x="1464" y="830" font-size="12" fill="#4A5568">report (index team)</text>
 <path d="M230 796 H267" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
 <path d="M467 796 H504" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
 <path d="M704 796 H741" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>
@@ -222,45 +225,45 @@
 <text x="46" y="944" font-size="12" font-weight="700" fill="#553C9A">1  Install</text>
 <text x="190" y="944" font-size="11.5" font-family="SFMono-Regular, Menlo, Consolas, monospace" fill="#1A202C">uv sync --locked</text>
 <text x="46" y="963" font-size="12" font-weight="700" fill="#553C9A">2  Check</text>
-<text x="190" y="963" font-size="11.5" font-family="SFMono-Regular, Menlo, Consolas, monospace" fill="#1A202C">uv run --frozen python -m scripts.check_mcp --user kamal      → ends with “The MCP server works.”</text>
+<text x="190" y="963" font-size="11.5" font-family="SFMono-Regular, Menlo, Consolas, monospace" fill="#1A202C">uv run --frozen python -m scripts.check_mcp --user kamal      → 6 S355 rows under 5 kN/m², “The MCP server works.”</text>
 <text x="46" y="982" font-size="12" font-weight="700" fill="#553C9A">3  Claude Code</text>
-<text x="190" y="982" font-size="11.5" font-family="SFMono-Regular, Menlo, Consolas, monospace" fill="#1A202C">claude mcp add engineering-search-jp -- uv run --frozen --directory &quot;$PWD&quot; python -m engineering_search.mcp_server --user jp</text>
-<text x="46" y="1001" font-size="12" font-weight="700" fill="#553C9A">4  Claude Desktop</text>
-<text x="190" y="1001" font-size="11.5" font-family="SFMono-Regular, Menlo, Consolas, monospace" fill="#1A202C">claude_desktop_config.json: &quot;command&quot;: &quot;&lt;output of which uv&gt;&quot;,</text>
-<text x="46" y="1020" font-size="12" font-weight="700" fill="#553C9A"></text>
-<text x="190" y="1020" font-size="11.5" font-family="SFMono-Regular, Menlo, Consolas, monospace" fill="#1A202C">&quot;args&quot;: [&quot;run&quot;, &quot;--frozen&quot;, &quot;--directory&quot;, &quot;&lt;repository&gt;&quot;, &quot;python&quot;, &quot;-m&quot;, &quot;engineering_search.mcp_server&quot;, &quot;--user&quot;, &quot;jp&quot;]</text>
+<text x="190" y="982" font-size="11.5" font-family="SFMono-Regular, Menlo, Consolas, monospace" fill="#1A202C">claude in the repository folder: .mcp.json starts the server as jp (approve it once) · claude mcp list</text>
+<text x="46" y="1001" font-size="12" font-weight="700" fill="#553C9A">4  Codex</text>
+<text x="190" y="1001" font-size="11.5" font-family="SFMono-Regular, Menlo, Consolas, monospace" fill="#1A202C">codex mcp add engineering_search -- uv run --frozen --directory &quot;$PWD&quot; python -m engineering_search.mcp_server --user kamal</text>
+<text x="46" y="1020" font-size="12" font-weight="700" fill="#553C9A">   Pi</text>
+<text x="190" y="1020" font-size="11.5" font-family="SFMono-Regular, Menlo, Consolas, monospace" fill="#1A202C">pi in the repository folder (trusted project): .pi/mcp.json starts the server as jp · pi mcp list</text>
 <text x="46" y="1039" font-size="12" font-weight="700" fill="#553C9A">5  Test</text>
-<text x="190" y="1039" font-size="11.5" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" fill="#1A202C">Add one server per user (jp, kamal, maya). Ask the questions in docs/MCP.md as each user. Report the request_id of each problem.</text>
-<text x="190" y="1058" font-size="11.5" font-weight="700" fill="#9B2C2C">Kamal must get no text, file name or count from project-northgate/ or specifications/. Report it at once if Kamal does.</text>
+<text x="190" y="1039" font-size="11.5" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" fill="#1A202C">Ask the questions in docs/MCP.md as each user, including the SQL ones. Read the SQL in each tool call. Report the request_id of each problem.</text>
+<text x="190" y="1058" font-size="11.5" font-weight="700" fill="#9B2C2C">Kamal must get no text, row, file name or count from project-northgate/, specifications/ or the Harbour roof schedule. Report it at once.</text>
 <text x="46" y="1083" font-size="12" font-weight="700" fill="#9B2C2C">⚠ Security hole</text>
 <text x="190" y="1083" font-size="11.5" fill="#9B2C2C">The server trusts --user. It does not match the person who uses the MCP client to the file permissions. Anyone who can edit the client configuration can read as JP.</text>
 <text x="190" y="1102" font-size="11.5" fill="#9B2C2C">Fix before real restricted files: remote MCP server with OAuth sign-in, user from the token, permissions from the repository.</text>
 <rect x="30" y="1130" width="1622" height="150" rx="10" fill="#FAF5FF" stroke="#6B46C1" stroke-width="1.5"/>
 <text x="46" y="1156" font-size="14" font-weight="700" fill="#1A202C">Evaluation and tests</text>
-<text x="210" y="1156" font-size="12" fill="#4A5568">Measured on every change with scripts.evaluate and pytest, not judged by eye</text>
+<text x="210" y="1156" font-size="12" fill="#4A5568">29 October 2026, 148 files · scripts.evaluate, scripts.load_test and pytest · plan in ADR 0019</text>
 <text x="46" y="1184" font-size="12.5" font-weight="700" fill="#553C9A">Test questions</text>
-<text x="46" y="1203" font-size="12" fill="#4A5568">17 questions in evaluation/</text>
-<text x="46" y="1219" font-size="12" fill="#4A5568">Values, lists, follow-ups</text>
-<text x="46" y="1235" font-size="12" fill="#4A5568">Questions with no answer</text>
-<text x="46" y="1251" font-size="12" fill="#4A5568">Three users, different access</text>
+<text x="46" y="1203" font-size="12" fill="#4A5568">16 scored text questions</text>
+<text x="46" y="1219" font-size="12" fill="#4A5568">13 gold NL-to-SQL questions,</text>
+<text x="46" y="1235" font-size="12" fill="#4A5568">each with a trap</text>
+<text x="46" y="1251" font-size="12" fill="#4A5568">Live-client SQL scoring: next</text>
 <text x="368" y="1184" font-size="12.5" font-weight="700" fill="#553C9A">Retrieval</text>
-<text x="368" y="1203" font-size="12" fill="#4A5568">Success@1 0.94</text>
-<text x="368" y="1219" font-size="12" fill="#4A5568">MRR@10 0.95</text>
+<text x="368" y="1203" font-size="12" fill="#4A5568">Success@1 0.88, @5 1.00</text>
+<text x="368" y="1219" font-size="12" fill="#4A5568">MRR@10 0.90</text>
 <text x="368" y="1235" font-size="12" fill="#4A5568">Recall@10 0.90</text>
 <text x="368" y="1251" font-size="12" fill="#4A5568">Zero-result rate 0.00</text>
 <text x="690" y="1184" font-size="12.5" font-weight="700" fill="#553C9A">Answers</text>
 <text x="690" y="1203" font-size="12" fill="#4A5568">Correct answers 1.00</text>
-<text x="690" y="1219" font-size="12" fill="#4A5568">Answer text checked against</text>
-<text x="690" y="1235" font-size="12" fill="#4A5568">the file: SHA-256, page, lines</text>
-<text x="690" y="1251" font-size="12" fill="#4A5568">No calculated values</text>
+<text x="690" y="1219" font-size="12" fill="#4A5568">Checked against the file:</text>
+<text x="690" y="1235" font-size="12" fill="#4A5568">SHA-256, page, lines</text>
+<text x="690" y="1251" font-size="12" fill="#4A5568">Unbound value → unverified</text>
 <text x="1012" y="1184" font-size="12.5" font-weight="700" fill="#553C9A">Safety</text>
 <text x="1012" y="1203" font-size="12" fill="#4A5568">Permission leaks 0</text>
 <text x="1012" y="1219" font-size="12" fill="#4A5568">test_no_leaks.py: each user,</text>
-<text x="1012" y="1235" font-size="12" fill="#4A5568">each mode, each result page</text>
-<text x="1012" y="1251" font-size="12" fill="#4A5568">Audit written before release</text>
+<text x="1012" y="1235" font-size="12" fill="#4A5568">mode, first and last pages</text>
+<text x="1012" y="1251" font-size="12" fill="#4A5568">SQL sees permitted rows only</text>
 <text x="1334" y="1184" font-size="12.5" font-weight="700" fill="#553C9A">Operations</text>
-<text x="1334" y="1203" font-size="12" fill="#4A5568">p50 16 ms, p95 70 ms</text>
-<text x="1334" y="1219" font-size="12" fill="#4A5568">Under 10 s per question (test)</text>
-<text x="1334" y="1235" font-size="12" fill="#4A5568">Unreadable files reported</text>
-<text x="1334" y="1251" font-size="12" fill="#4A5568">Index reads changed files only</text>
+<text x="1334" y="1203" font-size="12" fill="#4A5568">p50 79 ms, p95 330 ms</text>
+<text x="1334" y="1219" font-size="12" fill="#4A5568">About 10 requests/s a process</text>
+<text x="1334" y="1235" font-size="12" fill="#4A5568">8 s budget, else 503 busy</text>
+<text x="1334" y="1251" font-size="12" fill="#4A5568">in under 0.25 s (load test)</text>
 </svg>

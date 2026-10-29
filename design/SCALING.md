@@ -26,7 +26,9 @@ flowchart LR
 
 ## The MVP today
 
-The MVP runs on one machine: one web process (plus an optional MCP process), SQLite files, a local upload queue with worker threads, and one lock for the index in each process. The locks do not coordinate the two processes, so their index refreshes can conflict ([ARCHITECTURE.md](../ARCHITECTURE.md#known-defects)). [ARCHITECTURE.md](../ARCHITECTURE.md#mvp-shortcuts-in-the-code) lists these shortcuts. It has not been tested with hundreds of thousands of files or with many users at the same time.
+The MVP runs on one machine: one web process (plus one MCP process for each chat client), SQLite files, a local upload queue with worker threads, one lock and one SQLite connection in each process, and a file lock that lets one process at a time publish index changes. [ARCHITECTURE.md](../ARCHITECTURE.md#mvp-shortcuts-in-the-code) lists these shortcuts.
+
+**Measured concurrency (29 October 2026, 148 files, one process).** One process answers about 10 requests a second, whatever the load: with 1,000 simultaneous requests the last waited 102 s. Admission control now answers each request within the 8 s budget or refuses it at once with 503 and a retry time; at 1,000 simultaneous requests about 47 are answered and the rest are told to retry within 0.25 s. The constrained SQL path copies every permitted fact into memory for each request (about 3 µs a fact, 3 s at a million facts), and its step budget stops queries above about 200,000 facts. [ADR 0018](../docs/adr/0018-admission-control-and-the-time-budget.md) gives the numbers and the order of work: concurrent reads, several worker processes, SQL without a copy per request, a server search engine, and load tests in CI. It has not been tested with hundreds of thousands of files.
 
 ## Changes required for multiple machines
 

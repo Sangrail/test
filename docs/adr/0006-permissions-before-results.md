@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded in part by 0017 (permissions apply inside the lookup, before the limit)
 date: 2026-10-28
 ---
 # Check permissions before answers, counts and pages
+
+> **Superseded in part** by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md): permissions now apply inside the index lookup, before the 1,000-passage limit, not after it. The rest of this record stands.
 
 **Serves:** R1 (no information from a document that the user cannot read), U1 (a *selected* manager or lead).
 
@@ -26,6 +28,4 @@ The use case is for selected users (U1), and documents in the repository have di
 
 ## Implementation
 
-Done, with a known defect. `SearchService.search` and `SearchService.read` in [`service.py`](../../engineering_search/service.py). `POST /search` takes `page` and `limit` (at most 50). Tests: `tests/test_no_leaks.py` asks every evaluation question, and questions made from the text of each forbidden file, in each mode, for each user. It checks the first five pages of 50 passages, not every page. It also names forbidden files in follow-up questions and tries to read them directly. Also `tests/test_access.py`, `tests/test_pagination.py` and `tests/test_use_case.py`.
-
-**Known defect.** The index lookup ([`store.py`](../../engineering_search/store.py), `CANDIDATE_LIMIT`) keeps the 1,000 best passages from all files before the permission check and before `within`. This breaks the context of this decision: forbidden passages that rank higher can push permitted passages out, so permitted results are lost and forbidden files change what a user sees. A response still contains no forbidden text, names or counts. The tests do not check that adding forbidden files leaves a user's results unchanged. See [TODO.md](../../TODO.md#known-defects-fix-first).
+Done. `SearchService.search` and `SearchService.read` in [`service.py`](../../engineering_search/service.py). The service finds the matching files, evaluates permissions on them, and gives the index lookup the set of permitted files (and `within`). The lookup ([`store.py`](../../engineering_search/store.py)) applies that set inside the FTS5 query, before the 1,000-candidate limit, so forbidden passages cannot push permitted ones out. The SQL path builds a projection of permitted files only ([ADR 0016](0016-structured-facts-and-client-written-sql.md)). `POST /search` takes `page` and `limit` (at most 50). Tests: `tests/test_no_leaks.py` asks every evaluation question, and questions made from the text of each forbidden file, in each mode, for each user, and checks the first five pages and the last page. Also `test_forbidden_passages_cannot_push_a_permitted_passage_past_the_candidate_limit` in `tests/test_binding.py`, `tests/test_sql.py`, `tests/test_access.py`, `tests/test_pagination.py` and `tests/test_use_case.py`.

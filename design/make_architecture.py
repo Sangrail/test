@@ -6,13 +6,13 @@ accurate: change it when an import or a module changes.
 
 Run from the repository folder (rsvg-convert makes the PNG):
 
-    python3 design/make_architecture.py design/code-architecture.svg
+    uv run --frozen python design/make_architecture.py design/code-architecture.svg
     rsvg-convert -z 2 design/code-architecture.svg -o design/code-architecture.png
 """
 import sys
 from html import escape
 
-W, H = 1680, 1640
+W, H = 1680, 1920
 out = []
 add = out.append
 
@@ -21,6 +21,7 @@ STYLE = {
     "mcp": ("#F3EEFC", "#6B46C1"),
     "service": ("#E6FFFA", "#2C7A7B"),
     "domain": ("#E9F7EF", "#2F855A"),
+    "indexing": ("#FDF2F8", "#B83280"),
     "store": ("#FFF6E5", "#B7791F"),
     "core": ("#F1F5F9", "#475569"),
     "existing": ("#EDEFF2", "#6B7280"),
@@ -104,12 +105,12 @@ add(f'<rect width="{W}" height="{H}" fill="#FFFFFF"/>')
 # Title and legend
 text(30, 42, "Engineering evidence search: code architecture", size=24, fill=TEXT, weight=700)
 text(30, 66, "The modules in engineering_search/, by layer · every import points down the page · "
-     "two processes, one SearchService in each, share the SQLite files in .runtime/", size=13)
+     "the web server and each MCP server have their own SearchService and share the files in .runtime/", size=13)
 legend = [("web", "Web front end"), ("mcp", "MCP front end"), ("service", "Service and wiring"),
-          ("domain", "Domain logic"), ("store", "SQLite adapters"), ("core", "Base types"),
-          ("existing", "Outside the code")]
+          ("domain", "Search logic"), ("indexing", "Indexing line"), ("store", "SQLite adapters"),
+          ("core", "Base types"), ("existing", "Outside the code")]
 for i, (kind, label) in enumerate(legend):
-    x = 30 + i * 150
+    x = 30 + i * 130
     fill, stroke = STYLE[kind]
     add(f'<rect x="{x}" y="80" width="22" height="14" rx="3" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>')
     text(x + 28, 91, label, size=11)
@@ -125,48 +126,48 @@ box(LEFT, 142, 520, 106, "web", "Web pages · static/",
      "audit.html + audit.js: audit log, page by page",
      "style.css · app.py serves them · HTTP with a session cookie"])
 box(610, 142, 240, 106, "existing", "Chat client",
-    ["Claude Code, Claude Desktop", "Starts the MCP server as a", "child process and calls its", "tools over stdio"], tag="existing")
+    ["Claude Code, Codex, Pi", "Starts the MCP server as a", "child process and calls its", "tools over stdio"], tag="existing")
 box(865, 142, 250, 106, "note", "Tests and scripts",
-    ["tests/: create_app + TestClient", "scripts/evaluate.py: create_app",
-     "scripts/check_mcp.py: starts", "mcp_server.py over stdio"])
+    ["tests/: create_app + TestClient", "tests/test_mcp_stdio.py and",
+     "scripts/check_mcp.py start", "mcp_server.py over stdio"])
 
 # 2. Entry points
 band(275, 150, "#F7FAFE", "ENTRY POINTS · ONE PROCESS EACH")
-box(LEFT, 307, 520, 107, "web", "__main__.py · process 1: web server",
+box(LEFT, 307, 520, 107, "web", "__main__.py · the web server process",
     ["python -m engineering_search --documents --state-dir --port",
      "Checks the flags, then uvicorn.run(app) on 127.0.0.1",
      "Starts the upload workers (through app.py)"], imports="runtime")
-box(610, 307, 505, 107, "mcp", "mcp_server.py · process 2: MCP server",
+box(610, 307, 505, 107, "mcp", "mcp_server.py · one MCP server process per client",
     ["python -m engineering_search.mcp_server --user jp",
-     "FastMCP over stdio · tools search_evidence, read_evidence",
+     "FastMCP over stdio · 7 tools (+ coverage) · admit() per call",
      "--user → access.USERS, not verified ⚠ · reindex() at start"], imports="runtime, service, access")
 arrow(f"M735 248 V307", "starts · stdio", 742, 284, anchor="start")
-arrow(f"M990 248 V307", "check_mcp", 997, 284, anchor="start")
+arrow(f"M990 248 V307", "stdio client", 997, 284, anchor="start")
 
 # 3. Wiring
 band(440, 130, "#F2FBFA", "WIRING")
 box(LEFT, 472, 870, 88, "service", "runtime.py · opens the stores and builds each process",
-    ["stores(documents, state): index-<id>.sqlite3, queue-<id>.sqlite3 and audit.sqlite3 in the state folder",
+    ["stores(): index, index-<id>.lock (FileLock), queue, audit, Admission(SEARCH_BUDGET_SECONDS = 8 s)",
      "build_app() → app.create_app(stores)  ·  build_service() → SearchService(MockPermissionStore, stores)"],
     imports="access, adapters, app, jobs, service, store")
 arrow(f"M450 414 V472", "build_app()", 457, 450, anchor="start")
 arrow(f"M800 414 V472", "build_service()", 807, 450, anchor="start")
 
 # 4. HTTP front end
-band(585, 165, "#F7FAFE", "HTTP FRONT END · PROCESS 1 ONLY")
+band(585, 165, "#F7FAFE", "HTTP FRONT END · WEB SERVER ONLY")
 box(LEFT, 617, 700, 124, "web", "app.py · FastAPI",
     ["create_app(): the app and its SearchService",
-     "Default stores if none given (index in memory)",
+     "AdmissionMiddleware: over budget → 503, Retry-After",
      "WorkerPool threads → service.index_upload()",
-     "Upload routes call service.queue directly",
+     "Default stores if none given · uploads use queue",
      "imports: service, access, adapters, jobs, store, core"],
-    ["/search · /auth/* · /demo/documents",
-     "Index team only: /admin /index /scan /uploads",
-     "/audit /telemetry /health /docs",
-     "backend_boundary checks the role on each call",
-     "ServiceError → JSON reply with its status"], split=390)
+    ["/search · /sql · /sql/schema · /auth/*",
+     "/evidence/…/tables/n/rows/n · /demo/documents",
+     "Index team only: /admin /index /index/coverage",
+     "/scan /uploads /audit /telemetry /health /docs",
+     "backend_boundary checks the role on each call"], split=390)
 add('<rect x="850" y="626" width="170" height="106" rx="8" fill="#FFFFFF" stroke="#A0AEC0" stroke-dasharray="5 4"/>')
-for i, line in enumerate(["The MCP server has no", "HTTP layer. Its tools", "call SearchService", "directly, in process 2."]):
+for i, line in enumerate(["The MCP server has no", "HTTP layer. Its tools", "call SearchService", "directly, in its process."]):
     text(862, 648 + i * 18, line, size=12)
 arrow(f"M{LEFT} 195 H{LEFT - 25} V680 H{LEFT}")
 add(f'<text x="44" y="430" font-size="11" fill="{MUTED}" transform="rotate(-90 44 430)" text-anchor="middle">'
@@ -177,132 +178,170 @@ arrow(f"M450 560 V617", "create_app(stores)", 457, 596, anchor="start")
 band(765, 165, "#F2FBFA", "SERVICE · ALL SEARCH LOGIC · NO HTTP, NO MCP, NO SQL")
 box(LEFT, 797, 1040, 124, "service", "service.py · SearchService · one in each process",
     ["search(user, question, limit, page, mode, within)",
-     "read(user, file_id, page) · readable_files(user)",
-     "scan() · reindex() · status()",
-     "save_upload(job, content) · index_upload(job, start)",
+     "query_sql(user, sql, limit) · sql_schema() · table_row_evidence()",
+     "read() · readable_files() · scan() · reindex() · status() · coverage()",
+     "admit(): a ticket, or 503 busy · save_upload() · index_upload()",
      "commit_audit(event): fails → ServiceError(503)"],
-    ["Holds: index, audit, permissions, queue, telemetry",
+    ["Holds: index, index_lock, audit, permissions, queue, admission",
      "lock: index reads and writes in this process",
+     "index_lock: FileLock, plan and publish, all processes",
      "operation_lock: one scan or build at a time",
-     "ServiceError(status, detail) for both front ends",
-     "imports: query, answer, access, adapters, jobs, core"], split=530)
-arrow(f"M600 741 V797", "routes call search(), read(), reindex(), scan(), save_upload()", 592, 758, anchor="end")
+     "imports: indexing, query, answer, sql, access, adapters, jobs, core"], split=530)
+arrow(f"M600 741 V797", "routes call search(), query_sql(), reindex(), …", 592, 758, anchor="end")
 arrow(f"M800 560 V797", "creates", 807, 784, anchor="start")
-arrow(f"M1068 414 V797", "search(), read()", 1061, 784, anchor="end")
+arrow(f"M1068 414 V797", "search(), query_sql(), …", 1061, 784, anchor="end")
 
-# 6. Domain logic
-band(945, 165, "#F5FBF7", "DOMAIN LOGIC · PURE PYTHON · NO FILES, NO SQL")
-box(LEFT, 977, 420, 124, "domain", "answer.py",
+# 6. Search logic
+band(945, 165, "#F5FBF7", "SEARCH LOGIC · NO FILES ON DISK")
+box(LEFT, 977, 370, 124, "domain", "answer.py",
     ["understand(question, mode) → Intent: value or list",
-     "answer(): exact sentence or table row,",
-     "found · partial · not_found, also stated in",
-     "list_documents(): Comparison, unit conversion",
+     "answer(): exact sentence or table row, with status",
+     "found · unverified · partial · not_found",
+     "list_documents(): comparison, signs, pages of 200",
      "manifest(): the answer sources for the audit"], imports=None)
-text(LEFT + 92, 977 + 24, "imports: core, query", size=11, fill=STYLE["domain"][1], mono=True)
-box(640, 977, 475, 124, "domain", "access.py",
-    ["ACCESS_RULES: repository, folder or file · governing_rule()",
-     "MockPermissionStore.evaluate(user, files): most specific wins",
-     "USERS: jp, kamal, maya · DemoSessions: pretend sign-in",
-     "folder_access(): the folder list on the sign-in screen"], imports="none")
-arrow(f"M470 921 V977")
-arrow(f"M877 921 V977", "evaluate()", 884, 958, anchor="start")
+text(LEFT + 92, 977 + 24, "imports: core, query, units", size=11, fill=STYLE["domain"][1], mono=True)
+box(460, 977, 300, 124, "domain", "sql.py",
+    ["Projection: SQLite in memory, per request",
+     "Only permitted rows: documents, facts,",
+     "components view, table_rows, source_tables",
+     "SELECT only · authoriser · step budget"], imports="none")
+box(800, 977, 315, 124, "domain", "access.py",
+    ["ACCESS_RULES: repository, folder, file",
+     "MockPermissionStore.evaluate(user, files)",
+     "Most specific rule wins",
+     "USERS · DemoSessions: pretend sign-in"], imports="none")
+arrow(f"M400 921 V977")
+arrow(f"M610 921 V977", "query_sql()", 617, 958, anchor="start")
+arrow(f"M957 921 V977", "evaluate()", 964, 958, anchor="start")
 
-# 7. SQLite adapters
-band(1125, 165, "#FFFCF5", "ADAPTERS · THE ONLY SQL")
-box(LEFT, 1157, 330, 124, "store", "store.py",
-    ["SQLiteSearchIndex · WAL", "candidates(): FTS5 MATCH, then BM25", "document_matches() · passages()",
-     "apply(): all changes in one transaction"], imports="core, query")
-box(420, 1157, 320, 124, "store", "adapters.py",
-    ["SQLiteAuditStore: append(), read_page()", "Telemetry: in memory, last 10,000",
-     "queries and 100 index runs", "Resets when the process stops"], imports="none")
-box(755, 1157, 360, 124, "store", "jobs.py",
+# 7. Indexing line
+band(1125, 165, "#FEF7FB", "INDEXING LINE · READS FILES · NEVER WRITES THE INDEX")
+arrow(f"M780 921 V1157", "plan(), extract()", 787, 1145, anchor="start")
+box(LEFT, 1157, 1040, 124, "indexing", "indexing/ · Indexer",
+    ["detect.py: ContentDetector, the extension is a hint;",
+     "PDF, XLSX, DOCX and JT signatures decide type and version",
+     "status.py: statuses and hints · inventory.py: SourceFile",
+     "indexer.py: scan(), plan(indexed, previous), extract(path)",
+     "imports: core, units"],
+    ["readers/: Markdown, PDF (pypdf), CSV, XLSX (openpyxl)",
+     "registry.py: default_registry(), the one list of readers",
+     "facts.py: table cells → Fact with subject, role, SI value",
+     "coverage.py: by type, version, status, folder, capability",
+     "The service publishes the plan under the index lock"], split=520)
+
+# 8. SQLite adapters
+band(1305, 165, "#FFFCF5", "ADAPTERS · SQLITE FILES ON DISK")
+box(LEFT, 1337, 330, 124, "store", "store.py",
+    ["SQLiteSearchIndex · WAL", "candidates(query, files): FTS5, ≤ 1,000",
+     "structured(files) · document_matches()", "apply(): one transaction, with inventory"],
+    imports="core, query")
+box(420, 1337, 320, 124, "store", "adapters.py",
+    ["FileLock: flock on index-<id>.lock", "Admission: n·mean + 2√n·spread ≤ budget",
+     "SQLiteAuditStore: append(), read_page()", "Telemetry: in memory"], imports="none")
+box(755, 1337, 360, 124, "store", "jobs.py",
     ["SQLiteJobQueue: create, enqueue, claim,", "complete, fail, retry · full at 1,000 jobs",
      "WorkerPool: threads claim a job and call", "service.index_upload()"], imports="none")
-arrow(f"M567 921 V1118 H330 V1157")
-arrow(f"M567 1118 H580 V1157")
-arrow(f"M567 1118 H935 V1157")
-text(760, 1112, "index · audit and telemetry · queue: objects that the service holds", size=11, anchor="middle")
+add('<path d="M75 900 H40 V1298 H935" fill="none" stroke="#4A5568" stroke-width="1.6"/>')
+arrow(f"M370 1298 V1337")
+arrow(f"M580 1298 V1337")
+arrow(f"M935 1298 V1337")
+text(600, 1325, "objects that the service holds", size=11)
 
-# 8. Base
-band(1305, 140, "#F6F7F9", "BASE · IMPORTS NOTHING FROM THE PACKAGE")
-box(LEFT, 1337, 700, 96, "core", "core.py",
-    ["Types: Passage, Document",
-     "Interfaces: SearchIndex, AuditStore, AuditReader",
-     "evidence_manifest() · tokens()"],
-    ["source_files(), scan_files(): .md, .pdf, SHA-256",
-     "extract(): Markdown by headings and blank lines",
-     "PDF by page with pypdf, at most 15 lines"], split=350)
-box(790, 1337, 325, 96, "core", "query.py",
+# 9. Base
+band(1485, 140, "#F6F7F9", "BASE · IMPORTS NOTHING FROM THE PACKAGE")
+box(LEFT, 1517, 430, 96, "core", "core.py",
+    ["Passage, Table, TableRow, Fact, Document",
+     "SearchIndex: the seam where the store is injected",
+     "AuditStore, AuditReader · evidence_manifest()"])
+box(515, 1517, 280, 96, "core", "units.py",
+    ["Unit table, signed numbers", "to_si(): pressure in Pa, length in m", "Used by facts.py and answer.py"])
+box(805, 1517, 310, 96, "core", "query.py",
     ["plan(question) → QueryPlan", "Stop words, synonym groups", "S355 → prefix S355*"])
 
-# 9. Files on disk
-band(1460, 160, "#F7F8FA", "FILES ON DISK")
-box(LEFT, 1492, 300, 112, "existing", "test-repository/",
-    ["138 files: 133 Markdown, 5 PDF", "core.extract() reads them",
+# 10. Files on disk
+band(1640, 180, "#F7F8FA", "FILES ON DISK")
+box(LEFT, 1672, 300, 136, "existing", "test-repository/",
+    ["148 files: 135 Markdown, 6 PDF,", "2 CSV, 1 XLSX, 2 JT, 2 text", "indexing/ reads them",
      "service.save_upload() writes", "uploaded Markdown here"], tag="existing")
-arrow(f"M300 1433 V1492", "reads", 307, 1468, anchor="start")
-add(f'<rect x="400" y="1492" width="715" height="112" rx="10" fill="#FFFDF8" stroke="#B7791F" stroke-width="1.5"/>')
-text(414, 1512, ".runtime/  (--state-dir)", size=13, fill=TEXT, weight=700)
-text(590, 1512, "<id> comes from the document folder path · both processes open the same files", size=12)
-for i, (name, owner, note) in enumerate([("index-<id>.sqlite3", "store.py", "documents, passages, FTS5, meta"),
-                                         ("queue-<id>.sqlite3", "jobs.py", "upload jobs and their state"),
-                                         ("audit.sqlite3", "adapters.py", "events, no document text")]):
-    x = 414 + i * 233
-    box(x, 1524, 220, 70, "store", name, [f"written by {owner}", note])
+add('<path d="M75 1250 H28 V1720 H75" fill="none" stroke="#4A5568" stroke-width="1.6" marker-end="url(#arrow)"/>')
+add(f'<text x="22" y="1500" font-size="11" fill="{MUTED}" transform="rotate(-90 22 1500)" text-anchor="middle">'
+    'reads</text>')
+add(f'<rect x="400" y="1672" width="715" height="136" rx="10" fill="#FFFDF8" stroke="#B7791F" stroke-width="1.5"/>')
+text(414, 1692, ".runtime/  (--state-dir)", size=13, fill=TEXT, weight=700)
+text(590, 1692, "<id> comes from the document folder path · every process opens the same files", size=12)
+for i, (name, lines) in enumerate([("index-<id>.sqlite3", ["store.py", "passages, FTS5, files,", "tables, rows, facts"]),
+                                   ("index-<id>.lock", ["adapters.py FileLock", "one process plans and", "publishes at a time"]),
+                                   ("queue-<id>.sqlite3", ["jobs.py", "upload jobs and", "their state"]),
+                                   ("audit.sqlite3", ["adapters.py", "events, SQL hashes,", "no document text"])]):
+    box(414 + i * 175, 1704, 168, 94, "store", name, lines)
 
 # Side panels
-panel(110, 385, "The path of one question", [
+panel(110, 385, "The path of one question (text)", [
     ("1", ["app.py POST /search, or mcp_server search_evidence",
-           "User from the session cookie, or from --user"]),
+           "Admitted only if it fits the budget, else 503 busy"]),
     ("2", ["answer.understand(): one value or a list?",
-           "Finds a comparison, for example > 5 kN/m²"]),
-    ("3", ["query.plan(): stop words, synonyms, prefixes"]),
-    ("4", ["store.candidates(): FTS5, up to 1,000 passages",
-           "store.document_matches() for a list question"]),
-    ("5", ["access.evaluate(): permitted files only from here",
+           "query.plan(): stop words, synonyms, prefixes"]),
+    ("3", ["store.document_matches(): files with a query word",
+           "Then within, if given"]),
+    ("4", ["access.evaluate(user): permitted files from here",
            "Fails → 503 and no evidence"]),
-    ("6", ["answer.answer() or answer.list_documents()",
-           "Exact text from the document, never written"]),
+    ("5", ["store.candidates(query, permitted files):",
+           "FTS5 inside the file filter, ≤ 1,000 passages"]),
+    ("6", ["answer.answer(): found · unverified · partial",
+           "or answer.list_documents(), pages of 200"]),
     ("7", ["service.py pages the supporting passages"]),
     ("8", ["SQLiteAuditStore.append(): decisions, sources",
            "Fails → 503 and no evidence"]),
     ("9", ["Telemetry.record_stages(), then return",
            "Web: JSON reply · MCP: the tool result"]),
 ])
-panel(510, 425, "The index and upload paths", [
+panel(510, 255, "The path of one SQL query (tables)", [
+    ("1", ["app.py POST /sql, or mcp_server query_sql, admitted",
+           "The client wrote the SQL, not the service"]),
+    ("2", ["access.evaluate() on every indexed file"]),
+    ("3", ["store.structured(permitted) → sql.Projection",
+           "in memory, with the permitted rows only"]),
+    ("4", ["One SELECT · authoriser · query_only",
+           "step budget · ≤ 500 rows · ≤ 4,000 characters"]),
+    ("5", ["Audit: SQL hash, scope, cited files, no rows"]),
+    ("6", ["get_document_evidence: the row and its passage"]),
+])
+panel(780, 480, "The index and upload paths", [
     "Reindex: POST /index, web start or MCP start",
-    ("1", ["core.source_files(), then the SHA-256 of each file"]),
-    ("2", ["Compare with store.versions(): read only",
-           "new and changed files"]),
-    ("3", ["core.extract(): a Document with its passages",
-           "A file that fails is listed in failed_files"]),
-    ("4", ["queue.reconcile_ready(), store.apply(): one", "transaction for all changes"]),
+    ("1", ["Take the FileLock (index-<id>.lock), then",
+           "store.versions() and the stored inventory"]),
+    ("2", ["Indexer.plan(): scan, detect, choose a reader,",
+           "extract new, changed or re-read files"]),
+    ("3", ["Readers → passages, tables · facts.py → facts",
+           "Failures in failed_files, with a status"]),
+    ("4", ["store.apply(): one transaction, with the inventory"]),
     "Upload: Markdown, index team only",
     ("1", ["POST /uploads → service.queue.create()"]),
     ("2", ["PUT /uploads/{id}/content → save_upload():",
            "writes the file, then queue.enqueue()"]),
     ("3", ["WorkerPool thread: queue.claim()",
            "→ service.index_upload()"]),
-    ("4", ["core.extract() → store.upsert() → queue.complete()"]),
+    ("4", ["Indexer.extract() → store.upsert() under the",
+           "FileLock → queue.complete()"]),
     "Scan: POST /scan",
-    ("", ["core.scan_files(): compare only, no change"]),
+    ("", ["Indexer.scan(): compare only, no change"]),
 ])
-panel(950, 360, "Rules that the structure keeps", [
+panel(1275, 400, "Rules that the structure keeps", [
     ("1", ["Every import points down the page.", "No module imports one above it."]),
     ("2", ["Only app.py knows HTTP.", "Only mcp_server.py knows MCP."]),
-    ("3", ["SQL is only in store.py, adapters.py", "and jobs.py."]),
+    ("3", ["SQL is only in store.py, sql.py, adapters.py", "and jobs.py."]),
     ("4", ["Permissions and the audit are in service.py,", "so both front ends give the same result."]),
-    ("5", ["service.py gets its stores as objects, from", "runtime.py or from a test."]),
-    ("6", ["Each process has its own SearchService, locks", "and telemetry. They share the SQLite files."]),
-    ("⚠", ["MVP shortcuts: pretend sign-in, --user not", "verified, upload routes use service.queue",
-           "directly, rules in access.py. See ARCHITECTURE.md"]),
+    ("5", ["service.py gets its stores and the index lock as", "objects, from runtime.py or from a test."]),
+    ("6", ["indexing/ reads files only. It never writes the", "index. Search code never imports it."]),
+    ("7", ["Each process has its own SearchService, telemetry", "and Admission. They share SQLite files and a lock."]),
+    ("⚠", ["MVP shortcuts: pretend sign-in, --user not", "verified, the client writes the SQL, rules in",
+           "access.py. See ARCHITECTURE.md"]),
 ])
 
-panel(1325, 295, "Related documents", [
-    ("", ["ARCHITECTURE.md", "Modules, one question step by step, MVP shortcuts"]),
-    ("", ["design/system-design.svg", "The wider system: planes, stores, phases, MCP"]),
-    ("", ["docs/adr/0011 and 0012", "One search service · the MCP server and its hole"]),
-    ("", ["docs/adr/0006 and 0010", "Permissions before results · folder and file rules"]),
+panel(1690, 210, "Related documents", [
+    ("", ["ARCHITECTURE.md", "Modules, both answer paths, the indexing line"]),
+    ("", ["design/system-design.svg", "The wider system: planes, stores, phases"]),
+    ("", ["docs/MCP.md and docs/adr/", "Client setup · the decisions"]),
     ("", ["design/make_architecture.py", "Makes this diagram: change it with the code"]),
 ])
 

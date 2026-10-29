@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded in part by 0016 (CSV and XLSX are read)
 date: 2026-10-28
 ---
 # Start with Markdown and simple text-layer PDF
+
+> **Superseded in part** by [ADR 0016](0016-structured-facts-and-client-written-sql.md): CSV and XLSX are now read, with their tables. The rest of this record stands.
 
 **Serves:** S1 (MVP only), S2 (Markdown and simple PDF, no OCR, no CAD), U5 (no CAD file or PDF viewer).
 
@@ -26,4 +28,4 @@ The brief limits the MVP to Markdown and simple PDF (S2). It excludes OCR and th
 
 ## Implementation
 
-Done. The [indexing package](../../engineering_search/indexing/): `ExtensionDetector` names `.md` files `markdown` and `.pdf` files `pdf`. Only these two types have readers in `readers.py`. The Markdown reader splits by headings and blank lines. The PDF reader works page by page with pypdf (at most 15 lines in each passage). Files of other types are listed as unsupported and are not read. A file that cannot be read is skipped and reported ([ADR 0005](0005-coverage-and-reader-gaps.md)). Uploads accept Markdown only. Tests: `tests/test_indexer.py`, `tests/test_index.py`, `tests/test_use_case.py`.
+Done, and extended. The [indexing package](../../engineering_search/indexing/) detects the type from the content ([ADR 0003](0003-versioned-reader-selection.md)) and has readers for Markdown (text and pipe tables) and PDF (text layer, page by page with pypdf, at most 15 lines in each passage). [ADR 0016](0016-structured-facts-and-client-written-sql.md) adds CSV and XLSX readers for structured data. No OCR, no Word, no CAD content: scans and CAD files are listed in the coverage report as gaps. A file that cannot be read is skipped and reported ([ADR 0005](0005-coverage-and-reader-gaps.md)). Uploads accept Markdown only. Tests: `tests/test_indexer.py`, `tests/test_coverage.py`, `tests/test_index.py`, `tests/test_use_case.py`.

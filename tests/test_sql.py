@@ -84,6 +84,27 @@ def test_a_project_column_sets_the_project_of_each_register_row(client):
         ["Harbour", "folder"]]
 
 
+def test_the_example_queries_in_the_mcp_guide(client):
+    # docs/MCP.md, "Example SQL". The expected rows are from the fixtures, by hand.
+    open_items = ("SELECT subject, compliance_status, file_id, line FROM components "
+                  "WHERE project = 'Harbour' AND compliance_status <> 'Approved' ORDER BY file_id, line")
+    assert rows(client, "jp", open_items) == [["B-106", "Pending", SCHEDULE, 5], ["R-313", "Pending", ROOF, 5]]
+    assert rows(client, "kamal", open_items) == [["B-106", "Pending", SCHEDULE, 5]]
+    joined = rows(client, "jp", "SELECT c.subject, r.cells_json, c.line FROM components c JOIN table_rows r "
+                                "ON r.file_id = c.file_id AND r.table_no = c.table_no AND r.row_no = c.row_no "
+                                "WHERE c.subject = 'B-106'")
+    assert [(s, json.loads(cells), line) for s, cells, line in joined] == [
+        ("B-106", ["B-106", "Beam", "Mezzanine edge", "S355J2+N", "3.5", "", "Pending"], 5)]
+    by_project = "SELECT project, count(DISTINCT file_id), count(*) FROM facts WHERE project = 'Harbour' GROUP BY project"
+    assert rows(client, "jp", by_project) == [["Harbour", 4, 45]]
+    assert rows(client, "kamal", by_project) == [["Harbour", 3, 30]]  # Without the roof schedule's 15 facts.
+    demands = "SELECT subject FROM components WHERE imposed_load_kn_m2 IS NOT NULL ORDER BY subject"
+    assert rows(client, "kamal", demands) == [["F-021"], ["F-022"]]
+    # 5 N/m² is 0.005 kN/m²: units are normalised, intent is not.
+    assert rows(client, "jp", "SELECT subject FROM components WHERE material_grade LIKE 'S355%' "
+                              "AND allowable_load_kn_m2 < 0.005") == []
+
+
 @pytest.mark.parametrize("statement", [
     "DELETE FROM facts",
     "SELECT 1; DELETE FROM facts",

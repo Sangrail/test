@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded in part by 0017 (binding and the unverified status)
 date: 2026-10-28
 ---
 # Give no answer, or a partial answer, before a wrong answer
+
+> **Superseded in part** by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md): the question words are bound to the sentence, its heading, the file path or the title, not checked against the whole document, and a new status, `unverified`, marks an unbound value. The principle stands.
 
 **Serves:** U4 (100% confidence in the source), R2 (an answer, not passages), R1 (no information from forbidden documents), U1 (load limit, material or approval status).
 
@@ -29,6 +31,6 @@ The user asks for one parameter (U1) and must trust the source 100% (U4). The us
 
 ## Implementation
 
-Partial. `answer()` in [`answer.py`](../../engineering_search/answer.py) takes a `document_text` callable that `SearchService.search` gives it. The web page and the MCP server show the status and the missing words. Tests: `test_no_answer_is_given_when_no_document_states_it` and `test_one_value_is_answered_from_its_exact_source` in `tests/test_use_case.py`, and the `answer_correct` metric of `scripts/evaluate.py`.
+Done for the known case. `pick_answer()` in [`answer.py`](../../engineering_search/answer.py) checks that the cited sentence is bound to the question words: through the sentence, its heading, the file path or the document title. If the document has every word but the sentence does not name some of them, the status is `unverified`, with `unbound_words`. "Roof load is not specified. Floor load limit is 5 kN/m²." no longer answers "What is the roof load?" as `found`. The web page and the MCP server show the status and the missing or unbound words. Tests: `tests/test_binding.py`, `test_no_answer_is_given_when_no_document_states_it` and `test_one_value_is_answered_from_its_exact_source` in `tests/test_use_case.py`, and the `answer_correct` metric of `scripts/evaluate.py`.
 
-The statuses work for the wrong-project case in the context: a Cedar roof load is `partial` for a Northgate question. They do not stop a wrong parameter from the right document. Because the question words are checked against the whole document, a document with "Roof load is not specified. Floor load limit is 5 kN/m²." answers "What is the roof load?" with the floor load and status `found`. This is the wrong answer that this decision exists to prevent. The tests and the evaluation do not include this case. See [TODO.md](../../TODO.md#known-defects-fix-first).
+Limits: binding is a word check. A sentence that names the subject can still state a different parameter. The document-title rule is a heuristic: the first passage counts as the title only if it starts in the first three lines.

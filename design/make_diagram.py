@@ -57,8 +57,8 @@ add(f'<rect width="{W}" height="{H}" fill="#FFFFFF"/>')
 
 # Title and legend
 add(f'<text x="30" y="44" font-size="24" font-weight="700" fill="{TEXT}">Engineering evidence search: MVP system design</text>')
-add(f'<text x="30" y="70" font-size="13" fill="{MUTED}">A chat agent or the web page calls one search function · FTS5 inverted index · '
-    'permissions before answers, counts and pages · each answer is exact text from one file, with its source</text>')
+add(f'<text x="30" y="70" font-size="13" fill="{MUTED}">Two ways in, one service: text questions through the FTS5 index, table questions through SQL that the chat agent writes · '
+    'permissions before any limit, count or join · every answer cites its file</text>')
 lx = 1065
 for i, (kind, dashed, label) in enumerate([("query", False, "MVP, built"),
                                            ("mcp", False, "MCP install and test"),
@@ -71,24 +71,25 @@ for i, (kind, dashed, label) in enumerate([("query", False, "MVP, built"),
     add(f'<text x="{x + 28}" y="45" font-size="11" fill="{MUTED}">{label}</text>')
 
 # Query plane
-band(95, 360, "#F7FAFE", "QUERY PLANE · ONLINE · EACH QUESTION IN UNDER 10 S")
+band(95, 360, "#F7FAFE", "QUERY PLANE · ANSWERED WITHIN THE 8 S BUDGET, OR REFUSED AT ONCE (503 BUSY, RETRY-AFTER)")
 XS = [30, 267, 504, 741, 978, 1215, 1452]
 BW, AY, AH = 200, 130, 140
 box(XS[0], AY, BW, 300, "query", "Engineering lead",
     ["Asks in plain language:", "“What is the roof load", "limit at Northgate?”", "“Which documents", "specify S355?”", "",
      "Gets the value, the exact", "text and its source.", "Never opens a CAD", "file or a PDF viewer."])
 box(XS[1], AY, BW, AH, "existing", "Chat-agent shell",
-    ["Claude Code, Claude", "Desktop (MCP client),", "or the web page /search", "Its LLM picks the tool", "and writes the reply"], tag="existing")
+    ["Claude Code, Codex, Pi", "(MCP clients), or the", "web page /search", "Its LLM picks the tool,", "writes SQL and the reply"], tag="existing")
 box(XS[2], AY, BW, AH, "mcp", "MCP server · HTTP API",
-    ["mcp_server.py, stdio", "search_evidence(question,", "mode, within, page)", "read_evidence(file_id, page)", "--user flag: not verified ⚠"])
+    ["stdio · admit() per call", "Text: search_evidence,", "read_evidence · Tables:", "query_sql, describe_schema,", "get_document_evidence"])
+add(f'<text x="{XS[2] + 12}" y="{AY + AH + 14}" font-size="11" fill="#9B2C2C">--user flag: not verified ⚠</text>')
 box(XS[3], AY, BW, AH, "query", "Understand and plan",
     ["One value, or a list?", "Stop words, synonyms", "S355 → prefix S355*", "“> 5 kN/m²” → number", "comparison, with units"])
-box(XS[4], AY, BW, AH, "query", "FTS5 index lookup",
-    ["One MATCH, no file scans", "Most question words first,", "then BM25", "Up to 1,000 passages", "List: files with all words"])
-box(XS[5], AY, BW, AH, "query", "Permissions",
-    ["Rules on the repository,", "a folder or one file", "Most specific rule wins", "Before answer, counts", "and pages · fail closed"])
+box(XS[4], AY, BW, AH, "query", "Permissions",
+    ["Files with a query word,", "then the rules: repository,", "folder or file, most", "specific wins · before any", "limit or count · fail closed"])
+box(XS[5], AY, BW, AH, "query", "FTS5 index lookup",
+    ["One MATCH, no file scans", "Permitted files only,", "inside the query", "Up to 1,000 passages,", "most words first, BM25"])
 box(XS[6], AY, BW, AH, "query", "Answer step",
-    ["Value: exact sentence", "or table row", "found · partial · not found", "List: matching files,", "number filters"])
+    ["Value: exact sentence", "or row, bound to the", "subject: found · unverified", "· partial · not found", "List: bound lines, paged"])
 
 mid = AY + 62
 arrow(f"M{XS[0] + BW} {mid} H{XS[1]}")
@@ -100,10 +101,14 @@ box(XS[6], BY, BW, BH, "query", "Audit gate",
     ["Records who asked, the", "permission decisions and", "the answer source", "No document text · fails →", "no evidence is returned"])
 box(XS[1], BY, BW, BH, "existing", "Agent reply",
     ["Quotes the value and its", "file, page and lines", "Says what was searched", "“Not found” when no", "readable file states it"], tag="existing")
-add(f'<rect x="{XS[2]}" y="362" width="440" height="62" rx="8" fill="#FFFFFF" stroke="#A0AEC0" stroke-dasharray="5 4"/>')
-add(f'<text x="{XS[2] + 12}" y="382" font-size="12" font-weight="700" fill="{TEXT}">Measured on 138 files (17 test questions)</text>')
-add(f'<text x="{XS[2] + 12}" y="399" font-size="11.5" fill="{MUTED}">Search p50 16 ms, p95 70 ms · acceptance test: each question &lt; 10 s</text>')
-add(f'<text x="{XS[2] + 12}" y="415" font-size="11.5" fill="{MUTED}">The chat agent adds its own LLM time</text>')
+fill, stroke = STYLE["mcp"]
+add(f'<rect x="{XS[2]}" y="347" width="520" height="87" rx="8" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>')
+add(f'<text x="{XS[2] + 12}" y="365" font-size="12.5" font-weight="700" fill="{TEXT}">Table questions: the chat agent writes SQL (ADR 0016)</text>')
+for i, line in enumerate(["query_sql → permissions on every file → in-memory projection of",
+                          "the permitted rows only → authoriser, query_only, step budget,",
+                          "≤ 500 rows → audit (SQL hash, no rows) · rows cite file and line",
+                          "Safe, not necessarily right: the SQL is scored by evaluation (ADR 0019)"]):
+    add(f'<text x="{XS[2] + 12}" y="{382 + i * 14}" font-size="11" fill="{MUTED}">{escape(line)}</text>')
 
 arrow(f"M{XS[6] + 100} {AY + AH} V{BY}")
 arrow(f"M{XS[6]} {BY + 26} H{XS[1] + BW}", "answer · file · page · lines · SHA-256 version · request ID", 840, BY + 19)
@@ -114,30 +119,30 @@ add(f'<path d="M{XS[1] + 100} {AY + AH} V{BY}" stroke="#6B7280" stroke-width="1.
 CY, CH = 475, 205
 add(f'<rect x="267" y="{CY}" width="{1652 - 267}" height="{CH}" rx="12" fill="#FFFDF8" stroke="#B7791F" stroke-width="1.5"/>')
 add(f'<text x="480" y="{CY + 24}" font-size="13" font-weight="700" fill="{TEXT}">State folder (.runtime/)</text>')
-add(f'<text x="645" y="{CY + 24}" font-size="12" fill="{MUTED}">SQLite files · the web service and MCP server can share them</text>')
+add(f'<text x="645" y="{CY + 24}" font-size="12" fill="{MUTED}">SQLite files · the web service and MCP servers share them · index-&lt;id&gt;.lock: one process publishes at a time</text>')
 SY, SH = 545, 118
 box(287, SY, 170, SH, "store", "audit.sqlite3",
-    ["Search and read events", "Permission decisions", "Answer sources", "No document text"], title_size=13)
+    ["Search, read, SQL events", "Permission decisions", "Sources, SQL hashes", "No document text"], title_size=13)
 box(470, SY, 170, SH, "store", "queue-<id>.sqlite3",
     ["Upload jobs", "State, attempts, errors", "Upload workers"], title_size=13)
-add(f'<rect x="653" y="515" width="604" height="155" rx="10" fill="none" stroke="#B7791F" stroke-width="1.2"/>')
+add(f'<rect x="653" y="515" width="799" height="155" rx="10" fill="none" stroke="#B7791F" stroke-width="1.2"/>')
 add(f'<text x="665" y="534" font-size="13" font-weight="700" fill="{TEXT}">index-&lt;id&gt;.sqlite3</text>')
-add(f'<text x="815" y="534" font-size="12" fill="{MUTED}">structured + keyword store · WAL · one transaction per update</text>')
+add(f'<text x="815" y="534" font-size="12" fill="{MUTED}">keyword + structured store · WAL · one transaction per update</text>')
 subs = [("documents", ["file_id", "SHA-256 version", "passage count"]),
         ("passages", ["exact text", "heading, lines", "PDF page"]),
         ("passages_fts", ["FTS5 inverted", "index: heading,", "text, path words"]),
-        ("meta", ["time of the", "last change"])]
+        ("files", ["inventory: type,", "version, reader,", "status, warnings"])]
 for i, (title, lines) in enumerate(subs):
     box(663 + i * 148, SY, 140, SH, "store", title, lines, title_size=13)
-box(1270, SY, 175, SH, "store", "metadata + facts",
-    ["project, revision, status", "subject, value, unit", "with exact source", "design/EXTRACTION.md"], dashed=True, tag="phase 2", title_size=13)
+box(1257, SY, 185, SH, "store", "tables + facts",
+    ["source_tables, table_rows", "facts: subject, parameter,", "role, value, SI value,", "project · file, row, line"], title_size=13)
 box(1458, SY, 180, SH, "store", "vectors",
     ["Embeddings per passage", "Only if the test", "questions show a gain"], dashed=True, tag="phase 3", title_size=13)
 box(30, SY, 200, SH, "existing", "Repository permissions",
     ["MVP: rules in access.py", "Later: synced from the", "repository's own", "file permissions"], tag="existing")
-arrow(f"M130 {SY} V{BY + BH + 20} H{XS[5] + 60} V{AY + AH}", "access rules", 600, BY + BH + 14, dashed=True)
+arrow(f"M130 {SY} V{BY + BH + 20} H{XS[4] + 60} V{AY + AH}", "access rules", 600, BY + BH + 14, dashed=True)
 
-arrow(f"M{XS[4] + 100} {AY + AH} V515")
+arrow(f"M{XS[5] + 100} {AY + AH} V515")
 arrow(f"M{XS[6] + 150} {BY + BH} V{CY - 12} H372 V{SY}", "write before release", 1350, CY - 18)
 
 # Ingestion plane
@@ -145,19 +150,19 @@ IY0 = 700
 band(IY0, 172, "#F5FBF7", "INGESTION PLANE · AT START, ON REINDEX AND ON UPLOAD")
 IY, IH = 735, 122
 box(XS[0], IY, BW, IH, "existing", "Document repository",
-    ["test-repository/: 138 files", "133 Markdown, 5 PDF", "Later: DXF, DWG, JT,", "CATIA · no OCR in MVP"], tag="existing")
+    ["test-repository/: 148 files", "MD, PDF, CSV, XLSX", "Scans and JT reported,", "not read · no OCR"], tag="existing")
 box(XS[1], IY, BW, IH, "ingest", "Change detection",
     ["SHA-256 of each file", "Read only new and", "changed files", "Remove deleted files"])
 box(XS[2], IY, BW, IH, "ingest", "Upload queue",
     ["Markdown uploads", "Worker threads", "Retries, failed jobs", "shown in /admin"])
-box(XS[3], IY, BW, IH, "ingest", "Readers (core.py)",
-    ["Markdown: headings,", "blank lines, code fences", "PDF: pypdf text layer,", "page by page"])
+box(XS[3], IY, BW, IH, "ingest", "Detect and read",
+    ["Type from content,", "extension a hint", "Registry: Markdown, PDF,", "CSV, XLSX · version kept"])
 box(XS[4], IY, BW, IH, "existing", "Extraction connectors",
     ["Metadata, text and", "properties of other", "formats", "Not used in the MVP"], dashed=True, tag="existing · later")
-box(XS[5], IY, BW, IH, "ingest", "Passages",
-    ["Exact text, heading", "Line range, PDF page", "At most 15 lines (PDF)", "File version (SHA-256)"])
+box(XS[5], IY, BW, IH, "ingest", "Passages, tables, facts",
+    ["Exact text, lines, page", "Table rows with lines", "Facts from table cells", "Status for every file"])
 box(XS[6], IY, BW, IH, "ingest", "Publish",
-    ["All changes in one", "transaction", "Unreadable files are", "skipped and reported"])
+    ["One transaction, under", "the index lock", "Gaps in the coverage", "report (index team)"])
 imid = IY + 61
 arrow(f"M{XS[0] + BW} {imid} H{XS[1]}")
 arrow(f"M{XS[1] + BW} {imid} H{XS[2]}")
@@ -178,11 +183,11 @@ add(f'<text x="282" y="{MY + 26}" font-size="12" fill="{MUTED}">Full guide: docs
     'the chat client starts the server on your computer and talks to it over stdio</text>')
 steps = [
     ("1  Install", "uv sync --locked"),
-    ("2  Check", "uv run --frozen python -m scripts.check_mcp --user kamal      → ends with “The MCP server works.”"),
-    ("3  Claude Code", 'claude mcp add engineering-search-jp -- uv run --frozen --directory "$PWD" python -m engineering_search.mcp_server --user jp'),
-    ("4  Claude Desktop", 'claude_desktop_config.json: "command": "<output of which uv>",'),
-    ("", '"args": ["run", "--frozen", "--directory", "<repository>", "python", "-m", "engineering_search.mcp_server", "--user", "jp"]'),
-    ("5  Test", "Add one server per user (jp, kamal, maya). Ask the questions in docs/MCP.md as each user. Report the request_id of each problem."),
+    ("2  Check", "uv run --frozen python -m scripts.check_mcp --user kamal      → 6 S355 rows under 5 kN/m², “The MCP server works.”"),
+    ("3  Claude Code", "claude in the repository folder: .mcp.json starts the server as jp (approve it once) · claude mcp list"),
+    ("4  Codex", 'codex mcp add engineering_search -- uv run --frozen --directory "$PWD" python -m engineering_search.mcp_server --user kamal'),
+    ("   Pi", "pi in the repository folder (trusted project): .pi/mcp.json starts the server as jp · pi mcp list"),
+    ("5  Test", "Ask the questions in docs/MCP.md as each user, including the SQL ones. Read the SQL in each tool call. Report the request_id of each problem."),
 ]
 for i, (label, text) in enumerate(steps):
     y = MY + 52 + i * 19
@@ -190,7 +195,7 @@ for i, (label, text) in enumerate(steps):
     font = "Helvetica Neue, Helvetica, Arial, sans-serif" if label.startswith("5") else MONO
     add(f'<text x="190" y="{y}" font-size="11.5" font-family="{font}" fill="{TEXT}">{escape(text)}</text>')
 add(f'<text x="190" y="{MY + 52 + 6 * 19}" font-size="11.5" font-weight="700" fill="#9B2C2C">'
-    'Kamal must get no text, file name or count from project-northgate/ or specifications/. Report it at once if Kamal does.</text>')
+    'Kamal must get no text, row, file name or count from project-northgate/, specifications/ or the Harbour roof schedule. Report it at once.</text>')
 add(f'<text x="46" y="{MY + 52 + 7 * 19 + 6}" font-size="12" font-weight="700" fill="#9B2C2C">⚠ Security hole</text>')
 add(f'<text x="190" y="{MY + 52 + 7 * 19 + 6}" font-size="11.5" fill="#9B2C2C">'
     'The server trusts --user. It does not match the person who uses the MCP client to the file permissions. '
@@ -202,12 +207,12 @@ add(f'<text x="190" y="{MY + 52 + 8 * 19 + 6}" font-size="11.5" fill="#9B2C2C">'
 EY = 1130
 add(f'<rect x="30" y="{EY}" width="{1652 - 30}" height="150" rx="10" fill="#FAF5FF" stroke="#6B46C1" stroke-width="1.5"/>')
 add(f'<text x="46" y="{EY + 26}" font-size="14" font-weight="700" fill="{TEXT}">Evaluation and tests</text>')
-add(f'<text x="210" y="{EY + 26}" font-size="12" fill="{MUTED}">Measured on every change with scripts.evaluate and pytest, not judged by eye</text>')
-cols = [("Test questions", ["17 questions in evaluation/", "Values, lists, follow-ups", "Questions with no answer", "Three users, different access"]),
-        ("Retrieval", ["Success@1 0.94", "MRR@10 0.95", "Recall@10 0.90", "Zero-result rate 0.00"]),
-        ("Answers", ["Correct answers 1.00", "Answer text checked against", "the file: SHA-256, page, lines", "No calculated values"]),
-        ("Safety", ["Permission leaks 0", "test_no_leaks.py: each user,", "each mode, each result page", "Audit written before release"]),
-        ("Operations", ["p50 16 ms, p95 70 ms", "Under 10 s per question (test)", "Unreadable files reported", "Index reads changed files only"])]
+add(f'<text x="210" y="{EY + 26}" font-size="12" fill="{MUTED}">29 October 2026, 148 files · scripts.evaluate, scripts.load_test and pytest · plan in ADR 0019</text>')
+cols = [("Test questions", ["16 scored text questions", "13 gold NL-to-SQL questions,", "each with a trap", "Live-client SQL scoring: next"]),
+        ("Retrieval", ["Success@1 0.88, @5 1.00", "MRR@10 0.90", "Recall@10 0.90", "Zero-result rate 0.00"]),
+        ("Answers", ["Correct answers 1.00", "Checked against the file:", "SHA-256, page, lines", "Unbound value → unverified"]),
+        ("Safety", ["Permission leaks 0", "test_no_leaks.py: each user,", "mode, first and last pages", "SQL sees permitted rows only"]),
+        ("Operations", ["p50 79 ms, p95 330 ms", "About 10 requests/s a process", "8 s budget, else 503 busy", "in under 0.25 s (load test)"])]
 for i, (title, lines) in enumerate(cols):
     x = 46 + i * 322
     add(f'<text x="{x}" y="{EY + 54}" font-size="12.5" font-weight="700" fill="#553C9A">{escape(title)}</text>')

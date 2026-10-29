@@ -25,9 +25,4 @@ If a search finds nothing, the user must not think that no document states the v
 
 ## Implementation
 
-Partial. The [`Indexer`](../../engineering_search/indexing/indexer.py) lists every file with its type and one outcome: `indexable`, `unsupported` (no reader; listed without being read) or `unreadable`. A file that cannot be read or extracted is logged, returned in `failed_files`, and the other files are indexed. `/index/status` shows the types and outcomes of the last scan for the index team. Tests: `tests/test_indexer.py`, `tests/test_startup.py`, `tests/test_search.py`.
-
-Not met yet:
-
-- The inventory is in memory, not a stored report, and it is not grouped by format version.
-- The outcomes are fewer than the decision lists. There is no "encrypted", "damaged" or "unknown version", and no "no text": a PDF without a text layer is indexed with zero passages and is not reported. The index status can show `up_to_date`.
+Done. [`indexing/status.py`](../../engineering_search/indexing/status.py) names one status for each file: classification (`CLASSIFIED`, `UNSUPPORTED_FORMAT`, `NO_READER`, `UNSUPPORTED_VERSION`, `DEPENDENCY_MISSING`, `FORMAT_MISMATCH`, `INVALID_HEADER`, `READ_ERROR`) and reading (`INDEXED_FULL`, `INDEXED_PARTIAL`, `NO_TEXT_LAYER`, `NO_EXTRACTABLE_CONTENT`, `MALFORMED`, `ENCRYPTED`, `READER_CRASH`), each with a hint. A PDF without a text layer is `NO_TEXT_LAYER`, not indexed. The inventory is stored in the index (`files` table) with the format version, the reader and the warnings, and survives a restart. [`indexing/coverage.py`](../../engineering_search/indexing/coverage.py) builds the report by type, format version, status, folder and capability. The index team gets it at `GET /index/coverage` and through the MCP tool `get_index_coverage`. Other users do not, because the report names files. Tests: `tests/test_coverage.py`, `tests/test_indexer.py`, `tests/test_startup.py`.

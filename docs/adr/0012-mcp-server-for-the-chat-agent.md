@@ -1,8 +1,10 @@
 ---
-status: accepted (MVP only)
+status: superseded in part by 0016 (the tools) and 0018 (admission); stdio and the identity hole stand
 date: 2026-10-28
 ---
 # Give the chat agent an MCP server over stdio, and accept an unverified user for the MVP only
+
+> **Superseded in part** by [ADR 0016](0016-structured-facts-and-client-written-sql.md) (five structured tools and a coverage tool for the index team) and [ADR 0018](0018-admission-control-and-the-time-budget.md) (admission control). The stdio transport and the identity hole stand.
 
 **Serves:** C5 (a chat-agent shell calls backend APIs and tools), U6 (no file formats, schema, query languages or jargon), S1 (MVP only), R1 (no information from forbidden documents).
 
@@ -29,4 +31,4 @@ The constraints include a chat-agent shell that can call backend APIs and tools 
 
 ## Implementation
 
-Done for stdio, with the hole. [`mcp_server.py`](../../engineering_search/mcp_server.py), with `mcp==1.27.2` (FastMCP). Install and test steps: [docs/MCP.md](../MCP.md). Check: `uv run --frozen python -m scripts.check_mcp` runs the server as a chat client does, for each user. The remote server with OAuth is in [TODO.md](../../TODO.md#before-use-as-a-shared-service).
+Done for stdio, with the hole. [`mcp_server.py`](../../engineering_search/mcp_server.py), with `mcp==1.27.2` (FastMCP). [ADR 0016](0016-structured-facts-and-client-written-sql.md) adds the structured tools: `describe_schema`, `list_tables`, `describe_table`, `query_sql` and `get_document_evidence`. The index team also gets `get_index_coverage`. Verified on 29 October 2026 with Claude Code, Codex and Pi over local stdio; the project files `.mcp.json` and `.pi/mcp.json` start the server. Install and test steps: [docs/MCP.md](../MCP.md). Checks: `uv run --frozen python -m scripts.check_mcp` and `tests/test_mcp_stdio.py`, which run the server as a chat client does. The remote server with OAuth is in [TODO.md](../../TODO.md#before-use-as-a-shared-service).

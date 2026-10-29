@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded in part by 0019 (evaluation); the acceptance tests stand
 date: 2026-10-28
 ---
 # Enforce the use case with acceptance tests on a public test repository
+
+> **Superseded in part** by [ADR 0019](0019-evaluate-retrieval-and-nl-to-sql.md): evaluation now covers retrieval, natural language to SQL and the agent's reply. The acceptance tests stand; the test repository now has 148 files.
 
 **Serves:** R4 (tests enforce the use case), U1–U5, R1 (no information from forbidden documents), S3 (public or synthetic test data).
 

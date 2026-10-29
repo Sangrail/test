@@ -47,6 +47,8 @@ Run an inventory over the whole repository, or over a large random sample. Use t
 
 Record the results in a table that the team can repeat. Run the inventory again after a change in the repository.
 
+The MVP has a small version of this inventory: the coverage report (`GET /index/coverage`, index team only). It counts the files by type and format version, by status, by top folder and by capability, and lists each file that was not fully read, with the reason. It detects the type from the content for PDF, XLSX, DOCX and JT only, and reads only the version in a JT header. It is a starting point for the profile, not the profile.
+
 ## 3. From the profile to the readers
 
 For each format and version that holds a significant part of the answers, the team must select a reader. A reader is the software that opens the file and gives its content to the system. The brief says that connectors and APIs already exist for supported files. The profile tells the team which formats they support, which formats they do not support, and how much of the repository is in each group.
@@ -59,7 +61,7 @@ For each reader, record:
 - its licence, its cost and where it can run (server, desktop only, cloud);
 - its speed on the largest files.
 
-[ADR 0003](../docs/adr/0003-versioned-reader-selection.md) records the rule: detect the format and version of each file, select a tested reader, and record the reader and its version with each extracted item.
+[ADR 0003](../docs/adr/0003-versioned-reader-selection.md) records the rule: detect the format and version of each file, select a tested reader, and record the reader and its version with each extracted item. In the MVP, each reader has a manifest (file types, tested format versions, capabilities, dependencies), one registry chooses the reader, and the inventory records `reader_id@reader_version` for each file.
 
 ## 4. Structured and unstructured downstream systems
 
@@ -90,7 +92,7 @@ Thus the real system will probably need a viewer, or a link into an existing vie
 4. **The viewer must apply the same permissions.** A user who cannot read a file must not be able to open it in the viewer.
 5. **The viewer can run in the browser or on a server.** A browser viewer for PDF is simple. A viewer for DWG, JT or CATIA can need a server that changes the drawing into a web format. That is a cost and a licence question.
 
-The MVP shows the exact text and its location, and it has no viewer. That meets the brief for Markdown and text PDF. For the real system, plan the viewer with the readers.
+The MVP shows the exact text and its location, and it has no viewer. For a table row it gives the line (CSV, Markdown) or the sheet and sheet row (XLSX). That meets the brief for Markdown, text PDF, CSV and XLSX. For the real system, plan the viewer with the readers.
 
 ## 6. Steps
 
