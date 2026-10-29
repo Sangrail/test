@@ -1,4 +1,4 @@
-"""The indexer on its own: no web app, no index database, no queue.
+"""The indexer on its own: no web app and no index database.
 
 The indexer finds the files, detects their types, and plans the changes to
 an index. These tests give it a folder and a dict of indexed versions.
@@ -110,12 +110,6 @@ def test_a_plan_extracts_only_new_and_changed_files_and_removes_deleted_ones(tmp
     assert second.removals == ["gone.md"]
     assert second.added == 1 and second.edited == 1
     assert set(second.versions) == {"keep.md", "edit.md", "new.md"}
-
-
-def test_a_plan_does_not_touch_skipped_files(tmp_path):
-    write(tmp_path, "uploads/job/a.md", "# A\n")
-    plan = Indexer(tmp_path).plan({"uploads/job/a.md": "old"}, skip={"uploads/job/a.md"})
-    assert plan.upserts == [] and plan.removals == [] and plan.versions == {}
 
 
 def test_a_file_that_cannot_be_read_is_reported_and_the_others_are_indexed(tmp_path, monkeypatch):

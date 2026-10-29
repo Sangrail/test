@@ -6,7 +6,7 @@ This document describes the code as it runs now. [design/SYSTEM-DESIGN.md](desig
 
 ![Code architecture](design/code-architecture.png)
 
-Source: [design/code-architecture.svg](design/code-architecture.svg), made by [design/make_architecture.py](design/make_architecture.py). Change the script when a module or an import changes. [design/system-design.png](design/system-design.png) shows the wider system and the phases.
+Source: [design/code-architecture.svg](design/code-architecture.svg), made by [design/make_architecture.py](design/make_architecture.py). Change the script when a module or an import changes. [design/system-design.png](design/system-design.png) shows the initial phase: what exists in the company, what the MVP stands in for, and what is out of scope. In the code diagram, the hatched region marks the simulated extractors: the readers and fact rules stand in for the company's connectors ([C3](docs/constraints/constraints.md#c3), [ADR 0001](docs/adr/0001-prove-the-use-case-with-stand-in-readers.md)).
 
 The diagram shows the modules by layer. Every import points down the page. There are two kinds of process: the web server (`python -m engineering_search`) and the MCP server, which each chat client starts. Each process has its own `SearchService`. They share the SQLite files in the state folder, and a lock file that lets one process at a time change the index. Each process admits a search, read or SQL query only if it can answer it within the time budget ([Time budget and admission](#time-budget-and-admission)).
 
@@ -24,7 +24,7 @@ The service answers a question in one of two ways. Both use the same index, perm
 | Code | [`query.py`](engineering_search/query.py), [`answer.py`](engineering_search/answer.py), `SearchService.search` | [`sql.py`](engineering_search/sql.py), `SearchService.query_sql` and `table_row_evidence` |
 | Tools | `search_evidence`, `read_evidence` | `describe_schema`, `list_tables`, `describe_table`, `query_sql`, `get_document_evidence` |
 
-The quality of a structured answer depends on the SQL that the client writes. The service makes sure that the statement can only read the permitted rows, and that each row can be cited. It does not check that the statement asks the right question. [ADR 0016](docs/adr/0016-structured-facts-and-client-written-sql.md) records this decision.
+The quality of a structured answer depends on the SQL that the client writes. The service makes sure that the statement can only read the permitted rows, and that each row can be cited. It does not check that the statement asks the right question. [ADR 0006](docs/adr/0006-the-user-never-writes-sql.md) records this decision.
 
 ## Two lines: indexing and searching
 
@@ -32,10 +32,10 @@ The service does two separate jobs. They meet only at the index.
 
 | Line | What it does | Code |
 | --- | --- | --- |
-| **Indexing** | Find every file in the document folder, detect its type and format version, choose a reader, read the file into passages and tables, extract facts from the tables, and plan the changes to the index | [`engineering_search/indexing/`](engineering_search/indexing/): `Indexer`. `SearchService.scan`, `reindex` and the upload workers call it, and `SearchService` publishes its plan |
+| **Indexing** | Find every file in the document folder, detect its type and format version, choose a reader, read the file into passages and tables, extract facts from the tables, and plan the changes to the index | [`engineering_search/indexing/`](engineering_search/indexing/): `Indexer`. `SearchService.scan` and `reindex` call it, and `SearchService` publishes its plan |
 | **Searching** | Change a question into an index query, check permissions, look it up, select the answer, audit and return. Or run a client's SQL over the permitted rows | [`query.py`](engineering_search/query.py), [`answer.py`](engineering_search/answer.py), [`sql.py`](engineering_search/sql.py), the lookups in [`store.py`](engineering_search/store.py), and `SearchService.search` and `query_sql` |
 
-The index ([`store.py`](engineering_search/store.py)) is shared: indexing writes it through `SearchService`, and searching reads it. The indexing package does not import the store, the service or the web app. Nothing on the search line imports the indexing package. [`units.py`](engineering_search/units.py) is shared by both lines: the fact rules and the answer rules read numbers and units with the same table.
+The index ([`store.py`](engineering_search/store.py)) is shared: indexing writes it through `SearchService`, and searching reads it. The indexing package does not import the store, the service or the web app. The search modules (`query.py`, `answer.py`, `sql.py`) do not import the indexing package; `SearchService` imports both, because it runs the indexer on request and answers searches. [`units.py`](engineering_search/units.py) is shared by both lines: the fact rules and the answer rules read numbers and units with the same table.
 
 ## The path of one question (unstructured)
 
@@ -87,11 +87,10 @@ To cite a row, the client calls `get_document_evidence` (`GET /evidence/<file>/t
 | [`answer.py`](engineering_search/answer.py) | Selects the answer text and its status, makes document lists, compares numbers with unit conversion |
 | [`sql.py`](engineering_search/sql.py) | The constrained SQL projection, its schema and its limits |
 | [`access.py`](engineering_search/access.py) | Pretend users, path-based access rules, sessions. The access assumptions are at the top of the file |
-| [`service.py`](engineering_search/service.py) | `SearchService`: search, read a file, SQL query, table row evidence, schema, reindex, scan, status, coverage and upload publish. It calls the `Indexer` and publishes its plans to the index under its locks. The web app and the MCP server share it. It has no web code |
-| [`app.py`](engineering_search/app.py) | The web app: HTTP routes, pretend sign-in, the index-team boundary, uploads and the web pages. `AdmissionMiddleware` admits each search, SQL query and row-evidence request before it waits for a worker thread. It changes requests into `SearchService` calls |
+| [`service.py`](engineering_search/service.py) | `SearchService`: search, read a file, SQL query, table row evidence, schema, reindex, scan, status and coverage, the SQL-question refusal and the check that each cited file is unchanged on disc. It calls the `Indexer` and publishes its plans to the index under its locks. The web app and the MCP server share it. It has no web code |
+| [`app.py`](engineering_search/app.py) | The web app: HTTP routes, pretend sign-in, the index-team boundary and the web pages. `AdmissionMiddleware` admits each search, SQL query and row-evidence request before it waits for a worker thread. It changes requests into `SearchService` calls |
 | [`mcp_server.py`](engineering_search/mcp_server.py) | The MCP server (stdio). Tools: `search_evidence`, `read_evidence`, `describe_schema`, `list_tables`, `describe_table`, `query_sql`, `get_document_evidence`, and `get_index_coverage` for the index team only. It uses `SearchService` directly, without the web app |
-| [`runtime.py`](engineering_search/runtime.py) | Opens the index, lock, queue and audit files in the state folder. Builds the web app or the service alone |
-| [`jobs.py`](engineering_search/jobs.py) | The SQLite upload queue and the worker threads |
+| [`runtime.py`](engineering_search/runtime.py) | Opens the index, lock and audit files in the state folder. Builds the web app or the service alone |
 | [`adapters.py`](engineering_search/adapters.py) | The cross-process `FileLock`, `Admission` (the time budget), the SQLite audit store and the in-memory telemetry |
 | [`static/`](engineering_search/static/) | The web pages: `search.html` (with the sign-in screen), `admin.html` (index operations) and `audit.html` (audit log). There is no web page for SQL or for the coverage report |
 
@@ -99,17 +98,17 @@ Every import points down the layers of the diagram:
 
 - `__main__.py` imports `runtime.py`. `mcp_server.py` imports `runtime.py`, `service.py` and `access.py`.
 - `runtime.py` imports `app.py`, `service.py`, `access.py` and the stores. It opens the SQLite files and the lock file, and gives them to the service as objects.
-- `app.py` imports `service.py`, `access.py`, `adapters.py`, `jobs.py`, `store.py` and `core.py`. It imports the stores only to make defaults when none are given (the tests do this, with an in-memory index).
-- `service.py` imports `indexing/`, `query.py`, `answer.py`, `sql.py`, `access.py`, `adapters.py`, `jobs.py` and `core.py`. It does not import `store.py`: it gets the index as an object.
+- `app.py` imports `service.py`, `access.py`, `adapters.py`, `store.py` and `core.py`. It imports the stores only to make defaults when none are given (the tests do this, with an in-memory index).
+- `service.py` imports `indexing/`, `query.py`, `answer.py`, `sql.py`, `access.py`, `adapters.py` and `core.py`. It does not import `store.py`: it gets the index as an object.
 - `indexing/` imports only `core.py` and `units.py`.
 - `answer.py` imports `core.py`, `query.py` and `units.py`. `store.py` imports `core.py` and `query.py`.
-- `core.py`, `units.py`, `query.py`, `sql.py`, `access.py`, `adapters.py` and `jobs.py` import nothing from the package.
+- `core.py`, `units.py`, `query.py`, `sql.py`, `access.py` and `adapters.py` import nothing from the package.
 
-Only `app.py` knows HTTP. Only `mcp_server.py` knows MCP. SQL is only in `store.py`, `sql.py`, `adapters.py` and `jobs.py`.
+Only `app.py` knows HTTP. Only `mcp_server.py` knows MCP. SQL is only in `store.py`, `sql.py` and `adapters.py`.
 
 ## The indexing line
 
-All of it is in [`engineering_search/indexing/`](engineering_search/indexing/). [`tests/test_indexer.py`](tests/test_indexer.py) and [`tests/test_coverage.py`](tests/test_coverage.py) test it with a folder only: no web app, no index database and no queue.
+All of it is in [`engineering_search/indexing/`](engineering_search/indexing/). [`tests/test_indexer.py`](tests/test_indexer.py) and [`tests/test_coverage.py`](tests/test_coverage.py) test it with a folder only: no web app and no index database.
 
 ```text
 Indexer.scan()          every file → detect type and version → choose a reader → read and hash if one fits → Inventory
@@ -122,7 +121,7 @@ SearchService           under the index lock: index.apply(upserts, removals, inv
 | `detect.py` | `ContentDetector` (the default) and `ExtensionDetector` |
 | `status.py` | The status of each file, and a hint for each status that is a gap |
 | `inventory.py` | `SourceFile` and `Inventory`: every file of a scan, with its type, format version, status, reader and warnings |
-| `readers/` | The readers, their manifests, and the registry (`default_registry()`). The readers are stand-ins for the connectors that the brief says exist ([ADR 0020](docs/adr/0020-assume-the-environment-and-stand-in-for-it.md)) |
+| `readers/` | The readers, their manifests, and the registry (`default_registry()`). The readers are stand-ins for the connectors that the brief says exist ([ADR 0001](docs/adr/0001-prove-the-use-case-with-stand-in-readers.md)) |
 | `facts.py` | The fixed rules that turn table cells into facts |
 | `indexer.py` | `Indexer`: scan, plan, extract one file |
 | `coverage.py` | The coverage report |
@@ -138,7 +137,7 @@ SearchService           under the index lock: index.apply(upserts, removals, inv
 | A ZIP with `word/document.xml` | `word` |
 | `Version 10.0 JT` in the 80-character header | `jt`, version 10.0 |
 
-When the content has a signature, the content decides the type. When the extension claims a format with a signature and the signature is absent, the status is `FORMAT_MISMATCH`. When the header starts correctly but is broken (for example a damaged ZIP), the status is `INVALID_HEADER`. Markdown and CSV have no signature: the extension decides. Other known extensions (`.txt`, `.dwg`, `.dxf`, CATIA, `.ifc`) are named by extension. Any other extension is `unknown`.
+When the content has a signature, the content decides the type. When the extension claims a format with a signature and the signature is absent, the status is `FORMAT_MISMATCH`. When the header starts correctly but is broken (for example a damaged ZIP), the status is `INVALID_HEADER`. Markdown and CSV have no signature: the extension decides. An ASCII DXF is checked for its `SECTION` start and its `$ACADVER` version; a binary DXF by its sentinel. Other known extensions (`.txt`, `.dwg`, CATIA, `.ifc`) are named by extension. Any other extension is `unknown`.
 
 The JT probe reads the version string of the header only. It is not a JT parser. A detected version does not mean that any reader can read the file.
 
@@ -146,7 +145,7 @@ A detector is any object with `detect(path, head) -> FileSignature` (the `Detect
 
 ### 2. Choose a reader
 
-The brief says connectors and APIs already extract metadata, text and properties from supported files. The readers here are placeholders for them, written only to prove the chain from file to cited answer; a connector plugs in as one more reader that returns an `Extraction` ([ADR 0020](docs/adr/0020-assume-the-environment-and-stand-in-for-it.md)).
+The brief says connectors and APIs already extract metadata, text and properties from supported files. The readers here are placeholders for them, written only to prove the chain from file to cited answer; a connector plugs in as one more reader that returns an `Extraction` ([ADR 0001](docs/adr/0001-prove-the-use-case-with-stand-in-readers.md)).
 
 [`ReaderRegistry.select`](engineering_search/indexing/readers/registry.py) chooses the first reader that reads the file type and the format version, and whose Python packages are installed. [`default_registry()`](engineering_search/indexing/readers/registry.py) is the one place that lists the readers. Several readers can read one type; the first that fits is chosen.
 
@@ -156,8 +155,9 @@ Each reader has a manifest ([`readers/base.py`](engineering_search/indexing/read
 | --- | --- | --- | --- |
 | `markdown-text@2` | `markdown` | UTF-8 text, split at headings and blank lines, not inside code fences. Pipe tables are also read as tables, with the line of each row | `MALFORMED` if the file is not UTF-8. `NO_EXTRACTABLE_CONTENT` if there is no text |
 | `pdf-text-pypdf@1` | `pdf` 1.x and 2.x | The text layer of each page, with pypdf, split at numbered headings and blank lines, at most 15 lines a passage. No tables. No OCR | `NO_TEXT_LAYER` if no page has text. `INDEXED_PARTIAL` if some pages have no text. `ENCRYPTED`, `MALFORMED` |
-| `csv-table@1` | `csv` | One table. Each data row is also a passage, with the header line as its heading | `INDEXED_PARTIAL` if rows have a different number of cells than the header |
+| `csv-table@1` | `csv` | One logical table (rows in the shared `table_rows` store, never a database table per file). Each data row is also a passage, with the header line as its heading | `INDEXED_PARTIAL` if rows have a different number of cells than the header |
 | `xlsx-openpyxl@1` | `excel` | One table per sheet, and one passage per data row. The page of a passage is the sheet number, and its lines are sheet rows. Cell values are the values that Excel cached | `INDEXED_PARTIAL` if a formula has no cached value: the cell is left empty, and the warning names it. Hidden sheets are read, with a warning. `ENCRYPTED`, `MALFORMED` |
+| `dxf-text@1` | `dxf` (ASCII, AC1009 and later) | The TEXT and MTEXT notes of the ENTITIES section, each a passage headed by its layer, and the attributes of each block reference: a Property/Value table named after the drawing number and revision, and one passage `TAG \| value` per attribute citing the value's line. Geometry and block definitions are not read | `MALFORMED` for binary DXF or a broken pair. `NO_EXTRACTABLE_CONTENT` if there is no text |
 
 The registry tells three cases apart when no reader fits:
 
@@ -207,11 +207,11 @@ It returns an `IndexPlan`: the documents to write, the file IDs to remove, the v
 
 If a file cannot be read or extracted, the plan reports it in `failed_files` with its status, and the other files are indexed. A failed file is removed from the index, so an old version is not kept as if it were current.
 
-Uploads use the same component: the upload workers call `Indexer.extract` for one file.
+There is no upload path: the files live in the existing repository, and the indexer reads them there ([ADR 0007](docs/adr/0007-the-source-is-the-file-on-disc.md)). The refresh runs when a process starts and when the index team asks (`POST /index`).
 
 ### 6. Publish
 
-`SearchService.reindex` holds the index lock from reading the index versions to publishing the plan. The lock is a `FileLock` on `<state-dir>/index-<id>.lock` ([`adapters.py`](engineering_search/adapters.py)), which `runtime.py` injects. It uses `flock`, so other processes see it. Thus the web server and the MCP servers that share one index take turns: no process can publish a plan that it made from versions that another process has since changed. The upload workers hold the same lock when they publish one file.
+`SearchService.reindex` holds the index lock from reading the index versions to publishing the plan. The lock is a `FileLock` on `<state-dir>/index-<id>.lock` ([`adapters.py`](engineering_search/adapters.py)), which `runtime.py` injects. It uses `flock`, so other processes see it. Thus the web server and the MCP servers that share one index take turns: no process can publish a plan that it made from versions that another process has since changed.
 
 ## The index
 
@@ -219,7 +219,7 @@ The index is one SQLite file, `<state-dir>/index-<id>.sqlite3`.
 
 | Table | Contents |
 | --- | --- |
-| `documents` | One row for each indexed file: path, SHA-256 version, passage count |
+| `documents` | One row for each indexed file: path, content fingerprint (SHA-256, stored as `source_version`), passage count |
 | `passages` | The exact passage text, heading, line range and page |
 | `passages_fts` | The FTS5 inverted index of each passage's heading, text and file-path words. It uses the `porter unicode61` tokenizer, so "loads" matches "load" |
 | `files` | The last published inventory: one JSON record per file found, including files that are not indexed |
@@ -233,7 +233,7 @@ A rebuild runs the [indexing line](#the-indexing-line): it reads and hashes ever
 The ranking:
 
 1. Passages that contain more of the query words come first. Words in the heading or the file path count.
-2. Then BM25, with weights 3 for the heading, 1 for the text and 0.5 for the file path.
+2. Then BM25, with weights 3 for the heading, 1 for the text and 0.5 for the file path. Its statistics come from the permitted passages that match the question, copied into a temporary index, never from the whole index ([ADR 0004](docs/adr/0004-permissions-before-ranking-limits-and-counts.md)).
 
 ## Permissions
 
@@ -247,7 +247,7 @@ All files are indexed. Permissions decide what each user sees. See the assumptio
 
 ## Answers and sources
 
-A text answer is always text copied from one passage. It has the file, page, line range and file version of that passage. The acceptance tests in [`tests/test_use_case.py`](tests/test_use_case.py) check each answer against the file itself.
+A text answer is always text copied from one passage. It has the file, page, line range and content fingerprint of that passage. A source is the file on disc as it is now: before an answer or evidence is returned, the service hashes each cited file (`SearchService.changed_on_disc`). A search and `query_sql` answer without any file that changed or was deleted since it was indexed and list it in `changed_files`; a read of a changed file (`read_evidence` and `get_document_evidence` in the MCP server, the table-row evidence route over HTTP) is refused with 409 and the changed files ([ADR 0003](docs/adr/0003-quote-the-source-and-refuse-rather-than-guess.md)). A question that is a SQL statement is refused with 422 before any search ([ADR 0006](docs/adr/0006-the-user-never-writes-sql.md)). The acceptance tests in [`tests/test_use_case.py`](tests/test_use_case.py) check each answer against the file itself.
 
 The source proves where the text is. The status says how well the text is bound to the question. A question word is **bound** when it is in the selected sentence, in its passage heading, in the file path, or in the document title. The title is the heading of the first passage, and only if that passage starts on the first 3 lines of the file (or of the first page).
 
@@ -270,8 +270,8 @@ A structured answer is a set of rows. Each row carries `file_id`, `table_no`, `r
 
 | Process | Started by | Contents |
 | --- | --- | --- |
-| Web service | `python -m engineering_search` | FastAPI app, upload workers, startup index |
-| MCP server | Each chat client (`python -m engineering_search.mcp_server --user <id>`) | A `SearchService` only. No web app, no upload workers. Refreshes the index when it starts |
+| Web service | `python -m engineering_search` | FastAPI app, startup index |
+| MCP server | Each chat client (`python -m engineering_search.mcp_server --user <id>`) | A `SearchService` only. No web app. Refreshes the index when it starts |
 
 Several processes can use the same state folder. They then share the index, the lock file and the audit log. SQLite WAL mode and a 30-second lock timeout let them write in turn, so no write is half applied. The index lock lets one process at a time plan and publish index changes. [`tests/test_binding.py`](tests/test_binding.py) checks that a refresh waits while another holder has the lock.
 
@@ -279,7 +279,7 @@ The MCP server was used by hand over local stdio from Claude Code (`.mcp.json`),
 
 ## Time budget and admission
 
-The use case asks for an answer in under 10 seconds. One process answers one request at a time: `SearchService.lock` is held from the file match to the audit write, and the index has one SQLite connection. On the 148 test files that is about 10 requests a second. Without a limit, the 1,000th of 1,000 simultaneous requests waited 102 s.
+The use case asks for an answer in under 10 seconds. One process answers one request at a time: `SearchService.lock` is held from the file match to the audit write, and the index has one SQLite connection. On the 148 test files (measured before the DXF drawing was added) that is about 10 requests a second. Without a limit, the 1,000th of 1,000 simultaneous requests waited 102 s.
 
 [`Admission`](engineering_search/adapters.py) refuses a request at once if it cannot be answered within the budget (`SEARCH_BUDGET_SECONDS`, default 8 s, which leaves 2 s for the network and the chat client):
 
@@ -292,35 +292,34 @@ The use case asks for an answer in under 10 seconds. One process answers one req
 | Web app | `AdmissionMiddleware`, for `POST /search`, `POST /sql` and `GET /evidence/...`, before the route waits for a worker thread | 503, a `Retry-After` header and `{"busy": true, "retry_after_seconds": n, "message": ...}`. The web page shows the message |
 | MCP server | `service.admit()` around each search, read, SQL and evidence tool | The same object as the tool error. The server instructions tell the agent to report it and not to retry in a loop |
 
-Index operations and uploads are not admitted. `/index/status` shows the index team the learnt service time and spread, requests in flight, refusals and capacity.
+Index operations are not admitted. `/index/status` shows the index team the learnt service time and spread, requests in flight, refusals and capacity.
 
-Measured with `scripts/load_test.py` (one process, budget 8 s): at 100 and at 1,000 simultaneous requests, every answered request finished within 5.7 s and every refusal came back within 0.25 s. About 50 of each burst are answered. This bounds the time a user waits; it does not add capacity. [ADR 0018](docs/adr/0018-admission-control-and-the-time-budget.md) gives the numbers and the work needed to serve the company: concurrent reads, several worker processes, SQL without a copy per request, and load tests at the real size. Serving the whole organisation, with any number of users each answered within 10 seconds and no single point of failure, is its own engineering work: [docs/README.md](docs/README.md#making-it-available-to-an-organisation) sets out what it needs.
+Measured with `scripts/load_test.py` (one process, budget 8 s): at 100 and at 1,000 simultaneous requests, every answered request finished within 5.7 s and every refusal came back within 0.25 s. About 50 of each burst are answered. This bounds the time a user waits; it does not add capacity. [design/SCALING.md](design/SCALING.md) gives the numbers and the work needed to serve the company ([ADR 0008](docs/adr/0008-a-time-budget-and-admission-control.md) is the decision): concurrent reads, several worker processes, SQL without a copy per request, and load tests at the real size. Serving the whole organisation, with any number of users each answered within 10 seconds and no single point of failure, is its own engineering work: [docs/README.md](docs/README.md#making-it-available-to-an-organisation) sets out what it needs.
 
 Over local stdio each chat client starts its own MCP server process, so MCP users do not queue behind each other in one process. They share the machine and the SQLite files.
 
 ## MVP shortcuts in the code
 
-The MVP takes these shortcuts on purpose, to deliver quickly. Each one is acceptable for a local demonstration with 148 files. Each one must change before a shared service. [TODO.md](TODO.md) gives the gaps and the next work.
+The MVP takes these shortcuts on purpose, to deliver quickly. Each one is acceptable for a local demonstration with 149 files. Each one must change before a shared service. [TODO.md](TODO.md) gives the gaps and the next work.
 
 | Area | Shortcut | Effect | Change before a shared service |
 | --- | --- | --- | --- |
 | Identity | Pretend sign-in. Sessions are in memory. The MCP server takes the user from `--user` | Anyone can act as any user. Sessions end when the service stops. The MCP identity is not verified: it is a security hole | Company sign-in (OAuth). User from a verified token |
 | Permissions | Access rules are a Python dictionary in `access.py` | A change needs a code change. No groups or deny rules | Read the permissions from the repository |
 | Index-team tool | The MCP server registers `get_index_coverage` only when `--user` is an index-team user | The check rests on the unverified `--user` flag | The verified identity decides |
-| Concurrency | One lock (`SearchService.lock`) and one SQLite connection in each process. A search holds the lock from the file match to the audit write. A file lock serialises index publication between processes | About 10 requests a second per process on the test data. Admission control keeps each answer within the budget by refusing the rest at once ([Time budget and admission](#time-budget-and-admission)) | One read connection per thread with snapshot reads, no global lock for searches, several worker processes ([ADR 0018](docs/adr/0018-admission-control-and-the-time-budget.md)) |
-| SQL | The client writes the SQL. The service limits it (one `SELECT`, authoriser, read-only, step budget, row limit) and builds a projection for each request | The answer is only as good as the client's SQL, and it is not yet scored ([ADR 0019](docs/adr/0019-evaluate-retrieval-and-nl-to-sql.md)). Each request copies the permitted structured rows into memory: about 2 µs a fact to build and 1 µs to query `components`, so 3 s at a million facts, under the service lock. At 200,000 facts the 2,000,000-step budget stops even the standard S355 query, because `components` groups every fact | A query service with permissions in the database, or fixed query tools for common questions |
-| Uploads | The upload routes in `app.py` call `service.queue` directly to create, read, fail and retry jobs. Only saving and indexing go through `SearchService` | Upload logic is in two modules. The MCP server cannot upload | Move the job steps into `SearchService` if another front end needs uploads |
+| Concurrency | One lock (`SearchService.lock`) and one SQLite connection in each process. A search holds the lock from the file match to the audit write. A file lock serialises index publication between processes | About 10 requests a second per process on the test data. Admission control keeps each answer within the budget by refusing the rest at once ([Time budget and admission](#time-budget-and-admission)) | One read connection per thread with snapshot reads, no global lock for searches, several worker processes ([ADR 0008](docs/adr/0008-a-time-budget-and-admission-control.md)) |
+| SQL | The client writes the SQL. The service limits it (one `SELECT`, authoriser, read-only, step budget, row limit) and builds a projection for each request | The answer is only as good as the client's SQL, and it is not yet scored ([ADR 0009](docs/adr/0009-acceptance-tests-and-evaluation-sets.md)). Each request copies the permitted structured rows into memory: about 2 µs a fact to build and 1 µs to query `components`, so 3 s at a million facts, under the service lock. At 200,000 facts the 2,000,000-step budget stops even the standard S355 query, because `components` groups every fact | A query service with permissions in the database, or fixed query tools for common questions |
 | Errors | `ServiceError` carries an HTTP status code, also in the service | Simple: the web app returns the status, the MCP server returns the message. The service knows HTTP status numbers | Acceptable. Use named error types if more callers come |
+| Freshness | The index is refreshed on start and on request. A cited file is hashed again before it is quoted | An edited file's evidence is refused until the next refresh; a new file is not found until then. Hashing large cited files costs time on each answer | Automatic refresh from the repository's change events ([G5](docs/constraints/gaps.md#g5)) |
 | Index state | The inventory is stored with the index. The last scan time, the last index run and the operation state are in memory | After a restart, the index operations page shows the stored inventory but not the last run | Store the run history with the index |
 | Telemetry | In memory | Resets when the service stops | A metrics system |
-| File types | `ContentDetector` checks signatures for PDF, XLSX, DOCX and JT only. Markdown, CSV and the others are named by extension | A misnamed text file is found only when its reader fails. The JT probe reads the header version, not the content | libmagic or a format identification tool, and the format versions of more types ([ADR 0003](docs/adr/0003-versioned-reader-selection.md)) |
-| Readers | Stand-ins for the connectors: Markdown, text-layer PDF, CSV and XLSX only | No OCR, no PDF tables, no Word, no CAD or BIM content. The coverage report lists these files | Readers or connectors for the formats that the real repository holds ([design/DATA-PROFILE.md](design/DATA-PROFILE.md)) |
+| File types | `ContentDetector` checks signatures for PDF, XLSX, DOCX, JT and DXF only. Markdown, CSV and the others are named by extension | A misnamed text file is found only when its reader fails. The JT probe reads the header version, not the content | libmagic or a format identification tool, and the format versions of more types ([ADR 0001](docs/adr/0001-prove-the-use-case-with-stand-in-readers.md)) |
+| Readers | Stand-ins for the connectors: Markdown, text-layer PDF, CSV, XLSX and the text of ASCII DXF drawings | No OCR, no PDF tables, no Word, no CAD geometry, no DWG, JT or BIM content. The coverage report lists these files | Readers or connectors for the formats that the real repository holds ([design/DATA-PROFILE.md](design/DATA-PROFILE.md)) |
 | Query words | Stop words and synonyms are lists in `query.py` | Changes need a code change. The lists fit the test questions | A parameter dictionary that engineers maintain |
 | Answer rules | Value patterns are regular expressions in `answer.py`. The title is a heuristic: the first heading, only if its passage starts on the first 3 lines | They fit the test documents. Other notations are missed. A Markdown title with no text directly under it is not used, so its words do not bind | Readers return the title. More patterns from real documents |
 | Fact rules | Fixed header and cell patterns in `facts.py`, from tables only | A value in free text is not a fact. A header that the rules do not know gives the role `unknown`. Key-value tables put their heading in `subject`, so `components` mixes real components (B-104) with 121 rows whose subject is "Roof load", mostly from the generated project files; a query must filter by project, grade or subject to tell them apart | A parameter dictionary, and extraction from text with span checks ([design/EXTRACTION.md](design/EXTRACTION.md)) |
-| List answers | A list question reads all passages of each matching document from SQLite. Pages of 200 documents | Fast for 148 files. Slow for many thousands of matches | Facts and metadata in the index, with filters in the query |
+| List answers | A list question reads all passages of each matching document from SQLite. Pages of 200 documents | Fast for 149 files. Slow for many thousands of matches | Facts and metadata in the index, with filters in the query |
 | Web pages | Plain HTML and JavaScript, no framework, no build step. Checked by eye. No SQL page and no coverage page | No automated web page tests | Add browser tests if the pages stay |
-| Uploads | Markdown only, 10 MiB, local worker threads | No PDF, CSV or XLSX upload. Workers stop with the service | A shared queue and workers ([design/SCALING.md](design/SCALING.md)) |
 | Storage | SQLite files in one state folder, shared by the web service and the MCP servers. The file lock uses `flock` | One machine. Writers take turns. Not tested on Windows | A server database or search engine |
 
 ## Defects fixed since the review

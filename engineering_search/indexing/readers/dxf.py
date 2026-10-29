@@ -7,18 +7,22 @@ block references (ATTRIB), which is how a title block carries the drawing number
 revision, the approval status and values such as a safe working load. Geometry is not
 read.
 
-DXF is a list of group-code and value pairs, two lines each. The reader cites the line
-of the value in the file, so the quoted evidence is exactly what that line holds:
-    - each note is a passage, headed by its layer;
+DXF is a list of group-code and value pairs, two lines each. The reader cites the lines
+of the values in the file:
+    - each note is a passage, headed by its layer. An MTEXT note is one line of text:
+      its chunks (codes 3 and 1) are joined as written, paragraph breaks become spaces
+      and formatting codes are removed; it cites the lines from its first chunk to its last;
     - each block reference with attributes is a Property/Value table, named after the
       drawing number and revision when the title block has them. The property is the
       tag with its underscores as spaces, so the fact rules can read it;
     - each attribute is also a passage, headed by the table name, whose text is the
-      tag and the value as written ("CRANE_SAFE_WORKING_LOAD | 50 kN", like the cells
-      of a spreadsheet row). It cites the line of the value; the tag is in the same
-      ATTRIB entity, a few lines away.
+      tag and the value as written, joined like the cells of a spreadsheet row
+      ("CRANE_SAFE_WORKING_LOAD | 50 kN"). It cites the lines from the value to the tag,
+      both in the same ATTRIB entity; the table row cites the value's line.
 Only entities in the ENTITIES section are read; a block's own definitions (ATTDEF
-defaults) are templates, not the drawing's values. Binary DXF is not read.
+defaults) are templates, not the drawing's values. Binary DXF is not read: the
+manifest accepts the ASCII versions (AC...) only, so a binary file is reported as an
+unsupported version.
 """
 from __future__ import annotations
 
@@ -26,13 +30,16 @@ import re
 
 from ...core import Passage, Table, TableRow
 from ..detect import DXF
-from ..status import MALFORMED, NO_EXTRACTABLE_CONTENT
+from ..status import MALFORMED, NO_EXTRACTABLE_CONTENT, UNSUPPORTED_VERSION
 from .base import Capabilities, Extraction, ReaderError, ReaderManifest
 
 BINARY = b"AutoCAD Binary DXF"
-# MTEXT formatting: \P is a new paragraph; {\f...;}, \H...; and the like are formatting.
-MTEXT_PARAGRAPH = re.compile(r"\\P", re.I)
-MTEXT_CODE = re.compile(r"\\[A-OQ-Za-oq-z][^;\\{}]*;|[{}]")
+# MTEXT formatting: \P is a new paragraph and \~ a non-breaking space; \L, \O, \K and their
+# lower-case pair switch underline, overline and strike-through; {\f...;}, \H...; and the like
+# are formatting with an argument.
+MTEXT_SPACE = re.compile(r"\\[P~]", re.I)
+MTEXT_TOGGLE = re.compile(r"\\[LlOoKk]")
+MTEXT_CODE = re.compile(r"\\[A-Za-z][^;\\{}]*;|[{}]")
 
 
 def pairs(text: str) -> list[tuple[int, str, int]]:
@@ -79,17 +86,18 @@ def label(tag: str) -> str:
 
 
 class DxfTextReader:
-    manifest = ReaderManifest("dxf-text", "1", (DXF,), Capabilities(text=True, tables=True, metadata=True))
+    manifest = ReaderManifest("dxf-text", "1", (DXF,), Capabilities(text=True, tables=True, metadata=True),
+                              format_versions=("AC",))
 
     def read(self, file_id: str, version: str, raw: bytes) -> Extraction:
-        if raw.startswith(BINARY):
-            raise ReaderError(MALFORMED, "binary DXF is not read by this stand-in")
+        if raw.startswith(BINARY):  # The registry does not select this reader for binary DXF.
+            raise ReaderError(UNSUPPORTED_VERSION, "binary DXF is not read by this stand-in")
         try:
             text = raw.decode("utf-8")
         except UnicodeDecodeError:
             text = raw.decode("cp1252", errors="replace")  # Drawings before AutoCAD 2007 use the ANSI code page.
         passages: list[Passage] = []
-        blocks: list[tuple[str, list[tuple[str, str, int]]]] = []  # tag, value, value line
+        blocks: list[tuple[str, list[tuple[str, str, int, int]]]] = []  # tag, value, value line, tag line
         for entity in entities(pairs(text)):
             kind = entity[0][1]
             layer = (first(entity, 8) or ("0", 0))[0]
@@ -98,26 +106,29 @@ class DxfTextReader:
             elif kind == "MTEXT":
                 chunks = [(v, line) for c, v, line in entity if c in (3, 1)]
                 if chunks:
-                    body = MTEXT_CODE.sub("", MTEXT_PARAGRAPH.sub("\n", "".join(v for v, _ in chunks))).strip()
+                    raw_text = MTEXT_TOGGLE.sub("", MTEXT_SPACE.sub(" ", "".join(v for v, _ in chunks)))
+                    body = " ".join(MTEXT_CODE.sub("", raw_text).split())
                     if body:
                         passages.append(Passage(file_id, version, f"Drawing notes (layer {layer})",
                                                 chunks[0][1], chunks[-1][1], body))
             elif kind == "INSERT":
                 blocks.append(((first(entity, 2) or ("", 0))[0], []))
             elif kind == "ATTRIB" and blocks and (tag := first(entity, 2)) and (value := first(entity, 1)):
-                blocks[-1][1].append((tag[0], value[0], value[1]))
+                blocks[-1][1].append((tag[0], value[0], value[1], tag[1]))
         tables = []
         for name, attributes in blocks:
             if not attributes:
                 continue
-            values = {tag.upper(): value for tag, value, _ in attributes}
+            values = {tag.upper(): value for tag, value, _, _ in attributes}
             number, revision = values.get("DRAWING_NO"), values.get("REVISION")
             table_name = (f"Drawing {number}" + (f" rev {revision}" if revision else "") + " title block"
                           if number else f"Block {name} attributes")
-            rows = tuple(TableRow(i, (label(tag), value), line) for i, (tag, value, line) in enumerate(attributes, start=1))
+            rows = tuple(TableRow(i, (label(tag), value), line)
+                         for i, (tag, value, line, _) in enumerate(attributes, start=1))
             tables.append(Table(len(tables) + 1, table_name, ("Property", "Value"), rows))
-            passages += [Passage(file_id, version, table_name, line, line, f"{tag} | {value}")
-                         for tag, value, line in attributes if value]
+            passages += [Passage(file_id, version, table_name, min(line, tag_line), max(line, tag_line),
+                                 f"{tag} | {value}")
+                         for tag, value, line, tag_line in attributes if value]
         if not passages:
             return Extraction((), NO_EXTRACTABLE_CONTENT)
         return Extraction(tuple(sorted(passages, key=lambda p: p.start_line)), tables=tuple(tables))

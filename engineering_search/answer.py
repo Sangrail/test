@@ -102,15 +102,18 @@ def parts(passage: Passage) -> list[Part]:
             found.append(Part(sentence, first, last))
         prose.clear()
 
-    for number, line in enumerate(passage.text.splitlines(), start=passage.start_line):
+    for line_no, line in enumerate(passage.text.splitlines(), start=passage.start_line):
         if not line.strip():
             flush_prose()
         elif TABLE_ROW.search(line):
             flush_prose()
-            found.append(Part(" ".join(line.split()), number, number))
+            found.append(Part(" ".join(line.split()), line_no, line_no))
         else:
-            prose.append((number, line))
+            prose.append((line_no, line))
     flush_prose()
+    if len(passage.text.splitlines()) == 1 and passage.end_line > passage.start_line:
+        # One line of text read from several lines of the file (a DXF note or attribute): cite them all.
+        return [Part(part.text, passage.start_line, passage.end_line) for part in found]
     return found
 
 

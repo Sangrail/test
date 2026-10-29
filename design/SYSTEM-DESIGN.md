@@ -1,51 +1,84 @@
-# Engineering evidence search: gaps, phases and system design
+# The initial phase: a potential solution
 
-**How to read this document (updated 2026-10-29).** It has two parts.
+This is the initial phase that the task asks for ([T3](../docs/constraints/task.md#t3)): a potential solution, given the [background](../docs/constraints/background.md), the [use case](../docs/constraints/use-case.md) and the [constraints](../docs/constraints/constraints.md) of [the brief](../docs/Starting_document.md) ([K11](../docs/constraints/clarifications.md#k11)). The [system design diagram](system-design.svg) is drawn from it ([T4](../docs/constraints/task.md#t4)). The MVP is the working prototype of it ([T5](../docs/constraints/task.md#t5)).
 
-- [Part 1](#part-1-what-is-built-now) describes what the code does now, in summary. [ARCHITECTURE.md](../ARCHITECTURE.md) is the full description.
-- [Part 2](#part-2-proposed-design) is a design proposal. Nothing in Part 2 is built unless a line says **Built**. The proposal is not a commitment to every phase. The numbers in it are proposed targets, not results.
-
-[ADRs](../docs/adr/README.md) record the accepted decisions. [TODO](../TODO.md) tracks delivery, gaps and defects.
-
-**Use case.** A selected engineering manager or lead finds a critical parameter (load limit, material specification, compliance approval status) across 100+ project documents in under 10 seconds. They get 100% confidence in the source and never open a design file or a PDF viewer.
-
-**Scope of this MVP.** Markdown, PDFs with a text layer, CSV and XLSX. Markdown pipe tables, CSV files and workbook sheets are read as tables, and fixed rules extract typed facts from them. No OCR. PDF tables come out as text lines only. DXF, DWG, JT and CATIA come later: the detector reads the version in a JT header, and nothing more.
+The IDs (B, C, U, T, S, K, G, O) are the items of [the brief analysis](../docs/constraints/README.md). The [decision records](../docs/adr/README.md) (ADR 0001–0010) record the choices. [ARCHITECTURE.md](../ARCHITECTURE.md) describes the code in full; where it and this page differ, it is correct.
 
 ![System design](system-design.png)
 
-Source: [system-design.svg](system-design.svg). Solid boxes are the MVP. Dashed boxes are optional or later. Grey boxes are existing systems named in the brief. [code-architecture.png](code-architecture.png) shows the modules of the code, their layers and their imports.
+Source: [system-design.svg](system-design.svg), made by [make_diagram.py](make_diagram.py). Grey boxes already exist in the company ([C1–C5](../docs/constraints/constraints.md), assumed). Amber boxes are the MVP's labelled stand-ins for them. Blue boxes are what the MVP builds for the use case. Dashed boxes are out of scope. [code-architecture.png](code-architecture.png) shows the modules of the code, their layers and their imports.
 
-The diagram was redrawn on 29 October 2026 for the current design: both question paths, the permission check before the index lookup limit, tables and facts in the index, the index lock, admission control and the current scores. It is a summary. Part 1 and [ARCHITECTURE.md](../ARCHITECTURE.md) give the detail. Where they differ, they are correct.
+## The problem
 
-## Part 1: What is built now
+Years of design information sit in design files and project documents ([B1](../docs/constraints/background.md#b1)). Users do not know which file holds what they need ([B2](../docs/constraints/background.md#b2)), and will not learn file formats, schemas, query languages or jargon ([B3](../docs/constraints/background.md#b3), [B4](../docs/constraints/background.md#b4)).
 
-### One question, as built
+A selected engineering manager or lead ([U1](../docs/constraints/use-case.md#u1)) must find a critical parameter, such as a load limit, a material specification or an approval status ([U2](../docs/constraints/use-case.md#u2)), across 100+ project documents ([U3](../docs/constraints/use-case.md#u3)), in under 10 seconds ([U4](../docs/constraints/use-case.md#u4)), with 100% confidence in the source ([U5](../docs/constraints/use-case.md#u5)), without opening a CAD file or a PDF viewer ([U6](../docs/constraints/use-case.md#u6)). The six parts are one use case ([K1](../docs/constraints/clarifications.md#k1)).
 
-There are two ways in. Both use one `SearchService`, one index, one set of permissions and one audit log.
+## What exists, what stands in, what is out of scope
 
-**Unstructured (text).** The user asks a question on the web page, through the HTTP API, or through a chat agent that calls the MCP tool `search_evidence`. All three call one function, `SearchService.search`.
+The brief says five things already exist. The solution does not build them. It sits between them, and the MVP stands in for each one only as far as the flow needs ([ADR 0001](../docs/adr/0001-prove-the-use-case-with-stand-in-readers.md)). Stand-ins are not grown into products.
 
-1. **Normalise.** Remove stop words, expand a small synonym list, and make words with digits into prefix searches. Decide if the question asks for one value or a list, and find a number comparison ("greater than 5 kN/m²").
-2. **Check permissions.** Find every file that contains a query word. Apply `within`. Apply path rules from `access.py` (a Python dictionary, not a database table) to those files.
-3. **Look up.** Query a persistent SQLite FTS5 inverted index (`index-<id>.sqlite3`), over the permitted files only. The file filter is inside the index query, so it applies before the limit. Rank passages that contain more question words first, then by BM25. Keep the best 1,000 passages.
-4. **Answer.** For one value: from the 8 best permitted passages, select one sentence or table row that states a value, copied exactly. Its status is `found` only if every question word is in the sentence, its heading, the file path or the document title. Otherwise it is `unverified` (the document has the word elsewhere) or `partial` (the document does not have it). For a list: read every passage of each readable document that contains every question word, apply the number comparison at query time with unit conversion and signs, and return a page of 200 documents.
-5. **Audit, then return.** Write the audit record. If that fails, return no evidence. The response has the answer and the supporting passages, each with file, page, line range and SHA-256 version.
+| Part | Standing | In the MVP |
+| --- | --- | --- |
+| Architecture direction ([C1](../docs/constraints/constraints.md#c1)) | Existing, assumed | No stand-in. One service behind tools and an HTTP API, so the direction can place it ([ADR 0005](../docs/adr/0005-one-search-service-behind-tools.md)) |
+| Repository ([C2](../docs/constraints/constraints.md#c2)) | Existing, assumed | Stand-in: [`test-repository/`](../test-repository/TEST-DATA.txt), 149 files, read in place. No uploads ([K12](../docs/constraints/clarifications.md#k12)) |
+| Connectors ([C3](../docs/constraints/constraints.md#c3)) | Existing, assumed | Stand-in: sample readers for Markdown, text-layer PDF, CSV, XLSX and DXF (notes and title block), and fixed fact rules ([K7](../docs/constraints/clarifications.md#k7)) |
+| Structured and/or semantic stores ([C4](../docs/constraints/constraints.md#c4)) | Existing, assumed | Stand-in: one SQLite file with tables, typed facts and an FTS5 full-text index ([ADR 0002](../docs/adr/0002-structured-tables-and-full-text-search.md)) |
+| Chat-agent shell ([C5](../docs/constraints/constraints.md#c5)) | Existing, assumed | Claude Code, Codex or Pi call the MVP's MCP server. The web search page is a test harness, not a chat shell |
+| Repository access controls ([K13](../docs/constraints/clarifications.md#k13), [K15](../docs/constraints/clarifications.md#k15)) | Needed, not in the brief | Stand-in: folder and file rules in `access.py` ([G1](../docs/constraints/gaps.md#g1)) |
+| Durable audit | Needed, not in the brief | Stand-in: a local SQLite audit log ([G2](../docs/constraints/gaps.md#g2)) |
+| Search service, answers, permissions, time budget | Built by the MVP | The part this phase is about (below) |
+| Semantic search (embeddings) | Out of scope | Recorded as [O1](../docs/constraints/gaps.md#o1). Not a later phase of this plan |
+| Analysis of slow queries | Out of scope | Recorded as [O2](../docs/constraints/gaps.md#o2) |
 
-**Structured (tables and facts).** A chat agent calls `describe_schema`, writes one SQL `SELECT`, and calls `query_sql`. The agent writes the SQL, not the service.
+## The solution
 
-1. **Check permissions** on every indexed file.
-2. **Build a projection:** a new SQLite database in memory, with the tables, rows and facts of the permitted files only.
-3. **Run the statement** under limits: one `SELECT`, an authoriser that allows only the projection tables and plain functions, a read-only connection, a step budget, at most 500 rows and 4,000 characters.
-4. **Audit** the SHA-256 of the statement, the scope counts and the files in the result, never the rows. Then return the rows. Each row has its file, table, row, line and page. `get_document_evidence` returns the exact row and its passage.
+One search service sits between the chat shell and the stores ([ADR 0005](../docs/adr/0005-one-search-service-behind-tools.md)). It reads the repository where it is, keeps an index of what the readers extract, and answers a question with a sentence or row copied from a file, with the file, the location and the quote. Indexing and searching are separate lines that meet only at the index. The MVP runs it as one local process ([ADR 0010](../docs/adr/0010-a-local-single-process.md)).
+
+### A text question
+
+The user asks in plain language. The chat shell calls the MCP tool `search_evidence`, or the web page calls `POST /search`. Both call `SearchService.search`.
+
+1. **Refuse SQL.** A question that is a SQL statement is refused with a request for plain language ([K9](../docs/constraints/clarifications.md#k9), [ADR 0006](../docs/adr/0006-the-user-never-writes-sql.md)).
+2. **Understand.** Drop stop words, expand a small synonym list, make codes such as S355 into prefix searches. Decide if the question asks for one value or a list, and find a number comparison ("greater than 5 kN/m²").
+3. **Permissions first.** Find the files that contain a query word, then keep only those the user may read. This happens before any ranking, limit or count ([K13](../docs/constraints/clarifications.md#k13), [ADR 0004](../docs/adr/0004-permissions-before-ranking-limits-and-counts.md)).
+4. **Look up.** One FTS5 query over the permitted files only. Passages with more question words rank first, then BM25, with statistics from the permitted matches only. At most 1,000 passages.
+5. **Answer.** For one value: one sentence or table row that states a value, copied exactly. Its status is `found` only if every question word is in the sentence, its heading, the file path or the document title; otherwise `unverified` or `partial`; or `not found` ([ADR 0003](../docs/adr/0003-quote-the-source-and-refuse-rather-than-guess.md), [K14](../docs/constraints/clarifications.md#k14)). For a list: every readable document with a qualifying line, with the number comparison done in code, in pages of 200.
+6. **Check the file on disc.** Hash each cited file. A file changed or gone since indexing is refused: it is listed in `changed_files` and the answer is picked again without it ([K3](../docs/constraints/clarifications.md#k3), [ADR 0007](../docs/adr/0007-the-source-is-the-file-on-disc.md)).
+7. **Audit, then return.** Write the audit event. If that fails, no evidence is returned. Each source has the file, page, lines, the quoted text and the file's content fingerprint (a SHA-256 of its bytes).
 
 The chat agent writes the reply. Nothing checks that its reply matches the tool result.
 
-### The MCP tools, as built
+### A table question
+
+For filters, joins and counts over tables, the chat agent (not the user, not the service) writes one SQL `SELECT` ([ADR 0006](../docs/adr/0006-the-user-never-writes-sql.md)).
+
+1. `describe_schema` gives the tables, columns and units.
+2. `query_sql` checks permissions on every indexed file, and builds an in-memory projection of the permitted files' tables, rows and facts only.
+3. The statement runs under limits: one `SELECT`, an allowlist of tables and functions, a read-only connection, a step budget, at most 500 rows.
+4. A row from a file changed since indexing is refused with 409. The audit records a hash of the statement, never the rows.
+5. Each row carries its file, table, row, line and page. `get_document_evidence` returns the exact row and the passage that holds it.
+
+The service limits what the SQL can read. It cannot tell who wrote the statement ([G7](../docs/constraints/gaps.md#g7)), and does not check that the SQL asks the right question ([G4](../docs/constraints/gaps.md#g4)).
+
+### Keeping the index in step with the repository
+
+A source is the file on disc as it is now; there are no revisions to manage ([K3](../docs/constraints/clarifications.md#k3)). The index is refreshed when the service starts and when the index team asks ([K16](../docs/constraints/clarifications.md#k16), [ADR 0007](../docs/adr/0007-the-source-is-the-file-on-disc.md)).
+
+1. List every file. Detect its type and format version from the content; the extension is a hint.
+2. Take a SHA-256 of each file. Re-read only new and changed files (and files whose reader changed). Remove files deleted from disc.
+3. A registry picks a reader for each file ([ADR 0001](../docs/adr/0001-prove-the-use-case-with-stand-in-readers.md)). The reader returns passages (text with heading, page and lines) and tables. Fixed rules make typed facts from table cells, with SI values.
+4. Publish the changes in one transaction, under a file lock, so processes that share the index take turns.
+5. Every file that no reader takes, or reads only in part, is listed in the coverage report with the reason ([G8](../docs/constraints/gaps.md#g8)).
+
+There is no timer and no watcher. Between refreshes, an edited file is refused rather than quoted stale. Automatic refresh is part of [G5](../docs/constraints/gaps.md#g5).
+
+### The tools the shell calls
 
 ```text
 search_evidence(question, mode?: "auto" | "answer" | "list", within?: [file_id], limit?: 1..50, page?)
   → answer (one value with its status and source, or a page of up to 200 documents),
-    searched_for, supporting passages (file, page, lines, SHA-256 version, exact text), paging fields
+    searched_for, changed_files, supporting passages (file, page, lines, fingerprint, exact text)
 
 read_evidence(file_id, page?)
   → all passages of one file, or of one PDF page, if the user may read it
@@ -57,238 +90,91 @@ query_sql(sql, limit?: 1..500)
   → columns, rows, row_count, truncated; rows only from files the user may read
 
 get_document_evidence(file_id, table_no, row_no)
-  → the row as read, its facts, line, page, SHA-256 version and the passage that holds it
+  → the row as read, its facts, line, page, fingerprint and the passage that holds it
 
-get_index_coverage(gaps_limit?)       # registered only for an index-team --user
+get_index_coverage(gaps_limit?)       # only for an index-team --user
   → coverage by type, format version, status, folder and capability, with each gap
 ```
 
-`page` pages the supporting passages, and the document list of a list answer.
+The server runs over local stdio and needs no API key: the shell has its own model. It takes the user from its `--user` flag, which nothing verifies ([G1](../docs/constraints/gaps.md#g1)). [docs/MCP.md](../docs/MCP.md) says how to connect a shell.
 
-The server runs on local stdio only. Claude Code, Codex and Pi were connected to it by hand, and each answered the structured question with citations. `tests/test_mcp_stdio.py` runs a real MCP client session.
+## How the solution meets the use case
 
-### Proposed items that are not built
-
-| Proposed in Part 2 | Built now |
-| --- | --- |
-| `get_evidence(evidence_id)` | `read_evidence(file_id, page)` returns a whole file or page. `get_document_evidence` returns one table row |
-| `verify_citations(answer, evidence_ids)` | Not built. Nothing checks the agent's reply |
-| An `acl` table, joined before `LIMIT` | Path rules in `access.py`. The permitted files are passed into the index query, before the limit, and into the SQL projection |
-| `section_trees` and full section paths | Each passage has only its nearest heading |
-| Page + bounding-box locators | Page (or sheet) and line range (or sheet row) |
-| One ingestion path through the queue | Two paths: full refresh and the Markdown upload queue |
-
-Built since the last update: scanned PDFs are reported as `NO_TEXT_LAYER` in a coverage report, and a file lock coordinates index refreshes between processes that share a state folder.
-
-### Defects fixed
-
-The review of 2026-10-28 found six defects. All six are fixed: a wrong parameter is now `unverified`, not `found`; permissions apply before the retrieval limit; signs are read in number comparisons; lists are paged; two processes take turns to publish the index; PDFs without text are reported. [ARCHITECTURE.md](../ARCHITECTURE.md#defects-fixed-since-the-review) lists each fix with its test.
-
-### How the built system uses the brief's constraints
-
-| Constraint in the brief | Built now | Proposed |
+| Item | How | Still missing |
 | --- | --- | --- |
-| Files live in an existing repository | A local folder stands in for it. The service reads it and never writes into it, except Markdown uploads | Read from the repository through its connector. Change detection feeds the queue |
-| Connectors and APIs extract metadata, text and properties | The indexer (`engineering_search/indexing/`): file type and format version detection from the content, a reader registry, and built-in readers for Markdown, text-layer PDF, CSV and XLSX. Fixed rules extract typed facts from tables. Other files are listed in a coverage report with their status | **Extraction connectors**, called by the indexer workers. Our code only normalises their output into passages, tables and facts |
-| Structured and/or semantic stores | `index-<id>.sqlite3`: `documents`, `passages`, `passages_fts` (keyword index), `files` (inventory), `source_tables`, `table_rows`, `facts` and `meta` | Add section trees, metadata, and facts from text ([EXTRACTION.md](EXTRACTION.md)). A semantic store (`vectors`) only if the questions show a gain |
-| A chat-agent shell calls backend APIs or tools | A stdio MCP server with text search, constrained SQL and evidence tools, checked by hand with Claude Code, Codex and Pi. The user comes from an unverified `--user` flag | A remote MCP server behind company sign-in. Add `verify_citations` |
-| A users-to-files permissions database exists | Path rules in `access.py`, evaluated per request and applied inside retrieval, before the limit, and before the SQL projection is built | Sync the permissions from the repository into the index |
+| [U1](../docs/constraints/use-case.md#u1) a selected lead | An authorised pilot group ([K5](../docs/constraints/clarifications.md#k5)). Permissions before ranking, limits and counts, on both paths | Verified identity and the repository's own controls ([G1](../docs/constraints/gaps.md#g1)) |
+| [U2](../docs/constraints/use-case.md#u2) a critical parameter | One quoted value with a status; a list for "which documents"; rows from agent-written SQL. Asked of Markdown, PDF, CSV, XLSX and a DXF title block | One vocabulary for status values ([G6](../docs/constraints/gaps.md#g6)) |
+| [U3](../docs/constraints/use-case.md#u3) 100+ documents | One question searches every readable document across projects ([K10](../docs/constraints/clarifications.md#k10)): 145 files with a reader | |
+| [U4](../docs/constraints/use-case.md#u4) under 10 seconds | An 8 s budget; a request that cannot meet it is refused at once with a retry time ([ADR 0008](../docs/adr/0008-a-time-budget-and-admission-control.md)) | Any number of users ([G5](../docs/constraints/gaps.md#g5)) |
+| [U5](../docs/constraints/use-case.md#u5) 100% confidence in the source | Quotes copied, never written; file, location and fingerprint; refuse rather than guess; changed files refused | Proof on real questions ([G4](../docs/constraints/gaps.md#g4)) |
+| [U6](../docs/constraints/use-case.md#u6) no CAD file, no PDF viewer | The answer carries the quote, heading, page and lines ([K4](../docs/constraints/clarifications.md#k4)). A PDF calculation and a DXF title block are answered without opening either | What the stand-in readers cannot read ([G8](../docs/constraints/gaps.md#g8)) |
 
-## Part 2: Proposed design
+[`tests/test_use_case.py`](../tests/test_use_case.py) asks the use-case questions through the HTTP API and checks every answer against the files ([ADR 0009](../docs/adr/0009-acceptance-tests-and-evaluation-sets.md)).
 
-### Proposed tool contract
+**Measured on the test repository (29 October 2026, 149 files, one laptop, one process).** Retrieval on 16 scored questions: Success@1 0.88, Success@5 1.00, MRR@10 0.90, Recall@10 0.90, correct answers 1.00, permission leaks 0. Search service time p50 about 83 ms and p95 about 336 ms. End-to-end time through a chat shell is not measured. [docs/METRICS.md](../docs/METRICS.md) explains why these scores do not predict real performance.
 
-```text
-search_evidence(question: str, project?: str, mode: "find" | "list" = "find")
-  → request_id
-    searched_for: terms, synonyms applied, project, mode   # the shell echoes this to the user
-    results[]:    evidence_id, file, section_path, locator (lines | page + bbox),
-                  version (SHA-256), revision, approval_status, text (verbatim)
-    matched_documents, truncated
+## What this phase leaves open
 
-get_evidence(evidence_id)                → the passage plus surrounding context
-verify_citations(answer, evidence_ids[]) → every number and unit in the answer, each
-                                           marked as found or not found in the cited text
-```
+The [gaps page](../docs/constraints/gaps.md) holds each one ([T2](../docs/constraints/task.md#t2)): identity and permissions ([G1](../docs/constraints/gaps.md#g1)), durable audit ([G2](../docs/constraints/gaps.md#g2)), approved model use ([G3](../docs/constraints/gaps.md#g3)), quality on real questions ([G4](../docs/constraints/gaps.md#g4)), scale ([G5](../docs/constraints/gaps.md#g5), see [SCALING.md](SCALING.md)), an ontology of status values ([G6](../docs/constraints/gaps.md#g6)), who wrote a SQL statement ([G7](../docs/constraints/gaps.md#g7)) and what the stand-in readers cannot read ([G8](../docs/constraints/gaps.md#g8)). The hardest is G4.
 
-- **find** returns the top 10 sections.
-- **list** returns every permitted document with a matching passage, one row per document, paged.
+What "100% confidence in the source" means here: every value shown is copied from a cited file, at an exact location, and the file on disc still holds those bytes. It does not prove that the engineering value is right, or that the quoted value is the parameter asked for: binding is a word check, not a check of meaning. The system never decides whether a file is a "current" or "approved" revision ([K3](../docs/constraints/clarifications.md#k3)); it states what the file says, and shows other documents that state a value.
 
-**Built:** `search_evidence` with a different signature, and `read_evidence` in place of `get_evidence` (see [Part 1](#the-mcp-tools-as-built)). The document list is paged, with `count` and `truncated`. Not built: `project`, `section_path`, bbox locators, `revision`, `approval_status` and `verify_citations`.
+## Beyond the initial phase
 
-### No query language and no keyword-extraction API
-
-The shell can pass the user's sentence unchanged, and normalisation turns it into a query:
-
-1. Stop words ("what is the …") are dropped.
-2. Word forms are stemmed.
-3. An SME-owned synonym list expands "UDL" to "imposed load" and "live load".
-4. BM25 matches any of the words and ranks passages that contain more of them higher.
-
-**Built**, with a small synonym list in `query.py` that the developers wrote, not an SME-owned list. It replaced the first prototype's rule that every word must match.
-
-**Built, in addition:** for questions over tables, the shell does use a query language. Its LLM writes one SQL `SELECT`, and the service runs it under limits over the permitted rows only (see [Part 1](#one-question-as-built)). This is a choice to let the shell form structured queries. The service constrains the SQL. It does not write it or check that it matches the question.
-
-### API key
-
-The shell is existing, with its own LLM. We register the tools (OpenAPI or MCP), so **we need no key**.
-
-**Built:** the MCP server needs no key. The web page has no chat box and uses no language model. A chat box on the web page would need a server-side language model that calls the same search function. It is not built.
-
-### Answer text and numbers
-
-**Built:** the answer text is a verbatim quote: the table row or sentence that contains the value, at an exact location in a hashed file version. The service never writes, rounds or converts the answer text.
-
-**Built:** list questions with a comparison ("roof load greater than 5 kN/m²") parse value and unit from the lines of the matching documents at query time, convert units, keep signs, and compare in code (`answer.py`). Every question word must be bound to the qualifying line. Known limits: binding is a word check, not a check of meaning; only what word search finds is compared; a unit in a table header is not read on this path.
-
-**Built:** index-time facts from table cells, for a short fixed list of parameters, with SI values ([EXTRACTION.md](EXTRACTION.md)). The shell filters them with SQL. A value in free text is not a fact.
-
-**Proposed:** `verify_citations`, so that the shell may only restate a number that is in the cited text.
-
-The quote makes the source traceable. It does not prove that the quoted value answers the question.
-
-### Questions to clarify with the business
-
-1. **What does "100% confidence" mean?** We propose: every value shown is a verbatim quote from a cited passage, at a hashed file version and an exact location. It is not a guarantee that the engineering value is correct or current, or that the quoted value is the asked parameter. Is that acceptable?
-2. **Which document is authoritative?** When an approved revision and a draft disagree, do the connectors expose revision and approval status? If not, we show both and label them.
-3. **What do the connectors return for PDFs?** Page numbers, text block coordinates, bookmarks, document properties? This decides the evidence locator and the section path.
-4. **How fresh does the index need to be?** Under 10 s is query latency. Separately, how soon after a file changes must it be searchable?
-5. **Can the shell register our tools, and what may its LLM see?** The LLM receives passages the user is permitted to read. Is the shell's model provider approved for that content?
-6. **Are find, list and simple numeric comparison enough for the MVP?** The MVP now includes a query-time comparison with the limits above, and SQL filters over facts from tables. SQL can count and sum, but the service does not check a calculation that the shell makes. Calculations ("total load on…") are out of scope.
-
-### Critical gaps and challenges
-
-1. **"100% confidence" is about provenance, not truth.**
-   - **Built:** the source: file, version hash, exact location and verbatim text.
-   - **Built:** the status `found` needs every question word in the sentence, its heading, the file path or the document title. A sentence that does not name some of them is `unverified`, with the words it lacks. This is a word check: it does not prove that the value is the asked parameter.
-   - **Proposed:** `verify_citations` rejects any number in an answer that is not in the cited text. Then the shell says "not found".
-   - Still open: whether that document is the authoritative or current one. That needs revision and approval metadata.
-2. **Users and documents use different words.** "Load limit" vs "maximum uniformly distributed load" vs "imposed load" vs "UDL". **Built:** stemming, a small synonym list and BM25 any-word matching. Recall@k measures what is still missed.
-3. **Parameters often live in tables.**
-   - **Built:** Markdown pipe tables, CSV files and workbook sheets are read as tables, with the line of each row, and fixed rules make typed facts from their cells.
-   - **Built:** PDF tables come out as lines of text. Table structure is lost.
-   - **Built:** scanned PDFs have the status `NO_TEXT_LAYER`, and the coverage report lists them as gaps. There is no OCR.
-4. **Permissions must apply before any limit.**
-   - Filtering an already-limited result list loses permitted results, and lets forbidden documents change what a user sees.
-   - **Built:** the permitted files are passed into the index query, before the 1,000-passage limit. For SQL, the projection holds only the permitted rows, before any filter, join, count or limit.
-   - **Built:** the shell's LLM only sees permitted text and rows. If the permission check fails, the system fails closed. The audit log records the permission version.
-   - **Proposed:** permissions synced from the repository into the index.
-5. **Some questions need computation, not search.** **Built:** query-time comparison for list questions, and SQL filters over facts, with the limits in [Answer text and numbers](#answer-text-and-numbers). Calculations ("total load on…") are out of scope.
-6. **Ingestion.**
-   - **Built:** one persistent SQLite index in the state folder. The indexer (`engineering_search/indexing/`) lists every file, detects its type and format version from the content, reads and hashes the files that have a reader, and extracts only new and changed files (and files whose reader version changed). Changes apply in one transaction. A file lock lets one process at a time plan and publish, so processes that share a state folder take turns.
-   - **Now:** two ingestion paths (full refresh and the upload queue). Uploads are written into the document folder.
-   - **Proposed:** one ingestion path through the queue.
-7. **Scale.**
-   - The index lookup does not scan the documents or the passages. A query reads the lists of passages for its few terms, so its cost grows with how many passages contain those terms, not with how many files exist. **Now:** the answer step then reads passage text, and a list question reads all passages of each matching document. This is fast at 148 files, but grows with the number of matches. A SQL request copies the permitted structured rows into memory, which also grows with the repository.
-   - Extraction happens once per document version, when it changes. **Now:** every refresh also reads and hashes every file.
-   - One SQLite FTS5 node handles millions of passages. Beyond that, or with many concurrent users, move to a sharded Lucene-based engine such as OpenSearch. Licensing dtSearch is also a valid "buy" option, and it reads PDF natively.
-   - The real cost is the initial crawl of a decade of documents. Track it as freshness, separately from query latency.
-   - See [SCALING.md](SCALING.md).
-8. **There is no gold set from real users yet, so quality claims cannot be made.** The current 17 questions (16 scored) were written by the developers. This needs SME time to write questions and label answers.
-
-### Phases
-
-| Phase | Delivers | Exit criteria (proposed) | Status |
-| --- | --- | --- | --- |
-| **0** | First local Markdown prototype. Verbatim evidence with versions. Audit gate that fails closed. Durable queue and worker pool. Telemetry. Simulated users with a per-file permission store (`access.py`). | Exists | Done. Superseded by phase 1 |
-| **1: MVP** | Persistent `index.sqlite3` with FTS5, `documents`, `passages`, `section_trees` and `acl`. One ingestion path: change detection → queue → workers → connectors → publish. Markdown and text-PDF passages with full section paths and locators. Normalisation and BM25 any-word matching, with permissions applied before any limit. The `search_evidence`, `get_evidence` and `verify_citations` tools. Gold set v1 and an evaluation harness. | find: Success@10 ≥ 0.95, MRR@10 ≥ 0.70. list: set recall ≥ 0.95. Citation precision = 100%. Permission leaks = 0. Search API p95 < 1 s. End-to-end p95 < 10 s. | Partly built. See below |
-
-The numbers are proposals. Agree them with the business once a real gold set gives a baseline.
-
-**Phase 1 status (2026-10-29).**
-
-- **Built:** the persistent FTS5 index; Markdown, text-PDF, CSV and XLSX passages with page or sheet locators; content detection and a reader registry; a coverage report; query normalisation; one-value answers with binding statuses, and paged document lists; query-time number comparison; permissions before the retrieval limit; tables and facts from tables; constrained SQL; the MCP tools listed in [Part 1](#the-mcp-tools-as-built); a cross-process index lock; 17 developer-written questions (16 scored); use-case acceptance tests; a real stdio MCP client test.
-- **Not built:** `section_trees` (each passage has only its nearest heading); an `acl` table (rules are in `access.py`); `get_evidence`; `verify_citations`; one ingestion path; facts from free text; metadata from a connector.
-- **Measured on the test data:** Success@1 0.88, MRR@10 0.90, Recall@10 0.90, correct answer 1.00, permission leaks 0 in the evaluation, search service p50 about 79 ms and p95 about 330 ms. End-to-end latency through a chat agent is not measured. List set recall, SQL answers and citation precision are not scored. See [METRICS.md](../docs/METRICS.md).
-
-### Areas for improvement (outside the MVP)
+None of these is built or committed. Each is tied to the gap it would close. [EXTRACTION.md](EXTRACTION.md) works through extraction and stores in more detail.
 
 | Area | Why it matters | Approach when needed | Cost and risk |
 | --- | --- | --- | --- |
-| **Numeric comparison** ("above 5 kN/m²") | Users will ask it | **Built at query time** in `answer.py`, with signs and word binding, limited by recall. **Built at index time** for table cells: facts with SI values, filtered with SQL. Later: facts from free text | Query-time parsing is limited by retrieval recall. Index-time extraction needs unit normalisation and has its own error rate. The shell's SQL can be wrong |
-| **Value-to-element binding** | A document states several parameters | **Built:** answers whose sentence does not name every question word are `unverified`. Facts from tables have a subject and a role. Later: subjects for values in free text | Rules miss notations. Word binding is not a check of meaning |
-| **Typo tolerance** | "rooof laod" returns nothing | FTS5 trigram index, or "did you mean" from the index vocabulary | Low |
-| **Semantic search** | Paraphrases the synonym list misses | Embeddings per passage, combined with BM25 via reciprocal rank fusion. Only if the gold set shows a recall gap. | Matches are harder to justify as evidence; numbers and IDs embed poorly |
-| **Deep section search** | Long documents (400-page reports) | PageIndex tree search over the top 3 long, permitted documents, triggered by `deep:` or a low score | LLM cost, results that vary between runs, document text sent to a provider |
-| **PDF tables** | Parameters live in tables | Table-aware extraction (pdfplumber, docling) that keeps table rows with their headers | Extraction errors in complex layouts |
-| **Authority** | Draft vs approved, superseded revisions | Rank or label by revision and approval status from connector metadata | Depends on how good the metadata is |
-| **OCR and CAD** | Scanned PDFs, DXF/DWG/JT/CATIA | OCR connector. CAD title blocks and properties via connectors. | Extraction quality, licensing |
-| **Scale-out** | A decade of documents, many users | Postgres or OpenSearch, a broker with leases, multiple hosts ([SCALING.md](SCALING.md)) | Operations |
+| Real connectors ([G8](../docs/constraints/gaps.md#g8)) | Scans, CAD geometry, DWG, JT and CATIA are not read | The existing connectors behind the same reader interface. Profile the repository first ([DATA-PROFILE.md](DATA-PROFILE.md)) | Extraction quality, licences |
+| Citation check ([G4](../docs/constraints/gaps.md#g4)) | Nothing checks the agent's reply | A `verify_citations` tool: every number in the reply must be in a cited quote | Low; needs the shell to call it |
+| Facts from free text ([G4](../docs/constraints/gaps.md#g4)) | A value in a sentence is not a fact, so SQL misses it | Pattern rules, then span-checked extraction ([EXTRACTION.md](EXTRACTION.md)) | Its own error rate |
+| PDF tables ([G8](../docs/constraints/gaps.md#g8)) | PDF tables come out as lines of text | Table-aware extraction that keeps rows with their headers | Errors in complex layouts |
+| Section paths and locators | Each passage has only its nearest heading, and a page and line range | Full heading paths; page and box, for a viewer ([DATA-PROFILE.md](DATA-PROFILE.md#5-users-will-want-to-see-the-document)) | Depends on what the connectors return |
+| An ontology ([G6](../docs/constraints/gaps.md#g6)) | "Approved" and "APPROVED FOR CONSTRUCTION" are compared as written | An agreed vocabulary of parameters and status values, applied by the connectors | Hard over years of documents |
+| Typo tolerance | "rooof laod" returns nothing | A trigram index, or "did you mean" from the index vocabulary | Low |
+| Scale ([G5](../docs/constraints/gaps.md#g5)) | Many users, a far larger repository | A shared index service, a stateless query tier, automatic refresh ([SCALING.md](SCALING.md)) | Operations |
 
-### Measuring retrieval (proposed)
+Semantic search is out of scope ([O1](../docs/constraints/gaps.md#o1)). Lexical search shows exactly why a passage matched, which the source check needs ([ADR 0002](../docs/adr/0002-structured-tables-and-full-text-search.md)). If real questions show paraphrases that the synonym list misses ([G4](../docs/constraints/gaps.md#g4)), adding it needs a new decision record.
 
-**Built:** `scripts/evaluate.py` scores 16 questions with Success@k, MRR@10, Recall@10, a zero-result rate, a lenient "correct answer" check (expected file and expected text) and a permission-leak count. It does not use ranx, graded labels, confidence intervals or CI gates. The rest of this section is proposed.
+## Measuring quality on real questions (G4)
 
-#### Gold set
+[`scripts/evaluate.py`](../scripts/evaluate.py) scores 16 developer-written questions with Success@k, MRR@10, Recall@10, a zero-result rate, a lenient correct-answer check and a permission-leak count; a second set scores 13 questions for agent-written SQL ([evaluation/](../evaluation/README.md)). A claim about real quality needs more. This is the proposal for [G4](../docs/constraints/gaps.md#g4); none of it is built.
 
-- **Size.** 60–100 questions written the way users ask them, split across load limits, material specifications and approval status, and across Markdown and PDF.
-- **Graded labels per passage.**
-  - **2:** the passage contains the parameter value.
-  - **1:** right section or document, but not the value.
-  - **0:** not relevant.
-- **Answer key.** For each question, an expected value, unit, file and location. For list questions, the complete set of documents that should be returned.
-- **Special cases.**
-  - "Not in corpus" questions, to test abstention.
-  - Documents that state several parameters, to test that the answer is the asked one.
-  - Questions with conflicting answers, such as an approved revision vs a draft.
-  - Test users with restricted permissions, to test for leaks, and restricted documents that rank above permitted ones, to test that permitted results do not change.
-- **Format.** Stored in TREC qrels format so standard tools can score it.
+### Gold set
 
-#### find: ranked retrieval metrics (before the LLM)
+- **Size.** 60–100 questions from the pilot group, written the way they ask them, across load limits, material specifications and approval statuses, and across file types.
+- **Graded labels per passage.** 2: the passage states the value. 1: the right section or document, but not the value. 0: not relevant.
+- **Answer key.** For each question, the expected value, unit, file and location, checked by engineers. For a list question, the complete set of documents.
+- **Special cases.** Questions not answered by any document (to test refusal); documents with several parameters (to test binding); documents that disagree; users with restricted access, and restricted documents that rank above permitted ones (to test that permitted results do not change).
+- **Format.** TREC qrels, so standard tools can score it.
+
+### Metrics
 
 | Metric | Definition | Why it matters here |
 | --- | --- | --- |
-| **Success@k** (Hit@k) | Share of questions with at least one grade-2 passage in the top k | Directly answers "can the lead find the parameter?" |
-| **Recall@k** | Share of all grade-2 passages that appear in the top k | Conflicting values (5 vs 7 kN/m²) must *all* surface |
-| **MRR@10** | Mean of 1 / rank of the first grade-2 passage | How far down the list the answer sits |
-| **nDCG@10** | Gain from graded labels, discounted by position, normalised against the ideal ranking | Standard comparable score (BEIR reports nDCG@10). Uses the 0/1/2 grades. |
-| **Zero-result rate** | Share of questions that return nothing | Catches failures like `roof loads` → 0 |
+| **Success@k** | Share of questions with a grade-2 passage in the top k | Can the lead find the parameter? |
+| **Recall@k** | Share of all grade-2 passages in the top k | Disagreeing values (5 vs 7 kN/m²) must all show |
+| **MRR@10** | Mean of 1 / rank of the first grade-2 passage | How far down the answer sits |
+| **nDCG@10** | Graded gain, discounted by position, against the ideal ranking | A standard comparable score |
+| **Set precision and recall** | For list questions: correct returned ÷ returned, and ÷ all correct | A missed document is a missed value |
+| **Value exact match** | The value and unit stated equal the answer key | The answer, not just the passage |
+| **Citation precision** | Share of cited quotes that contain the stated value, checked in code | Must be 100% |
+| **Refusal accuracy** | On questions no document answers, the share that say "not found" | Refuse rather than guess |
+| **SQL accuracy** | Agent-written SQL returns the expected rows | The table path ([G7](../docs/constraints/gaps.md#g7)) |
+| **Permission leaks** | Any file ID, passage, count or name from a file the user may not read | Must be 0 ([K13](../docs/constraints/clarifications.md#k13)) |
+| **Latency** | p50, p95, p99 end to end and per stage, under concurrent load and while indexing | [K6](../docs/constraints/clarifications.md#k6): 95% within 10 s |
 
-#### list: set metrics
-
-List questions should return *every* matching document, so they are scored as sets, not ranked lists:
-
-- Precision = correct returned ÷ returned
-- Recall = correct returned ÷ all correct
-
-Recall matters more here, because a missed document is a missed value.
-
-#### Evidence and answer metrics (after the shell)
-
-| Metric | Definition | Target |
-| --- | --- | --- |
-| **Value exact match** | The value and unit the shell states equal the answer key | ≥ 0.90 |
-| **Citation precision** | Share of cited passages that contain the stated value verbatim. Checked by `verify_citations`, not by an LLM. | 100% (hard gate) |
-| **Citation recall** | Share of stated values that have a supporting citation | 100% (hard gate) |
-| **Abstention accuracy** | On "not in corpus" questions, the share that answer "not found" | ≥ 0.90 |
-| **Faithfulness / context precision** | RAGAS metrics scored by an LLM judge | Secondary signal only. Scores move when the judge model changes. |
-
-#### Safety and operations
-
-- **Permission leaks = 0.** A leak is any file ID, passage, snippet or match count from a file the user cannot read. It counts whether it appears in a response, a log the user can see, or text sent to the shell's LLM. Also: a user's permitted results must not change when restricted documents are added. This is a hard gate.
-- **Latency.** p50, p95 and p99 end to end and for each stage (normalisation, retrieval with permissions, audit, shell). Measured under concurrent queries *and* while indexing is running.
-- **Freshness and coverage.**
-  - Time to searchable (p95).
-  - Extraction failure rate.
-  - Index coverage: indexed files ÷ eligible files, with "PDF without a text layer" reported separately.
-
-#### Method
+### Method
 
 - Score runs with **ranx**, which reads TREC qrels and is validated against `trec_eval`.
-- Report a bootstrap 95% confidence interval. With 15–100 questions, the intervals are wide.
-- Compare variants with a paired significance test, for example all-words match vs BM25 any-word vs BM25 + synonyms.
+- Report a bootstrap 95% confidence interval: with under 100 questions, intervals are wide.
+- Compare variants with a paired significance test.
 - Break every metric down by parameter type and file type.
-- Run the harness in CI so that a change that lowers Success@10 or causes any leak fails the build.
-
-## History: from the first prototype
-
-The first prototype kept passages in memory and rebuilt them at each start, needed every question word to match, and had two ingestion paths. Phase 1 replaced the in-memory index with a persistent SQLite FTS5 index, and all-words matching with normalisation and any-word matching. It kept the `Passage` evidence model, the audit gate that withholds evidence if it cannot record the release, the job and worker semantics, the `SearchIndex` and `AuditStore` interfaces, and the simulated users in `access.py`. Still to do from that plan: one ingestion path, section paths, and page + bbox locators.
+- Run the harness on every release, so a change that lowers Success@10 or causes a leak fails ([ADR 0009](../docs/adr/0009-acceptance-tests-and-evaluation-sets.md)).
 
 ## Sources
 
 - ranx: ranking evaluation and comparison, validated against TREC Eval: <https://pypi.org/project/ranx/>
-- RAGAS metrics (faithfulness, context precision and recall): <https://docs.ragas.io/en/latest/concepts/metrics/>
 - Gao et al., *Enabling Large Language Models to Generate Text with Citations* (ALCE), EMNLP 2023: <https://arxiv.org/abs/2305.14627>
 - Thakur et al., *BEIR: A Heterogeneous Benchmark for Zero-shot Evaluation of Information Retrieval Models*, 2021 (nDCG@10 as the standard score): <https://arxiv.org/abs/2104.08663>
 - Järvelin and Kekäläinen, *Cumulated gain-based evaluation of IR techniques*, ACM TOIS 2002 (nDCG): <https://doi.org/10.1145/582415.582418>
-- PageIndex: <https://github.com/VectifyAI/PageIndex>

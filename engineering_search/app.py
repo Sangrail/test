@@ -7,11 +7,9 @@ responses.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-import hashlib
 import logging
 import os
 from pathlib import Path
-from time import perf_counter
 from typing import Literal
 from uuid import uuid4
 
@@ -23,12 +21,10 @@ from starlette.concurrency import run_in_threadpool
 from .access import ACCESS_RULES, USERS, DemoSessions, MockPermissionStore, PermissionStore, folder_access
 from .adapters import SQLiteAuditStore, Telemetry
 from .core import AuditReader, AuditStore, Passage, SearchIndex, tokens
-from .jobs import JobQueue, QueueFull, SQLiteJobQueue, WorkerPool
 from .service import SearchService, ServiceError, now
 from .store import SQLiteSearchIndex
 
 log = logging.getLogger(__name__)
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 
 class SearchRequest(BaseModel):
@@ -65,6 +61,7 @@ class SearchResponse(BaseModel):
     searched_for: str
     ignored_words: list[str]
     answer: dict
+    changed_files: list[str] = Field(default=[], description="Cited files that changed on disc after indexing; their evidence is refused")
 
 
 class SqlRequest(BaseModel):
@@ -76,18 +73,6 @@ class SqlRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     user_id: str
-
-
-class UploadRequest(BaseModel):
-    filename: str = Field(min_length=1, max_length=160)
-
-    @field_validator("filename")
-    @classmethod
-    def markdown_name(cls, value: str) -> str:
-        if (not value.lower().endswith(".md") or value.startswith(".")
-                or any(c in value for c in '/\\\x00') or any(ord(c) < 32 for c in value)):
-            raise ValueError("Use a Markdown filename ending in .md, without directories")
-        return value
 
 
 class AdmissionMiddleware:
@@ -111,18 +96,23 @@ class AdmissionMiddleware:
             response = JSONResponse({"detail": error.detail}, status_code=error.status,
                                     headers={"Retry-After": str(error.detail["retry_after_seconds"])})
             return await response(scope, receive, send)
+        async def tracked_send(message):
+            if message["type"] == "http.response.start":
+                ticket.status = message["status"]  # the telemetry records it when the ticket is released
+            await send(message)
+
         with ticket:
-            await self.app(scope, receive, send)
+            await self.app(scope, receive, tracked_send)
 
 
-class SearchTimingMiddleware:
+class CompletionAuditMiddleware:
+    """Record in the audit trail whether a search response was sent in full."""
     def __init__(self, app, telemetry: Telemetry, audit: AuditStore):
         self.app, self.telemetry, self.audit = app, telemetry, audit
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or scope["path"] != "/search" or scope["method"] != "POST":
             return await self.app(scope, receive, send)
-        start = perf_counter()
         status = 500
         completed = False
 
@@ -137,7 +127,6 @@ class SearchTimingMiddleware:
         try:
             await self.app(scope, receive, tracked_send)
         finally:
-            self.telemetry.query((perf_counter() - start) * 1000, status)
             if "audit_request_id" in scope:
                 try:
                     await run_in_threadpool(self.audit.append, {
@@ -154,7 +143,6 @@ class SearchTimingMiddleware:
 
 def create_app(root: Path | None = None, index: SearchIndex | None = None,
                audit: AuditStore | None = None, telemetry: Telemetry | None = None,
-               queue: JobQueue | None = None, worker_count: int | None = None,
                permissions: PermissionStore | None = None,
                index_on_start: bool = False, audit_reader: AuditReader | None = None,
                index_lock=None, admission=None) -> FastAPI:
@@ -162,40 +150,29 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
     audit = audit if audit is not None else SQLiteAuditStore(
         Path(os.environ.get("AUDIT_DB", ".runtime/audit.sqlite3")))
     audit_reader = audit_reader if audit_reader is not None else (audit if hasattr(audit, "read_page") else None)
-    worker_count = worker_count if worker_count is not None else int(os.environ.get("INDEXER_WORKERS", "2"))
-    if not 0 <= worker_count <= 16:
-        raise ValueError("INDEXER_WORKERS must be between 0 and 16")
-    namespace = hashlib.sha256(str(root).encode()).hexdigest()[:16]
     service = SearchService(
         root=root,
         index=index if index is not None else SQLiteSearchIndex(),
         audit=audit,
         permissions=permissions if permissions is not None else MockPermissionStore(),
-        queue=queue if queue is not None else SQLiteJobQueue(
-            Path(os.environ.get("QUEUE_DB", f".runtime/queue-{namespace}.sqlite3"))),
         telemetry=telemetry, index_lock=index_lock, admission=admission)
     sessions = DemoSessions()
-    pool = WorkerPool(service.queue, service.index_upload, worker_count)
 
     @asynccontextmanager
     async def lifespan(app):
-        try:
-            if index_on_start:
-                result = await run_in_threadpool(service.reindex)
-                log.info("Startup index: %s files, %s passages in %.3fs",
-                         result["files"], result["passages"], result["total_seconds"])
-            pool.start()
-            yield
-        finally:
-            await run_in_threadpool(pool.close)
+        if index_on_start:
+            result = await run_in_threadpool(service.reindex)
+            log.info("Startup index: %s files, %s passages in %.3fs",
+                     result["files"], result["passages"], result["total_seconds"])
+        yield
 
     app = FastAPI(title="Engineering evidence search — local MVP", version="0.1.0",
                   description="Local prototype with pretend login and enforced demo permissions. "
                   "Choose a demo user at /search. Index and audit APIs require Maya's index-team role. This is not production authentication.",
                   lifespan=lifespan)
-    app.add_middleware(SearchTimingMiddleware, telemetry=service.telemetry, audit=audit)
+    app.add_middleware(CompletionAuditMiddleware, telemetry=service.telemetry, audit=audit)
     app.add_middleware(AdmissionMiddleware, service=service)  # Outermost: refuses before any other work.
-    app.state.service, app.state.worker_pool, app.state.sessions = service, pool, sessions
+    app.state.service, app.state.sessions = service, sessions
     app.state.index, app.state.telemetry = service.index, service.telemetry
     static = Path(__file__).parent / "static"
 
@@ -217,11 +194,11 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
 
     @app.middleware("http")
     async def backend_boundary(request, call_next):
-        """Only the index team (Maya) can open the index, upload, audit and API pages."""
+        """Only the index team (Maya) can open the index, audit and API pages."""
         path = request.url.path
         protected = (path in {"/scan", "/telemetry", "/health", "/openapi.json", "/redoc"}
                      or any(path == prefix or path.startswith(prefix + "/")
-                            for prefix in ("/admin", "/index", "/uploads", "/docs", "/audit")))
+                            for prefix in ("/admin", "/index", "/docs", "/audit")))
         if protected:
             user = current_user(request)
             if user is None or user["role"] != "index_team":
@@ -308,6 +285,7 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
 
     @app.post("/search", response_model=SearchResponse,
               responses={409: {"description": "Index has not been built"},
+                         422: {"description": "The question is a SQL statement; ask in plain language"},
                          503: {"description": "Audit unavailable; evidence withheld"}},
               summary="Answer a plain-language question with cited evidence passages")
     def search(body: SearchRequest, request: Request):
@@ -347,7 +325,7 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
                                "pdf": sum(d.startswith(f["folder"]) and d.endswith(".pdf") for d in readable)}
                               for f in folder_access(file_ids, readable) if f["readable"]]}
 
-    # Index team: index operations, uploads and audit -----------------------
+    # Index team: index operations and audit ---------------------------------
 
     @app.get("/admin/access", summary="Backend-only access rules (folder and file)")
     def access_matrix():
@@ -357,7 +335,7 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
 
     @app.get("/index/status", summary="Index state and filesystem inventory as of the last scan")
     def index_status():
-        return {**service.status(), "upload_workers": worker_count}
+        return service.status()
 
     @app.get("/index/coverage", summary="Coverage by file type, version, status, folder and capability, "
                                         "with each file that was not fully read and why (index team only)")
@@ -366,7 +344,7 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
 
     @app.post("/scan", summary="Rescan source files and detect changes without reindexing")
     def rescan():
-        return {**service.scan(), "upload_workers": worker_count}
+        return service.scan()
 
     @app.post("/index", summary="Bring the index up to date with the document folder")
     def reindex():
@@ -391,70 +369,5 @@ def create_app(root: Path | None = None, index: SearchIndex | None = None,
             return audit_reader.read_page(page, limit, snapshot_id)
         except Exception:
             raise HTTPException(503, "Audit reading is unavailable") from None
-
-    @app.post("/uploads", status_code=201, summary="Create a Markdown upload job")
-    def create_upload(body: UploadRequest):
-        try:
-            return service.queue.create(body.filename)
-        except QueueFull as error:
-            raise HTTPException(429, str(error)) from None
-
-    @app.put("/uploads/{job_id}/content", status_code=202,
-             summary="Send raw UTF-8 Markdown bytes; enqueue indexing after saving",
-             openapi_extra={"requestBody": {"required": True, "content": {
-                 "application/octet-stream": {"schema": {"type": "string", "format": "binary"}}}}})
-    async def receive_upload(job_id: str, request: Request):
-        queue = service.queue
-        job = await run_in_threadpool(queue.get, job_id)
-        if job is None:
-            raise HTTPException(404, "Upload job not found")
-        if not await run_in_threadpool(queue.begin_receive, job_id):
-            raise HTTPException(409, "This upload has already started or finished")
-        try:
-            content = bytearray()
-            async for chunk in request.stream():
-                if len(content) + len(chunk) > MAX_UPLOAD_BYTES:
-                    raise HTTPException(413, "Maximum upload size is 10 MiB per Markdown file")
-                content.extend(chunk)
-            if not content:
-                raise HTTPException(422, "The uploaded file is empty")
-            try:
-                content.decode("utf-8")
-            except UnicodeDecodeError:
-                raise HTTPException(422, "Markdown uploads must contain UTF-8 text") from None
-            await run_in_threadpool(service.save_upload, job, bytes(content))
-            return await run_in_threadpool(queue.get, job_id)
-        except BaseException as error:
-            reason = str(error.detail) if isinstance(error, HTTPException) else "Upload interrupted or could not be saved. Select the file again."
-            await run_in_threadpool(queue.fail, job_id, reason)
-            if isinstance(error, HTTPException):
-                raise
-            if not isinstance(error, Exception):
-                raise
-            raise HTTPException(503, reason) from None
-
-    @app.get("/uploads", summary="Upload queue counts, workers and the latest 30 jobs")
-    def upload_status():
-        return {**service.queue.snapshot(), "worker_count": worker_count,
-                "running_workers": sum(t.is_alive() for t in pool.threads),
-                "max_file_bytes": MAX_UPLOAD_BYTES}
-
-    @app.get("/uploads/{job_id}", summary="Inspect one upload job")
-    def upload_detail(job_id: str):
-        job = service.queue.get(job_id)
-        if job is None:
-            raise HTTPException(404, "Upload job not found")
-        return job
-
-    @app.post("/uploads/{job_id}/retry", status_code=202, summary="Retry a failed indexing job")
-    def retry_upload(job_id: str):
-        if service.queue.get(job_id) is None:
-            raise HTTPException(404, "Upload job not found")
-        try:
-            if not service.queue.retry(job_id):
-                raise HTTPException(409, "Only failed indexing jobs with saved content can be retried")
-        except QueueFull as error:
-            raise HTTPException(429, str(error)) from None
-        return service.queue.get(job_id)
 
     return app

@@ -2,7 +2,6 @@ const $ = id => document.getElementById(id);
 let current = null;
 let page = 0;
 let working = false;
-let uploading = false;
 const pageSize = 20;
 const number = value => value == null ? '—' : new Intl.NumberFormat('en-IE').format(value);
 const milliseconds = value => value == null ? '—' : `${value.toFixed(2)} ms`;
@@ -86,15 +85,14 @@ function renderRows() {
   }
   $('document-rows').replaceChildren(fragment);
   $('empty-state').hidden = rows.length > 0;
-  $('empty-state').textContent = !current.last_scanned_at ? 'Rescan to discover documents.' : !current.documents.length ? 'No Markdown or PDF documents found in this folder.' : 'No documents match this filter.';
+  $('empty-state').textContent = !current.last_scanned_at ? 'Rescan to discover documents.' : !current.documents.length ? 'No readable documents found in this folder.' : 'No documents match this filter.';
   $('page-label').textContent = rows.length ? `${page*pageSize+1}–${Math.min((page+1)*pageSize,rows.length)} of ${number(rows.length)} documents` : '0 documents';
   $('previous').disabled = page === 0;
   $('next').disabled = (page+1)*pageSize >= rows.length;
 }
 async function refresh() {
-  const [status, metrics, uploads] = await Promise.all([api('/index/status'), api('/telemetry'), api('/uploads')]);
+  const [status, metrics] = await Promise.all([api('/index/status'), api('/telemetry')]);
   render(status);
-  renderUploads(uploads);
   for (const key of ['min','median','average','max']) $('query-'+key).textContent = milliseconds(metrics.query_ms[key]);
   $('query-window').textContent = `Server timings · last ${number(metrics.query_ms.count)} queries · since process start`;
   $('connection-label').textContent = 'API connected'; $('connection-dot').style.background = '#4e9c7d';
@@ -127,78 +125,6 @@ $('changes-only').addEventListener('change', () => {page=0;renderRows();});
 $('previous').addEventListener('click', () => {page--;renderRows();});
 $('next').addEventListener('click', () => {page++;renderRows();});
 
-function uploadMessage(text, error=false) {
-  $('upload-notice').textContent = text;
-  $('upload-notice').className = error ? 'error' : '';
-  $('upload-notice').hidden = !text;
-}
-function renderUploads(data) {
-  for (const state of ['uploading','queued','indexing','ready','failed']) $('jobs-'+state).textContent = number(data.counts[state]);
-  $('worker-summary').textContent = `${data.running_workers} / ${data.worker_count} upload workers running · ${data.active_workers.length} busy`;
-  $('queue-summary').textContent = `Latest ${data.jobs.length} of ${data.total_jobs} upload jobs · average processing ${milliseconds(data.average_processing_ms)}`;
-  $('queue-age').textContent = `Oldest queued: ${data.oldest_queued_seconds.toFixed(1)} s`;
-  $('uploads-empty').hidden = data.jobs.length > 0;
-  const fragment = document.createDocumentFragment();
-  for (const job of data.jobs) {
-    const row = document.createElement('tr');
-    const name = document.createElement('td'); name.textContent = job.filename; name.title = job.file_id;
-    const status = document.createElement('td');
-    const badge = document.createElement('span'); badge.className = `badge ${job.status}`;
-    badge.textContent = {uploading:'Uploading',queued:'Queued',indexing:'Indexing',ready:'Ready',failed:'Failed'}[job.status]; status.append(badge);
-    const worker = document.createElement('td'); worker.textContent = `${job.worker_id || '—'} / ${job.attempts}`;
-    const timing = document.createElement('td'); timing.textContent = `${milliseconds(job.queue_wait_ms)} / ${milliseconds(job.duration_ms)}`;
-    const details = document.createElement('td');
-    if (job.status === 'failed') {
-      const reason = document.createElement('span'); reason.textContent = job.error; details.append(reason);
-      if (job.source_version) {
-        const retry = document.createElement('button'); retry.className = 'secondary retry'; retry.textContent = 'Retry indexing';
-        retry.addEventListener('click', async () => {
-          retry.disabled = true;
-          try { await api(`/uploads/${job.id}/retry`, 'POST'); await refresh(); uploadMessage(`Retry queued for ${job.filename}.`); }
-          catch(error) { uploadMessage(error.message, true); retry.disabled = false; }
-        });
-        details.append(retry);
-      }
-    } else details.textContent = job.status === 'ready' ? `${job.passages} passages · ${date(job.finished_at)}` : job.status === 'uploading' ? 'Waiting for the file transfer to finish' : 'Saved; awaiting searchable index commit';
-    row.append(name,status,worker,timing,details); fragment.append(row);
-  }
-  $('upload-rows').replaceChildren(fragment);
-}
-async function uploadFiles(files) {
-  if (uploading || !files.length) return;
-  uploading = true;
-  message('');
-  $('choose-files').disabled = true;
-  let cursor = 0, accepted = 0, failed = 0;
-  const errors = [];
-  const publishProgress = () => uploadMessage(`Uploading ${files.length} file(s): ${accepted} accepted for indexing, ${failed} failed.`, failed > 0);
-  publishProgress();
-  async function transfer() {
-    while (cursor < files.length) {
-      const file = files[cursor++];
-      try {
-        if (!file.name.toLowerCase().endsWith('.md')) throw new Error('Only .md files are supported');
-        if (!file.size || file.size > 10*1024*1024) throw new Error('Choose a non-empty file up to 10 MiB');
-        const created = await fetch('/uploads', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename:file.name})});
-        const job = await created.json();
-        if (!created.ok) throw new Error(typeof job.detail === 'string' ? job.detail : 'Invalid upload filename');
-        const sent = await fetch(`/uploads/${job.id}/content`, {method:'PUT', headers:{'Content-Type':'application/octet-stream'}, body:file});
-        const result = await sent.json();
-        if (!sent.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Upload failed');
-        accepted++;
-      } catch(error) { failed++; errors.push(`${file.name}: ${error.message}`); }
-      publishProgress();
-    }
-  }
-  try {
-    await Promise.all(Array.from({length:Math.min(3,files.length)}, transfer));
-    await refresh();
-    uploadMessage(`${accepted} file(s) accepted for indexing. ${failed ? errors.join(' · ') : 'Follow their progress in the queue below.'}`, failed > 0);
-  } catch(error) { uploadMessage(error.message,true); }
-  finally { uploading = false; $('choose-files').disabled = false; $('upload-files').value = ''; }
-}
-$('choose-files').addEventListener('click', () => $('upload-files').click());
-$('upload-files').addEventListener('change', event => uploadFiles(Array.from(event.target.files)));
 async function start() {
   try {
     const matrix = await api('/admin/access');

@@ -11,7 +11,6 @@ import pytest
 
 from engineering_search.adapters import SQLiteAuditStore
 from engineering_search.app import create_app
-from engineering_search.jobs import SQLiteJobQueue
 from helpers import TEST_REPOSITORY
 
 SCHEDULE = "project-harbour/harbour-component-schedule.csv"
@@ -31,8 +30,7 @@ EXPECTED = {("M-401", BASIS, 13, 4.2), ("B-104", SCHEDULE, 3, 4.5), ("B-106", SC
 @pytest.fixture(scope="module")
 def client(tmp_path_factory):
     state = tmp_path_factory.mktemp("state")
-    app = create_app(root=TEST_REPOSITORY, audit=SQLiteAuditStore(state / "audit.sqlite3"),
-                     queue=SQLiteJobQueue(state / "queue.sqlite3"), worker_count=0)
+    app = create_app(root=TEST_REPOSITORY, audit=SQLiteAuditStore(state / "audit.sqlite3"))
     with TestClient(app) as client:
         client.post("/auth/login", json={"user_id": "maya"})
         assert client.post("/index").status_code == 200
@@ -120,6 +118,9 @@ def test_statements_that_write_escape_or_run_away_are_refused_and_audited(client
     assert response.status_code == 400, response.text
     event = last_audit(client)
     assert event["event"] == "sql_query_refused" and event["returned_rows"] == 0
+    # The audit keeps a fixed category, not SQLite's message, which can quote the statement.
+    assert event["error"] in {"not_select", "not_allowed", "too_slow", "invalid"}
+    assert "evil" not in json.dumps(event) and "facts" not in json.dumps(event)
     assert rows(client, "jp", "SELECT count(*) FROM documents") == [[145]]  # Nothing was changed.
 
 

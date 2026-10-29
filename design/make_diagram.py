@@ -1,52 +1,78 @@
-"""Make design/system-design.svg and design/system-design.png.
+"""Make design/system-design.svg: the system design diagram of the initial phase (T3, T4).
+
+It marks what already exists in the company (C1-C5, assumed), what the MVP
+stands in for, what the MVP builds for the use case, and what is out of scope.
+Keep it in step with design/SYSTEM-DESIGN.md.
 
 Run from the repository folder (rsvg-convert makes the PNG):
 
-    python3 design/make_diagram.py design/system-design.svg
+    uv run --frozen python design/make_diagram.py design/system-design.svg
     rsvg-convert -z 2 design/system-design.svg -o design/system-design.png
 """
 import sys
 from html import escape
 
-W, H = 1680, 1305
+W, H = 1680, 1250
 out = []
 add = out.append
 
 STYLE = {
-    "query": ("#EAF2FD", "#2B6CB0"),
-    "ingest": ("#E9F7EF", "#2F855A"),
-    "store": ("#FFF6E5", "#B7791F"),
-    "existing": ("#EDEFF2", "#6B7280"),
-    "note": ("#FFFFFF", "#A0AEC0"),
-    "mcp": ("#F3EEFC", "#6B46C1"),
+    "existing": ("#EDEFF2", "#6B7280"),   # exists in the company: C1-C5, assumed
+    "standin": ("#FFF6E5", "#B7791F"),    # the MVP's labelled stand-in for an existing part
+    "mvp": ("#EAF2FD", "#2B6CB0"),        # built by the MVP for the use case
+    "out": ("#FFFFFF", "#A0AEC0"),        # out of scope, recorded (dashed)
+    "user": ("#FFFFFF", "#4A5568"),
 }
-TEXT, MUTED, MONO = "#1A202C", "#4A5568", "SFMono-Regular, Menlo, Consolas, monospace"
+TEXT, MUTED, RED = "#1A202C", "#4A5568", "#9B2C2C"
+STANDIN_TEXT = "#7B5A12"
 
 
-def box(x, y, w, h, kind, title, lines=(), dashed=False, tag=None, title_size=14):
+def label(x, y, value, size=12, fill=MUTED, weight=None, anchor=None, italic=False):
+    attrs = f'x="{x}" y="{y}" font-size="{size}" fill="{fill}"'
+    if weight:
+        attrs += f' font-weight="{weight}"'
+    if anchor:
+        attrs += f' text-anchor="{anchor}"'
+    if italic:
+        attrs += ' font-style="italic"'
+    add(f'<text {attrs}>{escape(value)}</text>')
+
+
+def box(x, y, w, h, kind, title, lines=(), tag=None, standin=(), title_size=14):
+    """A box. `standin` lines are drawn in an amber strip at the bottom: the MVP's stand-in."""
     fill, stroke = STYLE[kind]
-    dash = ' stroke-dasharray="6 4"' if dashed else ""
+    dash = ' stroke-dasharray="6 4"' if kind == "out" else ""
     add(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="{fill}" '
         f'stroke="{stroke}" stroke-width="1.5"{dash}/>')
-    ty = y + 24
-    add(f'<text x="{x + 12}" y="{ty}" font-size="{title_size}" font-weight="700" fill="{TEXT}">{escape(title)}</text>')
-    if tag:
-        add(f'<text x="{x + w - 10}" y="{y + h - 8}" font-size="10" text-anchor="end" '
-            f'font-style="italic" fill="{stroke}">{escape(tag)}</text>')
+    label(x + 12, y + 24, title, size=title_size, fill=TEXT, weight=700)
     for i, line in enumerate(lines):
-        add(f'<text x="{x + 12}" y="{ty + 20 + i * 17}" font-size="12" fill="{MUTED}">{escape(line)}</text>')
+        label(x + 12, y + 44 + i * 17, line)
+    if standin:
+        sf, ss = STYLE["standin"]
+        sh = 8 + 14 * len(standin)
+        sy = y + h - sh - 8
+        add(f'<rect x="{x + 8}" y="{sy}" width="{w - 16}" height="{sh}" rx="5" fill="{sf}" '
+            f'stroke="{ss}" stroke-width="1.2"/>')
+        for i, line in enumerate(standin):
+            label(x + 16, sy + 15 + i * 14, line, size=11, fill=STANDIN_TEXT)
+    if tag:
+        label(x + w - 10, y + h - 8, tag, size=10, fill=stroke, anchor="end", italic=True)
 
 
-def arrow(d, label=None, lx=None, ly=None, dashed=False, anchor="middle"):
+def arrow(d, text=None, lx=None, ly=None, dashed=False, anchor="middle", over=False):
+    """An arrow. `over` draws a white halo first, so it reads as passing over a crossing line."""
+    if over:
+        add(f'<path d="{d}" fill="none" stroke="#FFFFFF" stroke-width="7"/>')
     dash = ' stroke-dasharray="5 4"' if dashed else ""
     add(f'<path d="{d}" fill="none" stroke="#4A5568" stroke-width="1.6"{dash} marker-end="url(#arrow)"/>')
-    if label:
-        add(f'<text x="{lx}" y="{ly}" font-size="11" text-anchor="{anchor}" fill="{MUTED}">{escape(label)}</text>')
+    if text:
+        add(f'<text x="{lx}" y="{ly}" font-size="11" text-anchor="{anchor}" fill="{MUTED}" '
+            f'paint-order="stroke" stroke="#FFFFFF" stroke-width="4">{escape(text)}</text>')
 
 
-def band(y, h, fill, label):
+def band(y, h, fill, text):
     add(f'<rect x="15" y="{y}" width="{W - 30}" height="{h}" rx="12" fill="{fill}"/>')
-    add(f'<text x="30" y="{y + 22}" font-size="12" font-weight="700" letter-spacing="1.5" fill="{MUTED}">{escape(label)}</text>')
+    add(f'<text x="30" y="{y + 22}" font-size="12" font-weight="700" letter-spacing="1.5" fill="{MUTED}">{escape(text)}</text>')
 
 
 add(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" '
@@ -56,168 +82,178 @@ add('<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth=
 add(f'<rect width="{W}" height="{H}" fill="#FFFFFF"/>')
 
 # Title and legend
-add(f'<text x="30" y="44" font-size="24" font-weight="700" fill="{TEXT}">Engineering evidence search: MVP system design</text>')
-add(f'<text x="30" y="70" font-size="13" fill="{MUTED}">Two ways in, one service: text questions through the FTS5 index, table questions through SQL that the chat agent writes · '
-    'permissions before any limit, count or join · every answer cites its file</text>')
-lx = 1065
-for i, (kind, dashed, label) in enumerate([("query", False, "MVP, built"),
-                                           ("mcp", False, "MCP install and test"),
-                                           ("note", True, "Later phase"),
-                                           ("existing", False, "Existing (brief)")]):
-    x = lx + i * 150
+label(30, 44, "Engineering evidence search: system design of the initial phase", size=24, fill=TEXT, weight=700)
+label(30, 70, "The initial phase (T3): one search service between the existing chat shell and the existing stores · "
+      "permissions before any limit or count · every answer quotes its file, or is refused", size=13)
+for x, kind, text in [(30, "existing", "Exists in the company (C1–C5, assumed)"),
+                      (330, "standin", "MVP stand-in for an existing part"),
+                      (590, "mvp", "Built by the MVP for the use case"),
+                      (850, "out", "Out of scope (recorded)")]:
     fill, stroke = STYLE[kind]
-    dash = ' stroke-dasharray="5 3"' if dashed else ""
-    add(f'<rect x="{x}" y="34" width="22" height="14" rx="3" fill="{fill}" stroke="{stroke}" stroke-width="1.5"{dash}/>')
-    add(f'<text x="{x + 28}" y="45" font-size="11" fill="{MUTED}">{label}</text>')
+    dash = ' stroke-dasharray="5 3"' if kind == "out" else ""
+    add(f'<rect x="{x}" y="86" width="22" height="14" rx="3" fill="{fill}" stroke="{stroke}" stroke-width="1.5"{dash}/>')
+    label(x + 28, 97, text, size=11)
 
-# Query plane
-band(95, 360, "#F7FAFE", "QUERY PLANE · ANSWERED WITHIN THE 8 S BUDGET, OR REFUSED AT ONCE (503 BUSY, RETRY-AFTER)")
+# Query path
+band(115, 375, "#F7FAFE", "QUERY PATH · ANSWERED WITHIN THE 8 S BUDGET, OR REFUSED AT ONCE WITH A RETRY TIME (ADR 0008)")
 XS = [30, 267, 504, 741, 978, 1215, 1452]
-BW, AY, AH = 200, 130, 140
-box(XS[0], AY, BW, 300, "query", "Engineering lead",
-    ["Asks in plain language:", "“What is the roof load", "limit at Northgate?”", "“Which documents", "specify S355?”", "",
-     "Gets the value, the exact", "text and its source.", "Never opens a CAD", "file or a PDF viewer."])
-box(XS[1], AY, BW, AH, "existing", "Chat-agent shell",
-    ["Claude Code, Codex, Pi", "(MCP clients), or the", "web page /search", "Its LLM picks the tool,", "writes SQL and the reply"], tag="existing")
-box(XS[2], AY, BW, AH, "mcp", "MCP server · HTTP API",
-    ["stdio · admit() per call", "Text: search_evidence,", "read_evidence · Tables:", "query_sql, describe_schema,", "get_document_evidence"])
-add(f'<text x="{XS[2] + 12}" y="{AY + AH + 14}" font-size="11" fill="#9B2C2C">--user flag: not verified ⚠</text>')
-box(XS[3], AY, BW, AH, "query", "Understand and plan",
-    ["One value, or a list?", "Stop words, synonyms", "S355 → prefix S355*", "“> 5 kN/m²” → number", "comparison, with units"])
-box(XS[4], AY, BW, AH, "query", "Permissions",
-    ["Files with a query word,", "then the rules: repository,", "folder or file, most", "specific wins · before any", "limit or count · fail closed"])
-box(XS[5], AY, BW, AH, "query", "FTS5 index lookup",
-    ["One MATCH, no file scans", "Permitted files only,", "inside the query", "Up to 1,000 passages,", "most words first, BM25"])
-box(XS[6], AY, BW, AH, "query", "Answer step",
-    ["Value: exact sentence", "or row, bound to the", "subject: found · unverified", "· partial · not found", "List: bound lines, paged"])
-
+BW, AY, AH = 200, 150, 150
+BY, BH = 330, 140
+box(XS[0], AY, BW, BY + BH - AY, "user", "Engineering lead (U1)",
+    ["An authorised pilot", "group (K5)", "", "Asks in plain language:", "“What is the roof load",
+     "limit at Northgate?”", "“Which documents", "specify S355?”", "",
+     "Gets the value, the quoted", "text and its source (U5)", "Opens no CAD file and", "no PDF viewer (U6)"])
+box(XS[1], AY, BW, AH, "existing", "Chat-agent shell (C5)",
+    ["Claude Code, Codex, Pi", "Owns the conversation;", "its model picks a tool", "and may write SQL (K9)"],
+    standin=["stand-in harness:", "the web /search page"])
+box(XS[2], AY, BW, AH, "mvp", "MCP server · HTTP API",
+    ["Tools over stdio, and", "the same calls on HTTP", "search_evidence,", "read_evidence, query_sql,",
+     "describe_schema, …"], tag="ADR 0005")
+label(XS[2] + 56, AY + AH + 16, "--user not verified (G1)", size=11, fill=RED)
+box(XS[3], AY, BW, AH, "mvp", "Refuse SQL, plan",
+    ["A SQL statement as a", "question: refused (K9)", "Stop words, synonyms", "S355 → prefix S355*",
+     "One value, or a list?"], tag="ADR 0006")
+box(XS[4], AY, BW, AH, "mvp", "Permissions first",
+    ["Files with a query word,", "then the access rules", "(stand-in, G1)", "Before ranking, limits",
+     "and counts (K13)"], tag="ADR 0004")
+box(XS[5], AY, BW, AH, "mvp", "FTS5 lookup",
+    ["One MATCH over the", "permitted files only", "Heading, text, path words", "Most words first, BM25",
+     "At most 1,000 passages"], tag="ADR 0002")
+box(XS[6], AY, BW, AH, "mvp", "Answer",
+    ["One sentence or row,", "copied, never written", "found · unverified ·", "partial · not found",
+     "List: documents, paged"], tag="ADR 0003")
 mid = AY + 62
-arrow(f"M{XS[0] + BW} {mid} H{XS[1]}")
-for a in range(1, 6):
+for a in range(6):
     arrow(f"M{XS[a] + BW} {mid} H{XS[a + 1]}")
 
-BY, BH = 310, 120
-box(XS[6], BY, BW, BH, "query", "Audit gate",
-    ["Records who asked, the", "permission decisions and", "the answer source", "No document text · fails →", "no evidence is returned"])
 box(XS[1], BY, BW, BH, "existing", "Agent reply",
-    ["Quotes the value and its", "file, page and lines", "Says what was searched", "“Not found” when no", "readable file states it"], tag="existing")
-fill, stroke = STYLE["mcp"]
-add(f'<rect x="{XS[2]}" y="347" width="520" height="87" rx="8" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>')
-add(f'<text x="{XS[2] + 12}" y="365" font-size="12.5" font-weight="700" fill="{TEXT}">Table questions: the chat agent writes SQL (ADR 0016)</text>')
-for i, line in enumerate(["query_sql → permissions on every file → in-memory projection of",
-                          "the permitted rows only → authoriser, query_only, step budget,",
-                          "≤ 500 rows → audit (SQL hash, no rows) · rows cite file and line",
-                          "Safe, not necessarily right: the SQL is scored by evaluation (ADR 0019)"]):
-    add(f'<text x="{XS[2] + 12}" y="{382 + i * 14}" font-size="11" fill="{MUTED}">{escape(line)}</text>')
+    ["Quotes the value with", "its file, page, lines", "Says what was searched", "“Not found” when no",
+     "readable file states it"])
+fill, stroke = STYLE["mvp"]
+SX, SYQ, SW, SHQ = XS[2], 360, XS[3] + BW - XS[2], 110
+add(f'<rect x="{SX}" y="{SYQ}" width="{SW}" height="{SHQ}" rx="8" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>')
+label(SX + 12, SYQ + 18, "Table questions: the chat agent writes SQL (ADR 0006)", size=12.5, fill=TEXT, weight=700)
+for i, line in enumerate(["query_sql → access rules on every file → in-memory",
+                          "projection of the permitted rows only → allowlist,",
+                          "read-only, step budget, ≤ 500 rows → fingerprint check",
+                          "→ audit (SQL hash, no rows) · rows cite file and line",
+                          "Safe, not necessarily right (G4, G7)"]):
+    label(SX + 12, SYQ + 38 + i * 14, line, size=11)
+box(XS[4], BY, BW, BH, "mvp", "Audit gate",
+    ["Records who asked, the", "decisions and sources", "No document text", "Fails → no evidence",
+     "is returned"])
+box(XS[6], BY, BW, BH, "mvp", "Fingerprint check",
+    ["Hash each cited file", "Changed or gone since", "indexing → refused:", "changed_files, or 409"],
+    tag="ADR 0003 · ADR 0007")
 
 arrow(f"M{XS[6] + 100} {AY + AH} V{BY}")
-arrow(f"M{XS[6]} {BY + 26} H{XS[1] + BW}", "answer · file · page · lines · SHA-256 version · request ID", 840, BY + 19)
-arrow(f"M{XS[1]} {BY + 60} H{XS[0] + BW}")
+arrow(f"M{XS[4]} {BY + 18} H{XS[1] + BW}", "answer · file · page · lines · fingerprint · request ID", 722, BY + 12)
+arrow(f"M{XS[1]} {BY + 70} H{XS[0] + BW}")
 add(f'<path d="M{XS[1] + 100} {AY + AH} V{BY}" stroke="#6B7280" stroke-width="1.2" stroke-dasharray="3 3"/>')
+arrow(f"M{XS[2] + 20} {AY + AH} V{SYQ}", "SQL", XS[2] + 26, AY + AH + 16, anchor="start")
+arrow(f"M{SX + SW} {SYQ + 70} H{XS[4]}")
 
-# Stores
-CY, CH = 475, 205
-add(f'<rect x="267" y="{CY}" width="{1652 - 267}" height="{CH}" rx="12" fill="#FFFDF8" stroke="#B7791F" stroke-width="1.5"/>')
-add(f'<text x="480" y="{CY + 24}" font-size="13" font-weight="700" fill="{TEXT}">State folder (.runtime/)</text>')
-add(f'<text x="645" y="{CY + 24}" font-size="12" fill="{MUTED}">SQLite files · the web service and MCP servers share them · index-&lt;id&gt;.lock: one process publishes at a time</text>')
-SY, SH = 545, 118
-box(287, SY, 170, SH, "store", "audit.sqlite3",
-    ["Search, read, SQL events", "Permission decisions", "Sources, SQL hashes", "No document text"], title_size=13)
-box(470, SY, 170, SH, "store", "queue-<id>.sqlite3",
-    ["Upload jobs", "State, attempts, errors", "Upload workers"], title_size=13)
-add(f'<rect x="653" y="515" width="799" height="155" rx="10" fill="none" stroke="#B7791F" stroke-width="1.2"/>')
-add(f'<text x="665" y="534" font-size="13" font-weight="700" fill="{TEXT}">index-&lt;id&gt;.sqlite3</text>')
-add(f'<text x="815" y="534" font-size="12" fill="{MUTED}">keyword + structured store · WAL · one transaction per update</text>')
-subs = [("documents", ["file_id", "SHA-256 version", "passage count"]),
-        ("passages", ["exact text", "heading, lines", "PDF page"]),
-        ("passages_fts", ["FTS5 inverted", "index: heading,", "text, path words"]),
-        ("files", ["inventory: type,", "version, reader,", "status, warnings"])]
-for i, (title, lines) in enumerate(subs):
-    box(663 + i * 148, SY, 140, SH, "store", title, lines, title_size=13)
-box(1257, SY, 185, SH, "store", "tables + facts",
-    ["source_tables, table_rows", "facts: subject, parameter,", "role, value, SI value,", "project · file, row, line"], title_size=13)
-box(1458, SY, 180, SH, "store", "vectors",
-    ["Embeddings per passage", "Only if the test", "questions show a gain"], dashed=True, tag="phase 3", title_size=13)
-box(30, SY, 200, SH, "existing", "Repository permissions",
-    ["MVP: rules in access.py", "Later: synced from the", "repository's own", "file permissions"], tag="existing")
-arrow(f"M130 {SY} V{BY + BH + 20} H{XS[4] + 60} V{AY + AH}", "access rules", 600, BY + BH + 14, dashed=True)
+# Stores (C4) and the access rules
+CY = 530
+SY, SH = CY + 45, 140
+box(30, SY, 200, SH, "standin", "Access rules (G1)",
+    ["access.py: repository,", "folder and file rules", "Stand-in for the", "repository's controls",
+     "(K13, K15)"])
+fill, stroke = STYLE["existing"]
+add(f'<rect x="267" y="{CY}" width="{1652 - 267}" height="200" rx="12" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>')
+label(281, CY + 24, "Structured and/or semantic stores (C4) · existing", size=13, fill=TEXT, weight=700)
+label(640, CY + 24, "the MVP stands in with SQLite files in .runtime/, shared by the web and MCP processes", size=12)
+box(287, SY, 230, SH, "out", "Semantic store",
+    ["Embeddings per passage", "Out of scope (O1)", "Lexical search shows", "why a passage matched"],
+    tag="out of scope")
+fill, stroke = STYLE["standin"]
+add(f'<rect x="532" y="{SY}" width="900" height="{SH}" rx="10" fill="#FFFDF8" stroke="{stroke}" stroke-width="1.5"/>')
+label(546, SY + 20, "index-<id>.sqlite3 · stand-in", size=13, fill=TEXT, weight=700)
+label(756, SY + 20, "structured tables and a lexical full-text index · one transaction per refresh, under the index lock",
+      size=11.5)
+for i, (title, lines) in enumerate([
+        ("documents", ["file_id", "content fingerprint", "(SHA-256 of the bytes)", "passage count"]),
+        ("passages + FTS5", ["exact text, heading,", "page and lines", "full-text index over", "heading, text, path"]),
+        ("tables + facts", ["source_tables, table_rows", "facts: subject, parameter,", "role, value, SI value",
+                            "file, table, row, line"]),
+        ("files", ["inventory: type, format", "version, reader, status,", "reason if not read"])]):
+    box(544 + i * 220, SY + 30, 210, 102, "standin", title, lines, title_size=13)
+box(1447, SY, 190, SH, "standin", "audit.sqlite3",
+    ["Search, read and", "SQL events", "No document text", "Stand-in for a", "durable audit (G2)"], title_size=13)
 
-arrow(f"M{XS[5] + 100} {AY + AH} V515")
-arrow(f"M{XS[6] + 150} {BY + BH} V{CY - 12} H372 V{SY}", "write before release", 1350, CY - 18)
+arrow(f"M{XS[5] + 100} {AY + AH} V{SY}", "MATCH", XS[5] + 108, 520, anchor="start")
+arrow(f"M{XS[6]} {BY + 80} H{XS[4] + BW}", over=True)
+arrow(f"M820 {SYQ + SHQ} V{SY}", "permitted rows", 828, 494, anchor="start")
+arrow(f"M{XS[4] + 100} {BY + BH} V500 H1540 V{SY}", "write before release", 1420, 494, over=True)
+arrow(f"M130 {SY} V515 H960 V{AY + 120} H{XS[4]}", "access rules", 600, 510, dashed=True)
 
-# Ingestion plane
-IY0 = 700
-band(IY0, 172, "#F5FBF7", "INGESTION PLANE · AT START, ON REINDEX AND ON UPLOAD")
-IY, IH = 735, 122
-box(XS[0], IY, BW, IH, "existing", "Document repository",
-    ["test-repository/: 148 files", "MD, PDF, CSV, XLSX", "Scans and JT reported,", "not read · no OCR"], tag="existing")
-box(XS[1], IY, BW, IH, "ingest", "Change detection",
-    ["SHA-256 of each file", "Read only new and", "changed files", "Remove deleted files"])
-box(XS[2], IY, BW, IH, "ingest", "Upload queue",
-    ["Markdown uploads", "Worker threads", "Retries, failed jobs", "shown in /admin"])
-box(XS[3], IY, BW, IH, "ingest", "Detect and read",
-    ["Type from content,", "extension a hint", "Registry: Markdown, PDF,", "CSV, XLSX · version kept"])
-box(XS[4], IY, BW, IH, "existing", "Extraction connectors",
-    ["Metadata, text and", "properties of other", "formats", "Not used in the MVP"], dashed=True, tag="existing · later")
-box(XS[5], IY, BW, IH, "ingest", "Passages, tables, facts",
-    ["Exact text, lines, page", "Table rows with lines", "Facts from table cells", "Status for every file"])
-box(XS[6], IY, BW, IH, "ingest", "Publish",
-    ["One transaction, under", "the index lock", "Gaps in the coverage", "report (index team)"])
-imid = IY + 61
-arrow(f"M{XS[0] + BW} {imid} H{XS[1]}")
-arrow(f"M{XS[1] + BW} {imid} H{XS[2]}")
-arrow(f"M{XS[2] + BW} {imid} H{XS[3]}")
-arrow(f"M{XS[3] + BW} {imid} H{XS[4]}", dashed=True)
-arrow(f"M{XS[4] + BW} {imid} H{XS[5]}", dashed=True)
-arrow(f"M{XS[3] + 100} {IY + IH} V{IY + IH + 8} H{XS[5] + 100} V{IY + IH}")
+# Indexing path
+IY0 = 750
+band(IY0, 185, "#F5FBF7", "INDEXING PATH · ON START AND ON REQUEST · NO UPLOADS, NO TIMER, NO WATCHER (K12, K16)")
+IY, IH = 785, 135
+box(XS[0], IY, BW, IH, "existing", "Repository (C2)",
+    ["Project folders (K15),", "read in place, never", "uploaded (K12)"],
+    standin=["stand-in: test-repository/,", "149 files, 145 readable"])
+box(XS[1], IY, BW, IH, "mvp", "Refresh (K16)",
+    ["On start and on request", "SHA-256 fingerprint of", "every file; re-read only", "new and changed files;",
+     "remove deleted ones"], tag="ADR 0007")
+box(XS[2], IY, BW, IH, "mvp", "Detect type",
+    ["From the content; the", "extension is a hint", "Signatures: PDF, XLSX,", "DOCX, JT, DXF",
+     "Registry picks a reader"], tag="ADR 0001")
+box(XS[3], IY, XS[4] + BW - XS[3], IH, "existing", "Connectors and APIs (C3)",
+    ["Extract metadata, text and properties from supported files"],
+    standin=["stand-in readers: Markdown · text-layer PDF · CSV · XLSX",
+             "· DXF notes and title-block attributes (ASCII)",
+             "Not read: scans, CAD geometry, binary DXF, DWG, JT,",
+             "CATIA (G8) · each listed with its reason"])
+box(XS[5], IY, BW, IH, "standin", "Passages and facts",
+    ["Text with heading, page", "and lines", "Table rows with lines", "Facts from table cells,",
+     "SI values (fact rules)"])
+box(XS[6], IY, BW, IH, "mvp", "Publish",
+    ["One transaction, under", "the index lock", "Coverage report: every", "file not read, and why",
+     "(index team, G8)"])
+imid = IY + 62
+for a in (0, 1, 2):
+    arrow(f"M{XS[a] + BW} {imid} H{XS[a + 1]}")
+arrow(f"M{XS[4] + BW} {imid} H{XS[5]}")
 arrow(f"M{XS[5] + BW} {imid} H{XS[6]}")
-arrow(f"M{XS[2] + 76} {IY} V{SY + SH}", "enqueue / claim", XS[2] + 84, IY - 12, anchor="start")
-arrow(f"M{XS[6] + 100} {IY} V715 H1100 V670", "upsert", 1200, 710)
+arrow(f"M{XS[6] + 100} {IY} V765 H1300 V{SY + SH}", "publish", 1430, 760)
 
-# MCP install and test
-MY, MH = 892, 222
-fill, stroke = STYLE["mcp"]
-add(f'<rect x="30" y="{MY}" width="{1652 - 30}" height="{MH}" rx="10" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>')
-add(f'<text x="46" y="{MY + 26}" font-size="14" font-weight="700" fill="{TEXT}">Install and test the MCP server</text>')
-add(f'<text x="282" y="{MY + 26}" font-size="12" fill="{MUTED}">Full guide: docs/MCP.md · Python 3.11+ and uv · '
-    'the chat client starts the server on your computer and talks to it over stdio</text>')
-steps = [
-    ("1  Install", "uv sync --locked"),
-    ("2  Check", "uv run --frozen python -m scripts.check_mcp --user kamal      → 6 S355 rows under 5 kN/m², “The MCP server works.”"),
-    ("3  Claude Code", "claude in the repository folder: .mcp.json starts the server as jp (approve it once) · claude mcp list"),
-    ("4  Codex", 'codex mcp add engineering_search -- uv run --frozen --directory "$PWD" python -m engineering_search.mcp_server --user kamal'),
-    ("   Pi", "pi in the repository folder (trusted project): .pi/mcp.json starts the server as jp · pi mcp list"),
-    ("5  Test", "Ask the questions in docs/MCP.md as each user, including the SQL ones. Read the SQL in each tool call. Report the request_id of each problem."),
-]
-for i, (label, text) in enumerate(steps):
-    y = MY + 52 + i * 19
-    add(f'<text x="46" y="{y}" font-size="12" font-weight="700" fill="#553C9A">{escape(label)}</text>')
-    font = "Helvetica Neue, Helvetica, Arial, sans-serif" if label.startswith("5") else MONO
-    add(f'<text x="190" y="{y}" font-size="11.5" font-family="{font}" fill="{TEXT}">{escape(text)}</text>')
-add(f'<text x="190" y="{MY + 52 + 6 * 19}" font-size="11.5" font-weight="700" fill="#9B2C2C">'
-    'Kamal must get no text, row, file name or count from project-northgate/, specifications/ or the Harbour roof schedule. Report it at once.</text>')
-add(f'<text x="46" y="{MY + 52 + 7 * 19 + 6}" font-size="12" font-weight="700" fill="#9B2C2C">⚠ Security hole</text>')
-add(f'<text x="190" y="{MY + 52 + 7 * 19 + 6}" font-size="11.5" fill="#9B2C2C">'
-    'The server trusts --user. It does not match the person who uses the MCP client to the file permissions. '
-    'Anyone who can edit the client configuration can read as JP.</text>')
-add(f'<text x="190" y="{MY + 52 + 8 * 19 + 6}" font-size="11.5" fill="#9B2C2C">'
-    'Fix before real restricted files: remote MCP server with OAuth sign-in, user from the token, permissions from the repository.</text>')
+# What this phase leaves open
+GY = 955
+add(f'<rect x="30" y="{GY}" width="{1652 - 30}" height="100" rx="10" fill="#FFFFFF" stroke="#A0AEC0" stroke-width="1.2"/>')
+label(46, GY + 26, "What this phase leaves open", size=14, fill=TEXT, weight=700)
+label(262, GY + 26, "docs/constraints/gaps.md · recorded, not solved by the MVP · the hardest is G4", size=12)
+gaps = [("G1", "Identity and the repository's permissions"), ("G2", "Durable, tamper-evident audit"),
+        ("G3", "Approved language-model use"), ("G4", "Quality on real questions"),
+        ("G5", "Any number of users within 10 s"), ("G6", "One vocabulary for status values"),
+        ("G7", "Who wrote a SQL statement"), ("G8", "What the stand-in readers cannot read"),
+        ("O1", "Semantic search: out of scope"), ("O2", "Slow-query analysis: out of scope")]
+for i, (gid, text) in enumerate(gaps):
+    x, y = 46 + (i % 5) * 322, GY + 56 + (i // 5) * 24
+    label(x, y, gid, size=12, fill=RED if gid.startswith("G") else MUTED, weight=700)
+    label(x + 28, y, text, size=12)
 
-# Evaluation
-EY = 1130
-add(f'<rect x="30" y="{EY}" width="{1652 - 30}" height="150" rx="10" fill="#FAF5FF" stroke="#6B46C1" stroke-width="1.5"/>')
-add(f'<text x="46" y="{EY + 26}" font-size="14" font-weight="700" fill="{TEXT}">Evaluation and tests</text>')
-add(f'<text x="210" y="{EY + 26}" font-size="12" fill="{MUTED}">29 October 2026, 148 files · scripts.evaluate, scripts.load_test and pytest · plan in ADR 0019</text>')
-cols = [("Test questions", ["16 scored text questions", "13 gold NL-to-SQL questions,", "each with a trap", "Live-client SQL scoring: next"]),
+# Measured on the test repository
+EY = 1075
+add(f'<rect x="30" y="{EY}" width="{1652 - 30}" height="155" rx="10" fill="#F7FAFE" stroke="#2B6CB0" stroke-width="1.5"/>')
+label(46, EY + 26, "Measured on the test repository", size=14, fill=TEXT, weight=700)
+label(282, EY + 26, "29 October 2026 · 149 files, 145 with a reader · scripts.evaluate, scripts.load_test and pytest · "
+      "docs/METRICS.md · not proof on real questions (G4)", size=12)
+cols = [("Questions", ["16 scored retrieval questions", "13 agent-written SQL questions", "Acceptance tests ask the",
+                       "use case through HTTP (ADR 0009)"]),
         ("Retrieval", ["Success@1 0.88, @5 1.00", "MRR@10 0.90", "Recall@10 0.90", "Zero-result rate 0.00"]),
-        ("Answers", ["Correct answers 1.00", "Checked against the file:", "SHA-256, page, lines", "Unbound value → unverified"]),
-        ("Safety", ["Permission leaks 0", "test_no_leaks.py: each user,", "mode, first and last pages", "SQL sees permitted rows only"]),
-        ("Operations", ["p50 79 ms, p95 330 ms", "About 10 requests/s a process", "8 s budget, else 503 busy", "in under 0.25 s (load test)"])]
+        ("Answers", ["Correct answers 1.00", "Each quote checked against", "the file: page and lines",
+                     "Unbound value → unverified"]),
+        ("Safety", ["Permission leaks 0", "Each user, mode and page", "SQL sees permitted rows only",
+                    "Changed file → refused"]),
+        ("Speed", ["p50 83 ms, p95 336 ms, in process", "About 10 requests/s a process", "8 s budget, else refused",
+                   "at once · end to end not measured"])]
 for i, (title, lines) in enumerate(cols):
     x = 46 + i * 322
-    add(f'<text x="{x}" y="{EY + 54}" font-size="12.5" font-weight="700" fill="#553C9A">{escape(title)}</text>')
+    label(x, EY + 54, title, size=12.5, fill="#2B6CB0", weight=700)
     for j, line in enumerate(lines):
-        add(f'<text x="{x}" y="{EY + 73 + j * 16}" font-size="12" fill="{MUTED}">{escape(line)}</text>')
+        label(x, EY + 73 + j * 17, line)
 
 add("</svg>")
 open(sys.argv[1], "w", encoding="utf-8").write("\n".join(out))

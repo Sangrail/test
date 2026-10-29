@@ -23,6 +23,11 @@
 ## Decision records
 
 - `docs/constraints/` and `docs/adr/` are written by hand, and every item and decision traces to the brief. A decision links the IDs it serves and the files that implement and test it. A change that conflicts with an accepted decision needs a new decision record, not a quiet edit.
+- Keep the pages linked, or they become useless. In both folders:
+  - Every item ID (B, C, U, T, S, K, G, O and a number) is a link to its own section: `[C3](../constraints/constraints.md#c3)` from an ADR, `[C3](constraints.md#c3)` between item pages, `[K3](#k3)` on its own page. Write a range as two links: `[U2](use-case.md#u2)–[U6](use-case.md#u6)`.
+  - A new item gets a row in its page's summary table, an `<a id="…">` anchor and a section. A new ADR gets the next number and a row in `docs/adr/README.md` with its title, its status (`*Proposed:*` in front of the title while proposed) and the items it serves, all of which its **Serves:** line also cites.
+  - When you change an item, a decision or a file they name, update every page that links to it in the same commit.
+  - `tests/test_doc_links.py` fails on a broken link or anchor anywhere in the documents, a bare item ID, a link to the wrong item, a summary table that differs from its sections, and an ADR index that differs from the records. Fix the pages; never weaken the test to pass.
 - The brief says connectors that extract metadata, text and properties already exist. The MVP's readers and extractors are sample stand-ins that show the flow; do not grow them into products.
 
 ## Docs

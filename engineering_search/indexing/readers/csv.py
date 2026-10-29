@@ -1,4 +1,5 @@
-"""CSV: one table per file, and one passage per data row for text search.
+"""CSV: the file as one logical table (rows in the shared table_rows store; no database
+table per file), and one passage per data row for text search.
 
 The first non-empty row is the header. Each passage is the row's original
 line, with the header line as its heading, so the column names are searchable

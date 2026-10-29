@@ -1,49 +1,50 @@
 # Background (B)
 
+> A company has years of engineering and infrastructure design information stored in design files and related project documents. Users often do not know which files contain the information they need, and they do not want to learn file formats, schema details, query languages, or system-specific jargon.
 
-The problem, as [the brief](../Starting_document.md) states it. These are facts about the situation, not requirements; the use case and the constraints answer them.
-
-| ID | Item | Pillar | Standing | Version |
-| --- | --- | --- | --- | --- |
-| [B1](#b1) | Years of design information in files and documents | intent | context | 1 |
-| [B2](#b2) | Users do not know which files hold the answer | intent | context | 1 |
+| ID | Item | Standing |
+| --- | --- | --- |
+| [B1](#b1) | Years of design information in design files and project documents | context |
+| [B2](#b2) | Users do not know which files hold what they need | context |
+| [B3](#b3) | Users will not learn file formats or schema details | context |
+| [B4](#b4) | Users will not learn query languages or system-specific jargon | context |
 
 <a id="b1"></a>
 
-## B1. Years of design information in files and documents
+## B1. Years of design information in design files and project documents
 
-> A company has years of engineering and infrastructure design information stored in design files and related project documents.
+> "years of engineering and infrastructure design information stored in design files and related project documents"
 
-**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), background.
+**For the design:** the information is spread over many files of many formats, old and new. Design files (CAD) and documents (PDF, spreadsheets, text) both hold parameters.
 
-**Standing:** *context*. A fact about the problem, not a requirement to meet.
-
-**What it means for the design:** The information already exists, spread across many files, formats and versions. The service finds it where it is; it does not ask people to enter it again.
-
-**Where the MVP stands:** 148 synthetic and public test files stand in for the repository ([S3](scope.md#s3)).
-
-**Decisions:** none yet.
-
-**History:**
-
-- Version 1, from 2026-10-29, active. Recorded from the background of the brief.
+**In the MVP:** the [test repository](../../test-repository/TEST-DATA.txt) has 149 files across several projects: Markdown, PDF, CSV, XLSX, a DXF drawing, and JT files and notes that no reader takes, so that the gaps show.
 
 <a id="b2"></a>
 
-## B2. Users do not know which files hold the answer
+## B2. Users do not know which files hold what they need
 
-> Users often do not know which files contain the information they need.
+> "Users often do not know which files contain the information they need"
 
-**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), background.
+**For the design:** the user asks a question, not a file. The system finds the file and says which one it was ([U5](use-case.md#u5)).
 
-**Standing:** *context*. A fact about the problem, not a requirement to meet.
+**In the MVP:** the search covers every file the user may read ([K10](clarifications.md#k10)). The answer names the file it came from.
 
-**What it means for the design:** Search must work across every file the user may read without the user naming one, and each answer must say where it came from ([U2](use-case.md#u2), [U4](use-case.md#u4)).
+<a id="b3"></a>
 
-**Where the MVP stands:** Each question searches every permitted file, and each answer names its file, location and version.
+## B3. Users will not learn file formats or schema details
 
-**Decisions:** none yet.
+> "they do not want to learn file formats, schema details"
 
-**History:**
+**For the design:** the user never sees a format, a table schema or a column name. The answer is the quoted value and where it is.
 
-- Version 1, from 2026-10-29, active. Recorded from the background of the brief.
+**In the MVP:** readers turn every format into passages and tables ([ADR 0001](../adr/0001-prove-the-use-case-with-stand-in-readers.md)). The schema is for the chat agent, never the user ([ADR 0006](../adr/0006-the-user-never-writes-sql.md)).
+
+<a id="b4"></a>
+
+## B4. Users will not learn query languages or system-specific jargon
+
+> "query languages, or system-specific jargon"
+
+**For the design:** questions are in plain language. A SQL statement typed as a question is refused ([K9](clarifications.md#k9)).
+
+**In the MVP:** `POST /search` and the MCP tool `search_evidence` refuse a question that is a SQL statement ([`tests/test_source_on_disc.py`](../../tests/test_source_on_disc.py)). The chat agent may write constrained SQL for the user ([ADR 0006](../adr/0006-the-user-never-writes-sql.md)).

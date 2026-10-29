@@ -69,7 +69,7 @@ class Extraction:
 
 
 class ReaderError(Exception):
-    """The reader could not read the file. `status` is MALFORMED or ENCRYPTED."""
+    """The reader could not read the file. `status` is MALFORMED, ENCRYPTED or UNSUPPORTED_VERSION."""
     def __init__(self, status: str, message: str):
         super().__init__(message)
         self.status = status

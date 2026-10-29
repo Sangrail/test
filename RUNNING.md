@@ -1,6 +1,6 @@
 # Run the service
 
-Each person runs an independent copy of the service. The web server, the index, the upload queue and the audit log are all on the machine that runs the service. You do not need a central server, an account, an API key or a cloud database.
+Each person runs an independent copy of the service. The web server, the index and the audit log are all on the machine that runs the service. You do not need a central server, an account, an API key or a cloud database.
 
 ## Install
 
@@ -22,8 +22,7 @@ The service does these steps:
 
 1. It opens or creates the index in `.runtime/`.
 2. It detects the type of every file in `test-repository/`, reads and hashes the files that have a reader, and extracts passages, tables and facts from the new and changed files. It holds the index lock while it does this.
-3. It starts two upload workers.
-4. It starts the web server on `127.0.0.1:8000`.
+3. It starts the web server on `127.0.0.1:8000`.
 
 Open <http://127.0.0.1:8000/search>. The page shows only the sign-in screen until you select a demo user. The screen says what each user can do and what to try. For example:
 
@@ -32,7 +31,8 @@ Open <http://127.0.0.1:8000/search>. The page shows only the sign-in screen unti
 3. Ask "Which documents have a roof load greater than 5 kN/m²?".
 4. Ask "What is the mezzanine floor load at Harbour?". The page shows "Value found, subject not confirmed": the sentence states a floor load, but it does not say "mezzanine".
 5. Sign out, sign in as Kamal, and ask the first question again. Kamal cannot read the Northgate file. Thus the answer is "not found", or a closest match that the page marks as not an answer.
-6. Sign in as Maya to open `/admin` (index operations) and `/audit` (audit log).
+6. Ask "What is the safe working load of the Harbour hangar crane?". The answer comes from the title block of a DXF drawing, without opening it.
+7. Sign in as Maya to open `/admin` (index operations) and `/audit` (audit log).
 
 The web page has no SQL box. Structured questions go through the HTTP API (`POST /sql`) or a chat client (see [Connect a chat agent](#connect-a-chat-agent-mcp)).
 
@@ -42,11 +42,10 @@ Press Ctrl-C to stop the service.
 
 | Option | Default | Purpose |
 | --- | --- | --- |
-| `--documents PATH` | `DOCUMENT_ROOT` or `test-repository` | The folder to index. The service reads `.md`, `.pdf`, `.csv` and `.xlsx` files in all subfolders |
-| `--state-dir PATH` | `STATE_DIR` or `.runtime` | The folder for the index, queue and audit databases |
+| `--documents PATH` | `DOCUMENT_ROOT` or `test-repository` | The folder to index. The existing repository. The service reads it in place: `.md`, `.pdf`, `.csv`, `.xlsx` and `.dxf` files in all subfolders |
+| `--state-dir PATH` | `STATE_DIR` or `.runtime` | The folder for the index and audit databases |
 | `--port 8001` | `8000` | The local port |
-| `--upload-workers 4` | `INDEXER_WORKERS` or `2` | The number of upload workers, from 0 to 16 |
-| `--no-startup-index` | off | Do not index at start. Use `/admin` to index |
+| `--no-startup-index` | off | Do not index at start. Use `/admin` to refresh the index |
 
 ## Where the data is
 
@@ -54,10 +53,11 @@ Press Ctrl-C to stop the service.
 | --- | --- |
 | `<state-dir>/index-<id>.sqlite3` | The search index: documents, passages, the FTS5 inverted index, the file inventory, tables, table rows and facts |
 | `<state-dir>/index-<id>.lock` | The index lock. One process at a time holds it while it plans and publishes index changes |
-| `<state-dir>/queue-<id>.sqlite3` | The upload job queue |
 | `<state-dir>/audit.sqlite3` | The audit log |
 
 `<id>` comes from the path of the document folder. Thus two document folders never share an index. You can delete an index file at any time. The service makes it again from the documents.
+
+To pick up files added, edited or deleted in the repository, refresh the index: restart the service, or sign in as Maya and select **Reindex documents** on `/admin` (`POST /index`). Only new and changed files are read. Until then, a file edited since the last refresh is not quoted: the answer says which files changed.
 
 ## Index your own files
 
@@ -65,9 +65,9 @@ Press Ctrl-C to stop the service.
 uv run --frozen python -m engineering_search --documents /absolute/path/to/documents --state-dir /absolute/path/to/state
 ```
 
-The service reads Markdown (UTF-8), PDF with a text layer, CSV (UTF-8) and XLSX files. It reads Markdown pipe tables, CSV files and workbook sheets as tables too, and extracts typed facts from them. It does not follow symbolic links. It does not change or move the documents.
+The service reads Markdown (UTF-8), PDF with a text layer, CSV (UTF-8), XLSX and ASCII DXF files (a drawing's notes and title-block attributes; no geometry). It reads Markdown pipe tables, CSV files, workbook sheets and DXF title blocks as tables too, and extracts typed facts from them. It does not follow symbolic links. It does not change or move the documents.
 
-The service detects the type of each file from its content and its extension. For PDF, XLSX, DOCX and JT, the content signature decides. It lists files that it cannot read (for example `.txt`, `.docx`, `.dwg`, `.jt`, or a file whose content does not match its extension) in `/admin` with their type, format version and status, and does not read them.
+The service detects the type of each file from its content and its extension. For PDF, XLSX, DOCX, JT and DXF, the content signature decides. It lists files that it cannot read (for example `.txt`, `.docx`, `.dwg`, `.jt`, a binary DXF, or a file whose content does not match its extension) in `/admin` with their type, format version and status, and does not read them.
 
 If the service cannot read or extract a file (for example, a permission error, invalid UTF-8, an encrypted file or a damaged PDF), it does not stop. It skips the file and shows the file in `failed_files` in the index result. The other files are indexed.
 
@@ -146,7 +146,7 @@ uv sync --locked --extra test
 uv run --frozen pytest -q
 ```
 
-The suite has 142 tests and takes about 4 minutes. It includes a real MCP client session over stdio.
+The suite has over 400 tests (many parametrised) and takes about 4 minutes. It includes a real MCP client session over stdio.
 
 ```bash
 uv run --frozen python -m scripts.evaluate
@@ -156,7 +156,7 @@ uv run --frozen python -m scripts.evaluate
 uv run --frozen python scripts/package_source.py
 ```
 
-The last command makes `.runtime/engineering-search-mvp.zip`. The ZIP contains only listed source files and `test-repository/`. It does not contain uploads, databases or the virtual environment. The command does not overwrite an existing ZIP.
+The last command makes `.runtime/engineering-search-mvp.zip`. The ZIP contains only listed source files and `test-repository/`. It does not contain databases or the virtual environment. The command does not overwrite an existing ZIP.
 
 ## Make the test data again
 
@@ -172,6 +172,12 @@ The structured fixtures (`project-harbour/` and `registers/component-register.cs
 
 ```bash
 uv run --frozen python scripts/make_structured_fixtures.py
+```
+
+The DXF drawing (`project-harbour/cad/hangar-frame-ga.dxf`, AutoCAD R12 ASCII, opens in any DXF viewer):
+
+```bash
+uv run --frozen python scripts/make_cad_fixture.py
 ```
 
 The 120 generated project files come from `scripts/seed_demo.py`. `test-repository/TEST-DATA.txt` describes every folder.

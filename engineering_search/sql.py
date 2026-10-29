@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+from threading import Lock
 from typing import Iterable
 
 MAX_SQL_CHARACTERS = 4000
@@ -41,7 +42,7 @@ SCHEMA = {
             "file_id": "TEXT. Path of the file in the document repository, e.g. 'project-harbour/x.csv'.",
             "project": "TEXT. Project from the top folder 'project-<name>' (e.g. 'Harbour'), else NULL.",
             "folder": "TEXT. Top folder of the file.",
-            "file_type": "TEXT. markdown, pdf, csv or excel.",
+            "file_type": "TEXT. markdown, pdf, csv, excel or dxf.",
             "source_version": "TEXT. SHA-256 of the file content that was read.",
             "passages": "INTEGER. Number of text passages read from the file.",
         },
@@ -128,8 +129,63 @@ FUNCTIONS = {"count", "sum", "avg", "min", "max", "total", "group_concat", "lowe
              "cast", "iif", "typeof"}
 
 
+# A question that is itself a SQL statement. The user never writes SQL (brief B4); only the
+# chat agent may, through query_sql. Words cannot tell the two apart ("Select the beams from
+# the roof" is a question that also parses as SQL), so SQLite decides. Where a statement can
+# start (the start of the text, after a semicolon, a bracket or UNION), the text from a SQL
+# keyword up to the next semicolon is compiled with EXPLAIN, which runs nothing, against an
+# empty database with the projection's tables:
+#   - a SELECT or WITH is SQL if it has FROM and compiles, or fails only on a column or a
+#     function, which SQLite looks up after it has parsed the statement and found its tables.
+#     An unknown table does not count: "select the beams from the roof" parses, as a column
+#     "the" of a table "the";
+#   - any other statement (DROP, DELETE, PRAGMA...) is SQL unless it is a syntax error.
+SQL_START = re.compile(r"(?:^|;|\(|\b(?:union(?:\s+all)?|intersect|except)\b)\s*"
+                       r"(select|with|insert|update|delete|replace|drop|create|alter|pragma|attach|detach|"
+                       r"vacuum|reindex)\b", re.IGNORECASE)
+NOT_PARSED = ("syntax error", "incomplete input", "unrecognized token")
+_probe: sqlite3.Connection | None = None
+_probe_lock = Lock()
+
+
+def _compile(candidate: str) -> str | None:
+    """None if SQLite compiles the statement, else its error message."""
+    global _probe
+    with _probe_lock:
+        if _probe is None:
+            _probe = sqlite3.connect(":memory:", check_same_thread=False)
+            _probe.executescript(DDL)
+        try:
+            _probe.execute(f"EXPLAIN {candidate}")
+            return None
+        except (sqlite3.Error, sqlite3.Warning) as error:
+            return str(error)
+
+
+def is_sql_statement(text: str) -> bool:
+    for start in SQL_START.finditer(text):
+        candidate = text[start.start(1):].split(";")[0].strip().rstrip("?.! ")
+        while candidate.endswith(")") and candidate.count(")") > candidate.count("("):
+            candidate = candidate[:-1].rstrip()
+        error = _compile(candidate)
+        if start.group(1).lower() in ("select", "with"):
+            if re.search(r"(?i)\bfrom\b", candidate) and (
+                    error is None or error.startswith(("no such column", "no such function"))):
+                return True
+        elif error is None or not any(phrase in error for phrase in NOT_PARSED):
+            return True
+    return False
+
+
 class SqlError(ValueError):
-    """The statement was refused or failed. The message is safe to show to the client."""
+    """The statement was refused or failed. The message is safe to show to the client.
+
+    `category` is a fixed word for the audit trail, which must not keep the
+    statement's literals (SQLite's message can quote them)."""
+
+    def __init__(self, message: str, category: str = "invalid"):
+        super().__init__(message)
+        self.category = category
 
 
 def project_of(folder: str) -> str | None:
@@ -188,11 +244,11 @@ class Projection:
     def query(self, sql: str, params: Iterable = (), limit: int = DEFAULT_ROWS) -> dict:
         sql = sql.strip().rstrip(";").strip()
         if not sql:
-            raise SqlError("Empty statement")
+            raise SqlError("Empty statement", "empty")
         if len(sql) > MAX_SQL_CHARACTERS:
-            raise SqlError(f"Statement longer than {MAX_SQL_CHARACTERS} characters")
+            raise SqlError(f"Statement longer than {MAX_SQL_CHARACTERS} characters", "too_long")
         if not re.match(r"(?is)^(select|with)\b", sql):
-            raise SqlError("Only a single SELECT statement is allowed")
+            raise SqlError("Only a single SELECT statement is allowed", "not_select")
         limit = max(1, min(int(limit), MAX_ROWS))
         self._steps = 0
         try:
@@ -200,14 +256,14 @@ class Projection:
             rows = cursor.fetchmany(limit + 1)
         except sqlite3.DatabaseError as error:
             if self._steps > STEP_BUDGET:
-                raise SqlError("The query took too long and was stopped; narrow it") from None
+                raise SqlError("The query took too long and was stopped; narrow it", "too_slow") from None
             message = str(error)
             if "not authorized" in message or "prohibited" in message:
-                message = ("Not allowed: only SELECT on documents, facts, components, table_rows and "
-                           "source_tables, with plain functions")
+                raise SqlError("Not allowed: only SELECT on documents, facts, components, table_rows and "
+                               "source_tables, with plain functions", "not_allowed") from None
             raise SqlError(message[:300]) from None
         except sqlite3.Warning as error:  # "You can only execute one statement at a time."
-            raise SqlError(str(error)[:300]) from None
+            raise SqlError(str(error)[:300], "not_select") from None
         columns = [d[0] for d in cursor.description or ()]
         return {"columns": columns, "rows": [list(r) for r in rows[:limit]],
                 "row_count": min(len(rows), limit), "truncated": len(rows) > limit}

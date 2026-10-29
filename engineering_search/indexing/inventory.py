@@ -26,7 +26,7 @@ class SourceFile:
 
 
 class Inventory:
-    """The files of one scan, by file ID. Uploads add to it with record()."""
+    """The files of one scan, by file ID. The indexer updates a file's status with record()."""
 
     def __init__(self, files: Iterable[SourceFile] = ()):
         self.files: dict[str, SourceFile] = {f.file_id: f for f in files}

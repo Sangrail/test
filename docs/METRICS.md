@@ -6,7 +6,7 @@ This document gives the scores of the MVP on `test-repository/`. [evaluation/REA
 
 ## 1. What is measured
 
-Two sets of checks measure the service. Both run against `test-repository/`: 148 files (135 Markdown, 6 PDF, 2 CSV, 1 XLSX, 2 JT and 2 text files). 144 files have a reader. They give 2,532 passages, 126 tables, 140 table rows and 296 facts. The scores below were measured on 29 October 2026.
+Two sets of checks measure the service. Both run against `test-repository/`: 148 files (135 Markdown, 6 PDF, 2 CSV, 1 XLSX, 2 JT and 2 text files). 144 files have a reader. They give 2,532 passages, 126 tables, 140 table rows and 296 facts. The scores below were measured on 29 October 2026. The DXF drawing was added afterwards (149 files, 145 with a reader); it adds two acceptance questions, which pass, and is not in the scored set.
 
 ### Scored questions
 
@@ -35,7 +35,7 @@ A passage is "relevant" when its file matches an expected file and its text cont
 
 ### Acceptance tests
 
-The automated tests ([`tests/`](../tests/), 142 tests, about 4 minutes) enforce the use case. They fail if:
+The automated tests ([`tests/`](../tests/), over 400 tests, about 4 minutes) enforce the use case. They fail if:
 
 - the repository has 100 documents or fewer;
 - one of 9 value questions gets the wrong value, file or page;
@@ -103,9 +103,9 @@ The scores are high because the test data is easy for this method. Each reason b
 | No real questions | The questions were written by the developers, not by engineering leads. Real questions are shorter, less exact and use local words |
 | No real documents | Format, structure, age, quality and size are not those of the company repository |
 | No held-out set | The method was changed while the developers looked at the questions. Scores on new questions will be lower |
-| Small scale test | One process answers about 10 requests a second on 148 files. Admission control answers within 8 s or refuses at once, with a retry time ([ADR 0018](adr/0018-admission-control-and-the-time-budget.md)). Not measured at 100,000 files or with several processes. Each SQL request copies the permitted rows into memory: about 3 s at a million facts |
+| Small scale test | One process answers about 10 requests a second on 148 files. Admission control answers within 8 s or refuses at once, with a retry time ([ADR 0008](adr/0008-a-time-budget-and-admission-control.md)). Not measured at 100,000 files or with several processes. Each SQL request copies the permitted rows into memory: about 3 s at a million facts |
 | Few formats | Markdown, text PDF, and a few small CSV and XLSX files. No CAD, BIM, Word or OCR content: one scanned PDF and two `.jt` files are in the test data only to test that they are reported. These formats are most of a real engineering repository |
-| SQL is not scored yet | A gold set of 13 questions with traps exists ([`evaluation/sql_questions.json`](../evaluation/sql_questions.json)), and a test proves its expected answers. No harness runs the clients on it yet, so the quality of the client's SQL is not measured ([ADR 0019](adr/0019-evaluate-retrieval-and-nl-to-sql.md)) |
+| SQL is not scored yet | A gold set of 13 questions with traps exists ([`evaluation/sql_questions.json`](../evaluation/sql_questions.json)), and a test proves its expected answers. No harness runs the clients on it yet, so the quality of the client's SQL is not measured ([ADR 0009](adr/0009-acceptance-tests-and-evaluation-sets.md)) |
 | Correct source, not correct value | The metric does not know if a value is current, approved or replaced by a later revision |
 | No chat agent in the loop | The language model can change or shorten the answer, or write the wrong SQL. The metric checks only the tool result. Claude Code, Codex and Pi were checked by hand on one question |
 | Simple permissions | Real permissions have groups, inheritance breaks, deny rules and changes over time |

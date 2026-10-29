@@ -30,7 +30,6 @@ import pytest
 
 from engineering_search.adapters import SQLiteAuditStore
 from engineering_search.app import create_app
-from engineering_search.jobs import SQLiteJobQueue
 
 REPOSITORY = Path(__file__).resolve().parents[1] / "test-repository"
 NORTHGATE = "project-northgate/northgate-warehouse-structural-calculations.pdf"
@@ -42,8 +41,7 @@ TIME_LIMIT_SECONDS = 10
 @pytest.fixture(scope="module")
 def client(tmp_path_factory):
     state = tmp_path_factory.mktemp("state")
-    app = create_app(root=REPOSITORY, audit=SQLiteAuditStore(state / "audit.sqlite3"),
-                     queue=SQLiteJobQueue(state / "queue.sqlite3"), worker_count=0)
+    app = create_app(root=REPOSITORY, audit=SQLiteAuditStore(state / "audit.sqlite3"))
     with TestClient(app) as client:
         client.post("/auth/login", json={"user_id": "maya"})
         assert client.post("/index").json()["failed_files"] == []
@@ -78,13 +76,12 @@ def assert_from_source(source):
         assert source["value"] and source["value"] in source["text"]
         return
     if source["file_id"].endswith(".dxf"):
-        # A DXF passage is the tag and the value of one title-block attribute. The cited line
-        # holds the value; the tag is in the same entity, before the next entity starts.
+        # A DXF passage is the tag and the value of one title-block attribute, joined like
+        # spreadsheet cells. The cited lines hold both, within one entity.
         lines = raw.decode().splitlines()
         tag, value = source["text"].split(" | ")
-        assert source["start_line"] == source["end_line"] and lines[source["start_line"] - 1] == value
-        rest_of_entity = lines[source["start_line"]:]
-        assert tag in rest_of_entity[:rest_of_entity.index("  0")]  # "  0" starts the next entity
+        cited = lines[source["start_line"] - 1:source["end_line"]]
+        assert value in cited and tag in cited and "  0" not in cited  # "  0" starts the next entity
         assert source["value"] and source["value"] in source["text"]
         return
     if source["page"]:

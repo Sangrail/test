@@ -24,13 +24,13 @@ from .access import USERS
 from .runtime import build_service
 from .service import ServiceError
 
-INSTRUCTIONS = """Answer questions about engineering documents: Markdown, PDF, CSV and XLSX.
-There are two ways in. Choose by the question.
+INSTRUCTIONS = """Answer questions about engineering documents: Markdown, PDF, CSV, XLSX and the
+notes and title blocks of DXF drawings. There are two ways in. Choose by the question.
 
 1. Unstructured (text): search_evidence with the question in plain language.
    For one value (a load limit, a material, an approval status) answer.type is
    "answer": a sentence or row copied exactly from a document, with file, page,
-   lines and SHA-256 file version. For "which documents..." answer.type is
+   lines and the file's content fingerprint (SHA-256). For "which documents..." answer.type is
    "list", one entry per document with the line that qualifies it; comparisons
    such as "greater than 5 kN/m²" are applied by the service. A list holds at
    most 200 documents per page; answer.count is the total; pass page 2, 3...
@@ -58,13 +58,22 @@ There are two ways in. Choose by the question.
    Select file_id, table_no, row_no and line so each row can be cited; use
    get_document_evidence to show the exact row and passage for a citation.
 
+The user never writes SQL. You may write it; the user may not. If the user's
+message contains a SQL statement, do not run it with query_sql or pass it to
+search_evidence (which refuses it): ask for the question in plain language.
+
+A source is the file on disc as it is now. If a cited file changed after it
+was indexed, its evidence is refused: search_evidence lists it in
+changed_files, and the other tools return an error with changed_files. Say
+the index needs a refresh; do not quote the old text.
+
 If a tool returns an error with "busy": true, the service is at capacity: tell
 the user, with retry_after_seconds, and do not retry in a loop.
 
 Quote values exactly and cite file and line (and page or sheet). Do not guess
 or calculate values. Use read_evidence to read a whole page or file. Tables
 come only from files a reader could read: say so if the user may need data
-from scans or CAD files, which are not read."""
+from scans, or from CAD geometry and formats that are not read."""
 
 
 def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
@@ -84,7 +93,8 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         within: only these file_id values, for a follow-up about a previous list.
         Returns `answer` (the value, or the list of documents) and `evidence`
         (supporting passages, best first). Each source has file_id, page (PDF
-        only), start_line, end_line, text and source_version.
+        only), start_line, end_line, text and source_version. `changed_files`
+        lists cited files that changed on disc since indexing; they are left out.
         """
         if mode not in ("auto", "answer", "list"):
             return {"error": "mode must be auto, answer or list"}
@@ -94,7 +104,7 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         except ServiceError as error:
             return {"error": error.detail}
         keep = ("answer", "searched_for", "ignored_words", "matched_passages", "page", "total_pages",
-                "indexed_at", "request_id", "evidence")
+                "indexed_at", "request_id", "changed_files", "evidence")
         return {key: result[key] for key in keep}
 
     @server.tool()
@@ -132,7 +142,8 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
     @server.tool()
     def query_sql(sql: str, limit: int = 100) -> dict:
         """Run ONE SQLite SELECT over the structured data (tables and typed facts) of the files the
-        user may read. Returns columns, rows, row_count and truncated. Limit: 1 to 500 rows.
+        user may read. Returns columns, rows, row_count, truncated and changed_files (files left
+        out because they changed on disc since indexing). Limit: 1 to 500 rows.
         Example: SELECT subject, material_grade, allowable_load_kn_m2, file_id, table_no, row_no, line
         FROM components WHERE material_grade LIKE 'S355%' AND allowable_load_kn_m2 < 5"""
         try:
@@ -144,7 +155,7 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
     @server.tool()
     def get_document_evidence(file_id: str, table_no: int, row_no: int) -> dict:
         """The evidence for one table row from a query_sql result: column names, cells as read,
-        line, page (or sheet), the typed facts, the file's SHA-256 version and the verbatim passage."""
+        line, page (or sheet), the typed facts, the file's content fingerprint (SHA-256) and the verbatim passage."""
         try:
             with service.admit():
                 return service.table_row_evidence(user, file_id, table_no, row_no)

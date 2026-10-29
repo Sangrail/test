@@ -2,7 +2,6 @@
 
     <state-dir>/index-<id>.sqlite3   search index (documents, passages, FTS5)
     <state-dir>/index-<id>.lock      held while one process plans and publishes index changes
-    <state-dir>/queue-<id>.sqlite3   upload job queue
     <state-dir>/audit.sqlite3        audit log
 
 <id> is taken from the document folder path, so two document folders never
@@ -20,13 +19,12 @@ from pathlib import Path
 from .access import MockPermissionStore
 from .adapters import Admission, FileLock, SQLiteAuditStore
 from .app import create_app
-from .jobs import SQLiteJobQueue
 from .service import SearchService
 from .store import SQLiteSearchIndex
 
 
 def stores(documents: Path, state: Path) -> dict:
-    """Open the index, queue and audit files for this document folder."""
+    """Open the index and audit files for this document folder."""
     root = documents.expanduser().resolve()
     state = state.expanduser().resolve()
     namespace = hashlib.sha256(str(root).encode()).hexdigest()[:16]
@@ -34,7 +32,6 @@ def stores(documents: Path, state: Path) -> dict:
             "index": SQLiteSearchIndex(state / f"index-{namespace}.sqlite3"),
             "index_lock": FileLock(state / f"index-{namespace}.lock"),
             "audit": SQLiteAuditStore(state / "audit.sqlite3"),
-            "queue": SQLiteJobQueue(state / f"queue-{namespace}.sqlite3"),
             "admission": Admission(float(os.environ.get("SEARCH_BUDGET_SECONDS", "8")))}
 
 
@@ -43,6 +40,6 @@ def build_service(documents: Path, state: Path) -> SearchService:
     return SearchService(permissions=MockPermissionStore(), **stores(documents, state))
 
 
-def build_app(documents: Path, state: Path, worker_count: int = 2, index_on_start: bool = True):
+def build_app(documents: Path, state: Path, index_on_start: bool = True):
     """The web app, with its own search service. python -m engineering_search uses this."""
-    return create_app(worker_count=worker_count, index_on_start=index_on_start, **stores(documents, state))
+    return create_app(index_on_start=index_on_start, **stores(documents, state))

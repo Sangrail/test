@@ -1,4 +1,5 @@
-"""Pretend users and file permissions.
+"""Pretend users and file permissions: a stand-in (U1, K13) for the company's identity
+provider and the repository's own access controls (gap G1).
 
 Access-control assumptions for the MVP
 --------------------------------------
@@ -50,7 +51,7 @@ USERS = (
      "try": "Ask the same roof load question as JP. The specification and Northgate results do not show."},
     {"id": "maya", "subject": "demo-user-003", "name": "Maya", "title": "Index team", "role": "index_team",
      "can": ["Read most files. The folder list below shows which.",
-             "Index documents and upload files (Index operations).",
+             "Index documents (Index operations).",
              "Read the audit log, which records each search and its permission decisions."],
      "try": "Search for anything, then open Audit log to see the record of that search."},
 )

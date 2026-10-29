@@ -30,7 +30,6 @@ from fastapi.testclient import TestClient
 
 from engineering_search.adapters import SQLiteAuditStore
 from engineering_search.app import create_app
-from engineering_search.jobs import SQLiteJobQueue
 
 ROOT = Path(__file__).resolve().parents[1]
 K = 10
@@ -62,8 +61,7 @@ def score(question: dict, results: list[dict]) -> dict:
 def run(documents: Path, questions: list[dict]) -> list[dict]:
     with tempfile.TemporaryDirectory() as state:
         state = Path(state)
-        app = create_app(root=documents, audit=SQLiteAuditStore(state / "audit.sqlite3"),
-                         queue=SQLiteJobQueue(state / "queue.sqlite3"), worker_count=0)
+        app = create_app(root=documents, audit=SQLiteAuditStore(state / "audit.sqlite3"))
         with TestClient(app) as client:
             client.post("/auth/login", json={"user_id": "maya"}).raise_for_status()
             client.post("/index").raise_for_status()

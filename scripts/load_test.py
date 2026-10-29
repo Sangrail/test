@@ -20,7 +20,6 @@ import httpx
 
 from engineering_search.adapters import Admission, SQLiteAuditStore
 from engineering_search.app import create_app
-from engineering_search.jobs import SQLiteJobQueue
 
 ROOT = Path(__file__).resolve().parents[1]
 SQL = ("SELECT subject, file_id, table_no, row_no, line FROM components "
@@ -63,7 +62,6 @@ def report(count: int, results: list[tuple[int, float]], wall: float, budget: fl
 async def main(counts: list[int], budget: float) -> int:
     state = Path(tempfile.mkdtemp())
     app = create_app(root=ROOT / "test-repository", audit=SQLiteAuditStore(state / "audit.sqlite3"),
-                     queue=SQLiteJobQueue(state / "queue.sqlite3"), worker_count=0,
                      admission=Admission(budget_seconds=budget))
     texts = questions()
     ok = True

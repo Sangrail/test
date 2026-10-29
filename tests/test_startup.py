@@ -2,13 +2,10 @@ from fastapi.testclient import TestClient
 
 from engineering_search.adapters import SQLiteAuditStore
 from engineering_search.app import create_app
-from engineering_search.jobs import SQLiteJobQueue
 
 
 def configured(root, state):
-    return create_app(root=root, audit=SQLiteAuditStore(state / "audit.sqlite3"),
-                      queue=SQLiteJobQueue(state / "queue.sqlite3"),
-                      worker_count=0, index_on_start=True)
+    return create_app(root=root, audit=SQLiteAuditStore(state / "audit.sqlite3"), index_on_start=True)
 
 
 def test_startup_build_and_restart_use_current_documents(tmp_path):

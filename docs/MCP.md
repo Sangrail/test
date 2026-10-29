@@ -15,7 +15,7 @@ flowchart LR
     Projection --> Index
     Text --> Audit[(audit log)]
     SQL --> Audit
-    Index --> Repo[(test-repository/<br/>148 files)]
+    Index --> Repo[(test-repository/<br/>149 files)]
 ```
 
 > **Security hole.** The MCP server does not check who uses it. It searches as the user that the `--user` flag names. Anyone who can edit the client configuration can search as JP and read every file. Use it only with the test documents. [The security hole](#the-security-hole-the-mcp-user-is-not-verified) below gives the details and the fix.
@@ -42,7 +42,7 @@ For a structured question, the LLM reads the schema with `describe_schema`, writ
 4. Stops it after 2,000,000 SQLite steps, and returns at most 500 rows.
 5. Writes an audit event: the SHA-256 of the statement, its length, the files in scope, the files excluded by policy, the number of rows and the cited files. It does not write the rows.
 
-`get_document_evidence` then shows the exact row for a citation: the column names, the cells as read, the line, the page or sheet, the typed facts, the file's SHA-256 version and the verbatim line from the file.
+`get_document_evidence` then shows the exact row for a citation: the column names, the cells as read, the line, the page or sheet, the typed facts, the file's content fingerprint (SHA-256) and the verbatim line from the file.
 
 What the server cannot check is whether the SQL answers your question. The LLM can write a correct, safe query for the wrong thing, for example compare a capacity with a demand. The tool call shows the SQL, so a tester can read it.
 
@@ -100,7 +100,7 @@ The server does not see the conversation. It sees only the tool arguments. The L
 | Result | The page shows the answer panel and the passages, exactly as returned | The LLM reads the JSON result and writes a reply in its own words |
 | Follow-up questions | You select "Ask the next question about these documents only" | The LLM must send the file IDs of the previous list in `within` |
 | Where the text goes | Only to your browser | To the LLM provider too, because the LLM must read the result |
-| Other functions | Index operations, uploads and the audit log (Maya) | Search, read and SQL. Maya also gets `get_index_coverage` |
+| Other functions | Index operations and the audit log (Maya) | Search, read and SQL. Maya also gets `get_index_coverage` |
 
 Two results of these differences:
 
@@ -133,7 +133,7 @@ This command starts the MCP server the same way that a chat client does. It list
 uv run --frozen python -m scripts.check_mcp
 ```
 
-The first run indexes the 148 files of `test-repository/`. This takes some seconds. The output must end with `The MCP server works.` and show:
+The first run indexes the 149 files of `test-repository/`. This takes some seconds. The output must end with `The MCP server works.` and show:
 
 - the Northgate roof load limit, 0.6 kN/m², page 2;
 - the Northgate building control status, PENDING, page 4;
@@ -244,7 +244,7 @@ Ask these questions in order. Ask each question as JP first, then as Kamal. The 
 | 3 | What steel is used for the Northgate purlins? | S390GD, Northgate PDF, page 3 | S390GD, from the material approval register PDF, page 1, as `unverified`: the agent must say the cited row does not name every question word |
 | 4 | Do we have any documents in Northgate? | 2 documents: the Northgate PDF and the register | 1 document: the register |
 | 5 | Of those documents, which mention compliance? | 1 document: the Northgate PDF | None |
-| 6 | Which documents specify S355? | 70 documents (Maya: 69) | 66 documents |
+| 6 | Which documents specify S355? | 71 documents (Maya: 70) | 67 documents |
 | 7 | Which documents have a roof load greater than 5 kN/m²? | 53 documents | 52 documents |
 | 8 | What is the fire resistance rating at Northgate? | Not found. No document states it | Not found |
 | 9 | Read page 4 of the Northgate PDF | All passages of page 4 | "No readable evidence". The file name and its content do not show |
@@ -282,13 +282,13 @@ For each problem, send:
 
 | Tool | Input | Returns |
 | --- | --- | --- |
-| `search_evidence` | question, mode (`auto`, `answer`, `list`), `within`, limit, page | The answer and its status, or a list of documents (at most 200 per page), and the supporting passages |
-| `read_evidence` | file_id, page | All indexed passages of a file or of one PDF page |
+| `search_evidence` | question in plain language, mode (`auto`, `answer`, `list`), `within`, limit, page | The answer and its status, or a list of documents (at most 200 per page), the supporting passages, and `changed_files` (cited files that changed on disc since indexing, left out). A question that is a SQL statement is refused |
+| `read_evidence` | file_id, page | All indexed passages of a file or of one PDF page. Refused if the file changed since indexing |
 | `describe_schema` | none | The tables and views that `query_sql` can read, with notes on units and citations. No document data |
 | `list_tables` | none | The table and view names |
 | `describe_table` | table | The columns, with type, meaning and units |
-| `query_sql` | sql, limit (1 to 500) | columns, rows, row_count, truncated, or an error that says why the statement was refused |
-| `get_document_evidence` | file_id, table_no, row_no | The cited row: columns, cells, line, page or sheet, typed facts, SHA-256 file version and the verbatim line |
+| `query_sql` | sql, limit (1 to 500) | columns, rows, row_count, truncated and `changed_files` (files left out because they changed on disc since indexing), or an error that says why the statement was refused |
+| `get_document_evidence` | file_id, table_no, row_no | The cited row: columns, cells, line, page or sheet, typed facts, the content fingerprint and the verbatim line. Refused if the file changed since indexing |
 | `get_index_coverage` | gaps_limit | Index team (Maya) only. Files by type and status, the readers, and the files not fully read, with the reason |
 
 ### Example SQL
@@ -369,11 +369,13 @@ No rows, for every user.
 | Pi does not list the server | The project is not trusted, so Pi does not read `.pi/mcp.json`. Trust it, pass `--approve`, or add the server to `~/.pi/agent/mcp.json` |
 | `spawn uv ENOENT` or `command not found: uv` | The client cannot find `uv`. Use the full path from `which uv` as the command |
 | `query_sql` returns an error | The statement was refused: not one `SELECT`, too long, a forbidden table or function, or over the step budget. The error says which. The agent can correct the SQL and try again |
-| A tool returns `"busy": true` | The server cannot answer within the 8 s budget, so it refused the call at once. Ask again after `retry_after_seconds`. Over stdio each client has its own server, so this is rare; a long SQL projection or a slow machine can cause it. `SEARCH_BUDGET_SECONDS` sets the budget ([ADR 0018](adr/0018-admission-control-and-the-time-budget.md)) |
+| A tool returns `"busy": true` | The server cannot answer within the 8 s budget, so it refused the call at once. Ask again after `retry_after_seconds`. Over stdio each client has its own server, so this is rare; a long SQL projection or a slow machine can cause it. `SEARCH_BUDGET_SECONDS` sets the budget ([ADR 0008](adr/0008-a-time-budget-and-admission-control.md)) |
 | The first question is slow | The server indexes new and changed files when it starts. The next start hashes every file and extracts only the changed files |
 | Index refresh fails with 503 at start | The document folder is missing, or a folder in it cannot be read. Check `--documents` |
 | A warning about pydantic shows in the log | The warning is harmless. The server writes it to stderr, not to the MCP channel |
-| Results look out of date | Delete `.runtime/index-*.sqlite3`. The server makes the index again at the next start |
+| A tool says a file changed since it was indexed (`changed_files`) | The file on disc is not what the index holds, so its evidence is not quoted. Restart the server (it refreshes the index at start), or refresh from `/admin` |
+| `search_evidence` says the question looks like SQL | The user never writes SQL. Ask in plain language; the agent writes SQL with `query_sql` when a question needs it |
+| Results look out of date | Restart the server: it refreshes the index at start. To rebuild from nothing, delete `.runtime/index-*.sqlite3` |
 
 To see the tools without a chat client, use the MCP Inspector. It needs Node.js.
 
@@ -389,7 +391,7 @@ Add `--documents` and `--state-dir` to the server arguments. Use full paths.
 claude mcp add my-documents -- uv run --frozen --directory "$PWD" python -m engineering_search.mcp_server --user jp --documents /full/path/to/documents --state-dir /full/path/to/state
 ```
 
-The server reads `.md`, `.pdf` (text layer only, no OCR), `.csv` and `.xlsx` files. It detects the type from the file content; the extension is a hint. Tables in CSV, XLSX and Markdown files become rows and typed facts for `query_sql`. Facts are not read from prose, so a value stated only in a sentence is found by `search_evidence`, not by SQL. Scans and CAD files are listed in the coverage report, not read.
+The server reads `.md`, `.pdf` (text layer only, no OCR), `.csv`, `.xlsx` and ASCII `.dxf` files (a drawing's notes and title-block attributes only). It detects the type from the file content; the extension is a hint. Tables in CSV, XLSX and Markdown files, and DXF title blocks, become rows and typed facts for `query_sql`. Facts are not read from prose, so a value stated only in a sentence is found by `search_evidence`, not by SQL. Scans, binary DXF and other CAD files are listed in the coverage report, not read.
 
 The access rules in `engineering_search/access.py` apply to your files too. If no rule matches a path, all three users can read the file.
 
@@ -397,7 +399,7 @@ The access rules in `engineering_search/access.py` apply to your files too. If n
 
 - `--user` selects whose permissions apply, and nothing verifies it. This is a security hole. See [The security hole](#the-security-hole-the-mcp-user-is-not-verified).
 - The server runs on your computer only (stdio). There is no remote MCP server yet. ChatGPT and GitHub Copilot were not tested.
-- The LLM writes the SQL. The server makes it safe; it does not make it right. Read the SQL. The 13 gold questions in [evaluation/sql_questions.json](../evaluation/sql_questions.json) are the planned measure; no client has been scored on them yet ([ADR 0019](adr/0019-evaluate-retrieval-and-nl-to-sql.md)).
+- The LLM writes the SQL. The server makes it safe; it does not make it right. Read the SQL. The 13 gold questions in [evaluation/sql_questions.json](../evaluation/sql_questions.json) are the planned measure; no client has been scored on them yet ([ADR 0009](adr/0009-acceptance-tests-and-evaluation-sets.md)).
 - Each call is answered within 8 s or refused at once with `"busy": true` and `retry_after_seconds`.
 - The web service and the MCP server can use the same `.runtime/` folder. They then share the index and the audit log. Index builds take a file lock, so they do not run at the same time.
 - [RUNNING.md](../RUNNING.md) tells you how to run the web page. [ARCHITECTURE.md](../ARCHITECTURE.md) tells you how a question is answered.

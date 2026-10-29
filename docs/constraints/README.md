@@ -1,43 +1,27 @@
-# Intent, constraints and scope
+# The brief, item by item
 
+A forensic reading of [the brief](../Starting_document.md). Each pillar of the brief is split into items with one ID each, and every item says what it means for the design, where the MVP stands, and which files and [decisions](../adr/README.md) serve it. The product owner's answers to the questions the brief leaves open are the clarifications (K). What the MVP does not solve is on the gaps page (G).
 
-The background, constraints, use case, task and scope from [the brief](../Starting_document.md), what the product owner added while the MVP was built, and the production requirements that it does not meet. They are kept, with every earlier version, in the design records database ([docs/records](../records/README.md)), with the [decision records](../adr/README.md), the fourth pillar.
-
-| Pillar | What it is | Items |
+| Page | IDs | What it holds |
 | --- | --- | --- |
-| **Intent** | What the system is for: the direction that every decision flows from. | B1, B2, R2, R3, U1, U2, U3, U4, U5, U6 |
-| **Constraint** | What the system must work within: the environment, the data, the rules it must keep. | C1, C2, C3, C4, C5, P1, P2, P3, P4, P5, P6, R1, R4, R5, R6, R7, R8 |
-| **Scope** | How far this work goes down the road. The arbiter. | S1, S2, S3, S4, S5, S6, T1, T2, T3 |
+| [Background](background.md) | [B1](background.md#b1)–[B4](background.md#b4) | The problem as the brief states it |
+| [Constraints](constraints.md) | [C1](constraints.md#c1)–[C5](constraints.md#c5) | What already exists in the company. The MVP assumes it and uses labelled stand-ins |
+| [Use case](use-case.md) | [U1](use-case.md#u1)–[U6](use-case.md#u6) | Who needs what, how fast and with what confidence |
+| [Task](task.md) | [T1](task.md#t1)–[T5](task.md#t5) | What the brief asks to be delivered |
+| [Scope](scope.md) | [S1](scope.md#s1)–[S2](scope.md#s2) | An MVP, not the platform. Lists the features that go beyond the brief |
+| [Clarifications](clarifications.md) | [K1](clarifications.md#k1)–[K16](clarifications.md#k16) | The product owner's answers where the brief is open |
+| [Gaps and challenges](gaps.md) | [G1](gaps.md#g1)–[G8](gaps.md#g8), [O1](gaps.md#o1)–[O2](gaps.md#o2) | What the MVP leaves unsolved, and what is out of scope but recorded |
 
-Decisions flow from the intent and the constraints. Scope is the arbiter of how far this work goes: going beyond a scope item is acceptable, and is recorded with an *exceeds* link; falling short of one is the failure to flag. The group in an ID (B, C, U, …) says where the item came from; the pillar says what kind of item it is.
+**Standing** of an item:
 
-| Group | IDs | What it holds |
-| --- | --- | --- |
-| [Background](background.md) | B1–B2 | The problem as the brief states it |
-| [Constraints from the brief](environment.md) | C1–C5 | The environment that already exists: the architecture direction, the repository, connectors, stores and the chat-agent shell. The MVP assumes them and uses stand-ins |
-| [Use case](use-case.md) | U1–U6 | Who needs what, how fast and with what confidence. From the brief |
-| [Task](task.md) | T1–T3 | What the brief asks to be delivered |
-| [Scope](scope.md) | S1–S6 | How far down the road the MVP goes. The arbiter: exceeding scope is acceptable and recorded; falling short of it is a failure |
-| [Requirements and constraints added during the MVP](requirements.md) | R1–R8 | Permissions, answers, lists, tests, response time, several users, project folders and folder authorisation |
-| [Production requirements](production.md) | P1–P6 | What a service for the whole organisation needs and **the MVP does not meet** |
+- *context*: a fact about the problem, not something to meet.
+- *assumed*: the brief says it already exists. The MVP does not build it; a minimal, labelled stand-in shows the flow.
+- *met*: met by the MVP on the test repository.
+- *partly met*: met in part; the item says what is missing and which gap holds it.
 
-## Each entry gives
+**Rules:**
 
-- the statement, its pillar and its source;
-- its standing, what it means for the design, and where the MVP stands;
-- the files that stand in for it, enforce it, measure it or deliver it;
-- the decision records that serve it, leave it unmet, go beyond it, or cite it;
-- its history: each version, when it was active, and why it changed.
-
-**Standing:**
-
-- *context*: A fact about the problem, not a requirement to meet.
-- *assumed*: The brief says it exists. The MVP does not build it; it uses a stand-in to prove the chain.
-- *met*: Met by the MVP, on the test data. For a scope item: the MVP goes this far.
-- *partly met*: Met in part. Where the MVP stands says what is missing.
-- *not met*: Not met by the MVP. For a scope item, this is the failure to flag.
-- *exceeded*: The MVP goes beyond this scope item, knowingly. Acceptable, and recorded.
-
-## Changing an item
-
-Change the database, never these pages: [docs/records/README.md](../records/README.md) shows how, with plain SQL in the `sqlite3` shell. IDs are never renumbered or reused; a withdrawn item keeps its anchor and its history.
+- Every decision record cites the IDs it serves. A decision that cites none does not belong in this MVP.
+- A change that steps outside an item is flagged in its commit message (`Constraints:` line, see [AGENTS.md](../../AGENTS.md)), not hidden.
+- IDs are not renumbered. A withdrawn item stays, marked withdrawn, with the reason.
+- The pages are written by hand. The brief itself is never edited.

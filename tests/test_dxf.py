@@ -11,7 +11,8 @@ from engineering_search.indexing.detect import ContentDetector
 from engineering_search.indexing.facts import extract_facts
 from engineering_search.indexing.readers import ReaderError
 from engineering_search.indexing.readers.dxf import DxfTextReader
-from engineering_search.indexing.status import FORMAT_MISMATCH, NO_EXTRACTABLE_CONTENT
+from engineering_search.answer import parts
+from engineering_search.indexing.status import FORMAT_MISMATCH, NO_EXTRACTABLE_CONTENT, UNSUPPORTED_VERSION
 
 DRAWING = Path(__file__).resolve().parents[1] / "test-repository/project-harbour/cad/hangar-frame-ga.dxf"
 
@@ -33,14 +34,17 @@ def test_title_block_attributes_are_a_table_that_cites_the_value_line():
     assert lines[rows["Approval status"].line - 1] == "Approved"
 
 
-def test_an_attribute_passage_quotes_its_tag_and_value_from_the_cited_lines():
+def test_an_attribute_passage_joins_its_tag_and_value_and_cites_the_lines_of_both():
     raw = DRAWING.read_bytes()
     lines = raw.decode().splitlines()
     (passage,) = [p for p in read(raw).passages if p.text.startswith("CRANE_SAFE_WORKING_LOAD")]
     assert passage.text == "CRANE_SAFE_WORKING_LOAD | 50 kN"
-    assert passage.start_line == passage.end_line and lines[passage.start_line - 1] == "50 kN"
-    assert lines[passage.start_line + 1] == "CRANE_SAFE_WORKING_LOAD"  # the tag, in the same entity
+    cited = lines[passage.start_line - 1:passage.end_line]
+    assert cited[0] == "50 kN" and cited[-1] == "CRANE_SAFE_WORKING_LOAD"
+    assert "  0" not in cited  # one entity: no other entity starts inside the cited lines
     assert passage.heading == "Drawing HB-S-201 rev C title block"
+    (part,) = parts(passage)  # the answer quotes the whole passage and cites both lines
+    assert (part.start_line, part.end_line) == (passage.start_line, passage.end_line)
 
 
 def test_notes_are_passages_and_geometry_is_not_read():
@@ -69,8 +73,19 @@ def test_block_definitions_are_templates_and_not_read():
 def test_mtext_formatting_is_removed():
     raw = b"  0\nSECTION\n  2\nENTITIES\n  0\nMTEXT\n  8\nNOTES\n  3\n{\\fArial;MAX DECK LOAD }\n  1\n\\P10 kN/m\xc2\xb2\n  0\nENDSEC\n  0\nEOF\n"
     (passage,) = read(raw).passages
-    assert passage.text == "MAX DECK LOAD \n10 kN/m²"
+    assert passage.text == "MAX DECK LOAD 10 kN/m²"
     assert (passage.start_line, passage.end_line) == (10, 12)
+    (part,) = parts(passage)
+    assert (part.start_line, part.end_line) == (10, 12)  # not line 11, which is a group code
+
+
+def test_mtext_paragraphs_and_switches_do_not_split_the_note_or_stay_in_the_text():
+    raw = (b"  0\nSECTION\n  2\nENTITIES\n  0\nMTEXT\n  8\nNOTES\n"
+           b"  1\n\\LBOLTS\\l M24\\PGRADE\\~8.8. \\OCHECK\\o TORQUE.\n  0\nENDSEC\n  0\nEOF\n")
+    (passage,) = read(raw).passages
+    assert passage.text == "BOLTS M24 GRADE 8.8. CHECK TORQUE."
+    assert [(p.text, p.start_line, p.end_line) for p in parts(passage)] == [
+        ("BOLTS M24 GRADE 8.8.", 10, 10), ("CHECK TORQUE.", 10, 10)]
 
 
 def test_a_drawing_with_no_text_has_no_content():
@@ -78,9 +93,11 @@ def test_a_drawing_with_no_text_has_no_content():
     assert read(raw).status == NO_EXTRACTABLE_CONTENT
 
 
-def test_binary_dxf_is_refused():
-    with pytest.raises(ReaderError):
+def test_binary_dxf_is_an_unsupported_version_not_a_malformed_file():
+    assert not DxfTextReader.manifest.supports("binary") and DxfTextReader.manifest.supports("AC1009")
+    with pytest.raises(ReaderError) as refused:
         read(b"AutoCAD Binary DXF\r\n\x1a\x00" + b"\x00" * 20)
+    assert refused.value.status == UNSUPPORTED_VERSION
 
 
 def test_dxf_is_detected_by_content(tmp_path):

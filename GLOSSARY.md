@@ -4,9 +4,33 @@ Terms used to describe source evidence, file compatibility and search coverage.
 
 ## Language
 
-**Source version**:
-A particular content revision of a document. It is distinct from the version of the file format used to encode that content. The service records it as the SHA-256 of the file.
-_Avoid_: File version without qualification
+**Source**:
+A file on disc in the existing repository, as it is now. There is no revision history and no notion of a "current" or "approved" revision: the file is what it is. An answer names the source file, the location in it and the quoted evidence.
+_Avoid_: Current revision, approved revision
+
+**Content fingerprint**:
+A hash of a file's bytes, taken when the file is indexed. It tells the indexer whether a file has changed since the last refresh, and tells a reader of the evidence which bytes a quote came from. It is not a revision number.
+_Avoid_: Revision, version (without qualification)
+
+**Changed file**:
+A source whose content fingerprint on disc no longer matches the one in the index, or that is gone. Its evidence is refused, not quoted, until the index is refreshed.
+
+**Stand-in**:
+A minimal part of the MVP that takes the place of something the brief says already exists (the repository, the connectors, the stores, the chat shell), only so the flow can be shown end to end. It is labelled as a stand-in and is not grown into a product.
+_Avoid_: Connector, when referring to the MVP's readers
+
+**Pilot user**:
+A member of the selected group allowed to use the pilot: an engineering manager or lead who may read some projects and not others.
+_Avoid_: Selected user, when "selected" could be read as one named person
+
+**Critical engineering parameter**:
+A value an engineering decision depends on: a load limit, a material specification or an approval status, for example.
+
+**Clarification**:
+The product owner's answer where the brief is open. It names the brief items it clarifies.
+
+**Gap**:
+Something a service for the whole organisation needs that the MVP does not provide. It is recorded, not hidden, and not a defect of the MVP.
 
 **Format version**:
 The revision of a file format in which a document is encoded. A document's age alone does not establish its format version or readability. The detector reads it from the content where the format states one, for example `%PDF-1.7` or the JT header.
@@ -15,7 +39,7 @@ The revision of a file format in which a document is encoded. A document's age a
 The name that a detector gives to a file, for example `markdown`, `pdf`, `excel` or `jt`. A file type without a reader is not supported.
 
 **Detector**:
-The part of the indexer that names the file type and format version of each file. The default `ContentDetector` treats the extension as a hint and lets the content signature decide for PDF, XLSX, DOCX and JT.
+The part of the indexer that names the file type and format version of each file. The default `ContentDetector` treats the extension as a hint and lets the content signature decide for PDF, XLSX, DOCX, JT and DXF.
 
 **Format mismatch**:
 A file whose content does not have the signature of the type that its extension claims, for example a text note saved as `.jt`. Its status is `FORMAT_MISMATCH`. A file that starts like its type but has a broken header is `INVALID_HEADER`.
@@ -30,7 +54,7 @@ Every file found by one scan, with its file type, format version, status, reader
 The component that scans the document folder, detects file types, chooses readers, reads the files, extracts facts from their tables, and plans the changes to the search index. It is in `engineering_search/indexing/`. It does not write the index.
 
 **Reader**:
-A concrete implementation that interprets a file format and produces passages and tables. Its supported format versions must be established through verification. The MVP has readers for Markdown, text-layer PDF, CSV and XLSX.
+A concrete implementation that interprets a file format and produces passages and tables. Its supported format versions must be established through verification. The MVP's readers (Markdown, text-layer PDF, CSV, XLSX and DXF) are sample stand-ins for the connectors that the brief says already exist; they show the flow.
 
 **Reader manifest**:
 What a reader declares: its ID and version, the file types and format versions it is tested with, its capabilities (text, tables, metadata, geometry) and the packages it needs.
@@ -42,10 +66,10 @@ A particular release of a reader. Different reader versions can interpret the sa
 The one list of readers (`default_registry()`). For each file it chooses the first reader that fits the type, the format version and the installed packages, or says why none fits: `NO_READER`, `UNSUPPORTED_VERSION` or `DEPENDENCY_MISSING`.
 
 **Reader selection**:
-The recorded choice of reader and reader version used to interpret a particular source version. The inventory records it as `reader_id@reader_version`.
+The recorded choice of reader and reader version used to interpret a source with a particular content fingerprint. The inventory records it as `reader_id@reader_version`.
 
 **Evidence passage**:
-Content extracted from an identified source version, with a location that allows its origin to be checked. Provenance does not establish engineering correctness or approval.
+Content extracted from a source with a known content fingerprint, with a location that allows its origin to be checked. Provenance does not establish engineering correctness or approval.
 
 **Search hit**:
 An evidence passage that matches a query. Several hits can come from one document.
@@ -86,7 +110,7 @@ The answer to a "which documents" question: one entry for each readable document
 A path (the whole repository, a folder or a file) and the users who may read it. The most specific rule for a file applies.
 
 **Table**:
-Rows and columns read from a document: a Markdown pipe table, a CSV file or a workbook sheet. Each row keeps its line (or sheet row) and page (or sheet number).
+Rows and columns read from a document: a Markdown pipe table, a CSV file, a workbook sheet or the title block of a drawing. Each row keeps its line (or sheet row) and page (or sheet number).
 
 **Fact**:
 A typed value from one table cell, extracted at index time by fixed rules: subject, parameter, role, the value as written, the number with its sign, the unit, the SI value, the dimension and the project, with the file, table, row and line. Facts come only from tables, never from free text.
@@ -107,4 +131,4 @@ The one component that searches, runs SQL, reads files, checks permissions and w
 A lock file (`index-<id>.lock` in the state folder) that lets one process at a time plan and publish changes to a shared index.
 
 **MCP server**:
-A process that gives a chat client (Claude Code, Codex, Pi) the tools `search_evidence`, `read_evidence`, `describe_schema`, `list_tables`, `describe_table`, `query_sql` and `get_document_evidence` over the Model Context Protocol, on local stdio. It calls the search service. See docs/MCP.md.
+A process that gives a chat client (Claude Code, Codex, Pi) the tools `search_evidence`, `read_evidence`, `describe_schema`, `list_tables`, `describe_table`, `query_sql` and `get_document_evidence` (and, for the index team, `get_index_coverage`) over the Model Context Protocol, on local stdio. It calls the search service. See docs/MCP.md.

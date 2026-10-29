@@ -4,6 +4,7 @@ Built from an inventory and the reader registry only, so it can run without the
 search index. Coverage is reported by file type and format version, by status,
 by top-level folder (project) and by capability (text, tables, ...), not as one
 "files processed" number. It names files, so only the index team may see it.
+It serves T2 (the gaps): a file the stand-in readers cannot read is reported, never dropped.
 """
 from __future__ import annotations
 

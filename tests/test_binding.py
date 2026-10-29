@@ -7,12 +7,10 @@ from pathlib import Path
 import threading
 import time
 
-import pytest
 
 from engineering_search.access import USERS, MockPermissionStore
 from engineering_search.adapters import FileLock, SQLiteAuditStore
 from engineering_search.answer import MAX_LISTED, understand
-from engineering_search.jobs import SQLiteJobQueue
 from engineering_search.service import SearchService
 from engineering_search.store import CANDIDATE_LIMIT, SQLiteSearchIndex
 
@@ -25,7 +23,7 @@ def service(tmp_path: Path, files: dict[str, str], rules=None, index=None, index
         (root / name).parent.mkdir(parents=True, exist_ok=True)
         (root / name).write_text(text)
     built = SearchService(root, index or SQLiteSearchIndex(), SQLiteAuditStore(tmp_path / "audit.sqlite3"),
-                          MockPermissionStore(rules), SQLiteJobQueue(tmp_path / "queue.sqlite3"),
+                          MockPermissionStore(rules),
                           index_lock=index_lock)
     built.reindex()
     return built

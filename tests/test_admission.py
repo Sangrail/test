@@ -8,7 +8,6 @@ import pytest
 
 from engineering_search.adapters import Admission, Busy, SQLiteAuditStore
 from engineering_search.app import create_app
-from engineering_search.jobs import SQLiteJobQueue
 from helpers import TEST_REPOSITORY
 
 
@@ -65,8 +64,7 @@ def test_a_queued_request_is_charged_only_for_its_own_turn():
 
 def test_a_busy_service_answers_503_with_retry_after_and_withholds_evidence(tmp_path):
     full = Admission(budget_seconds=0.0)  # Every request expects more than no time at all.
-    app = create_app(root=TEST_REPOSITORY, audit=SQLiteAuditStore(tmp_path / "audit.sqlite3"),
-                     queue=SQLiteJobQueue(tmp_path / "queue.sqlite3"), worker_count=0, admission=full)
+    app = create_app(root=TEST_REPOSITORY, audit=SQLiteAuditStore(tmp_path / "audit.sqlite3"), admission=full)
     with TestClient(app) as client:
         client.post("/auth/login", json={"user_id": "maya"})
         assert client.post("/index").status_code == 200  # Index operations are not admission-controlled.

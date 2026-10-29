@@ -4,7 +4,7 @@ These readers are stand-ins. The brief says connectors and APIs already extract
 metadata, text and properties from supported files; the MVP reads Markdown, PDF text,
 CSV, XLSX and the notes and title block of a DXF drawing itself, only to show the
 flow from file to cited answer. A connector
-plugs in here as one more reader that returns an Extraction (ADR 0020).
+plugs in here as one more reader that returns an Extraction (ADR 0001).
 
     base.py       ReaderManifest, Capabilities, Extraction, ReaderError, Reader
     text.py       split lines into passages (shared)

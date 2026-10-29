@@ -19,7 +19,6 @@ from engineering_search.indexing.readers import Capabilities, Extraction, Markdo
 from engineering_search.indexing.status import (CLASSIFIED, DEPENDENCY_MISSING, ENCRYPTED, FORMAT_MISMATCH,
                                                 INDEXED_FULL, INDEXED_PARTIAL, INVALID_HEADER, NO_READER,
                                                 NO_TEXT_LAYER, UNSUPPORTED_VERSION)
-from engineering_search.jobs import SQLiteJobQueue
 from engineering_search.service import SearchService
 from engineering_search.store import SQLiteSearchIndex
 
@@ -162,8 +161,7 @@ def test_statuses_survive_a_restart_and_the_report_is_for_the_index_team_only(tm
 
     def start():
         return SearchService(root, SQLiteSearchIndex(index_path), SQLiteAuditStore(tmp_path / "audit.sqlite3"),
-                             MockPermissionStore(),
-                             SQLiteJobQueue(tmp_path / "queue.sqlite3"))
+                             MockPermissionStore())
 
     first = start()
     first.reindex()
@@ -171,8 +169,7 @@ def test_statuses_survive_a_restart_and_the_report_is_for_the_index_team_only(tm
     assert {g["file_id"]: g["status"] for g in restarted.coverage()["gaps"]} == {"scanned.pdf": NO_TEXT_LAYER}
     assert restarted.reindex()["read_files"] == 0  # Known statuses: nothing is read again.
 
-    app = create_app(root=root, index=SQLiteSearchIndex(index_path), audit=SQLiteAuditStore(tmp_path / "audit.sqlite3"),
-                     queue=SQLiteJobQueue(tmp_path / "queue.sqlite3"), worker_count=0)
+    app = create_app(root=root, index=SQLiteSearchIndex(index_path), audit=SQLiteAuditStore(tmp_path / "audit.sqlite3"))
     with TestClient(app) as client:
         client.post("/auth/login", json={"user_id": "kamal"})
         assert client.get("/index/coverage").status_code == 403

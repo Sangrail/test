@@ -24,14 +24,14 @@ The questions score the text path only (`search_evidence`). The structured path 
 
 ## How each part is evaluated
 
-[ADR 0019](../docs/adr/0019-evaluate-retrieval-and-nl-to-sql.md) gives the plan. A question can go wrong in three places, so each is measured on its own:
+[ADR 0009](../docs/adr/0009-acceptance-tests-and-evaluation-sets.md) gives the plan. A question can go wrong in three places, so each is measured on its own:
 
 | Part | Question | How | State |
 | --- | --- | --- | --- |
 | Retrieval and text answers (the service) | Does the index find the right passage, and does the answer step choose the right sentence and status? | `scripts/evaluate.py` over `questions.json`: Success@1 and @5, MRR@10, Recall@10, answer correct, leaks, time | Runs. Needs not-found, list, paraphrase and status-scored questions |
 | Natural language to SQL (the chat agent) | Does the agent's SQL return exactly the right rows? | Execution accuracy over `sql_questions.json`: the agent's result rows (`[subject, file_id]`) or value must equal the expected ones. Also row precision and recall, pass rate by trap, refused statements, tool calls, time. Each question several times, with the client and model versions recorded | The gold set exists and `tests/test_sql_questions.py` proves each expected answer against the extraction. The live-client harness (MCP trace and a runner for Claude Code, Codex and Pi) is not built |
 | The agent's reply and tool choice | Does the reply quote the tool results, keep every row and pass on warnings? Does the agent pick SQL for filters and text search for prose? | Deterministic checks of subjects, numbers and file names in the reply against the traced tool results; a language-model judge only as a second opinion | Not built |
-| Time budget | Is every request answered within 8 s, or refused at once? | `scripts/load_test.py`: N simultaneous requests through the real web app | Runs ([ADR 0018](../docs/adr/0018-admission-control-and-the-time-budget.md)) |
+| Time budget | Is every request answered within 8 s, or refused at once? | `scripts/load_test.py`: N simultaneous requests through the real web app | Runs ([ADR 0008](../docs/adr/0008-a-time-budget-and-admission-control.md)) |
 
 Why execution accuracy and not the SQL text: many different statements are correct. Why traps: on small data a wrong query can return the right rows by chance, so each gold question names the mistake that it is built to catch (grade family, capacity versus demand, units, sign, project filter, a join, permissions, and "no rows is the right answer").
 
@@ -85,7 +85,7 @@ Why execution accuracy and not the SQL text: many different statements are corre
 **Gaps in the conditions**
 
 12. **No real documents.** There are a few small synthetic CSV and XLSX files, one scanned PDF and two synthetic `.jt` files (to test that they are reported). There is no CAD, BIM or Word content, no tables across pages, no title blocks and no real damaged files.
-13. **The load test is small.** `scripts/load_test.py` sends up to 1,000 simultaneous requests to one process on 148 files: every answered request finishes within the 8 s budget, and the rest are refused at once ([ADR 0018](../docs/adr/0018-admission-control-and-the-time-budget.md)). One process answers about 10 requests a second. There is no test at the expected data size, with several processes, or with SQL over large projections.
+13. **The load test is small.** `scripts/load_test.py` sends up to 1,000 simultaneous requests to one process on 148 files: every answered request finishes within the 8 s budget, and the rest are refused at once ([ADR 0008](../docs/adr/0008-a-time-budget-and-admission-control.md)). One process answers about 10 requests a second. There is no test at the expected data size, with several processes, or with SQL over large projections.
 14. **Simple permissions.** Three users and path rules in code. There are no groups, deny rules or permission changes during a search.
 15. **The MCP user is not verified.** No test can find this gap, because the server trusts the `--user` flag. [docs/MCP.md](../docs/MCP.md) explains this security hole.
 

@@ -2,11 +2,11 @@
 
     scan()          find every file, detect its type and version, choose a reader
     plan(indexed)   compare the scan with the index; extract new and changed files
-    extract(path)   read one file into a Document: passages, tables and facts (also for uploads)
+    extract(path)   read one file into a Document: passages, tables and facts
 
 The detector and the reader registry are injected (defaults: ContentDetector
 and default_registry()). The indexer reads files. It never writes the index,
-and it has no locks, queue or web code. The caller publishes a plan with
+and it has no locks or web code. The caller publishes a plan with
 index.apply(plan.upserts, plan.removals, files). Thus a test needs only a folder.
 """
 from __future__ import annotations
@@ -122,7 +122,7 @@ class Indexer:
         return (document,
                 replace(source, status=extraction.status, warnings=extraction.warnings))
 
-    def plan(self, indexed: Mapping[str, str], skip: set[str] = frozenset(),
+    def plan(self, indexed: Mapping[str, str],
              previous: Mapping[str, SourceFile] | None = None) -> IndexPlan:
         """Scan, then work out what to change in an index that holds `indexed` (file ID -> version).
 
@@ -130,15 +130,12 @@ class Indexer:
         not known (`previous`, the last published inventory), and files whose
         chosen reader or reader version changed. A file that cannot
         be read or extracted is reported in `failed` with its status and is not in the
-        index after publish. Files in `skip` (uploads that the workers still own) are
-        not touched.
+        index after publish. A file deleted from the folder is removed.
         """
         previous = previous or {}
         inventory = self.scan()
         upserts, versions, failed = [], {}, []
         for source in list(inventory.files.values()):
-            if source.file_id in skip:
-                continue
             if source.status not in INDEXED:
                 if source.status == READ_ERROR:
                     log.warning("Could not read %s: %s", source.file_id, source.error)
@@ -153,7 +150,7 @@ class Indexer:
                 continue
             try:
                 document, extracted = self.extract(self.root / source.file_id)
-            except ReaderError as error:  # The reader rejected this file: MALFORMED, ENCRYPTED.
+            except ReaderError as error:  # The reader rejected this file: MALFORMED, ENCRYPTED, UNSUPPORTED_VERSION.
                 inventory.record(replace(source, status=error.status, error=str(error)[:200]))
                 failed.append({"file_id": source.file_id, "error": error.status})
                 continue
@@ -166,7 +163,7 @@ class Indexer:
             upserts.append(document)
             versions[source.file_id] = document.source_version
         return IndexPlan(inventory=inventory, upserts=upserts,
-                         removals=sorted(indexed.keys() - versions.keys() - skip),
+                         removals=sorted(indexed.keys() - versions.keys()),
                          versions=versions, failed=failed,
                          added=len(versions.keys() - indexed.keys()),
                          edited=sum(indexed[k] != v for k, v in versions.items() if k in indexed))

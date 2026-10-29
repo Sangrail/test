@@ -1,6 +1,5 @@
 import hashlib
 import json
-from pathlib import Path
 import sqlite3
 
 from fastapi.testclient import TestClient
@@ -8,7 +7,6 @@ from fastapi.testclient import TestClient
 from engineering_search.adapters import SQLiteAuditStore
 from engineering_search.app import create_app
 from engineering_search.store import SQLiteSearchIndex
-from engineering_search.jobs import SQLiteJobQueue
 
 
 def make_client(tmp_path, audit=None):
@@ -16,8 +14,7 @@ def make_client(tmp_path, audit=None):
     root.mkdir()
     db = tmp_path / "audit.sqlite3"
     client = TestClient(create_app(root=root, index=SQLiteSearchIndex(),
-                                  audit=audit or SQLiteAuditStore(db),
-                                  queue=SQLiteJobQueue(tmp_path / "queue.sqlite3")))
+                                  audit=audit or SQLiteAuditStore(db)))
     assert client.post("/auth/login", json={"user_id": "maya"}).status_code == 200
     return root, db, client
 
@@ -161,7 +158,9 @@ def test_rescan_detects_changes_without_modifying_index(tmp_path):
     assert changed["source_files"] == 2 and changed["indexed_files"] == 2
     assert changed["pending_changes"] == {"added": 1, "edited": 1, "deleted": 1}
     assert {r["status"] for r in changed["documents"]} == {"added", "edited", "deleted"}
-    assert client.post("/search", json={"query": "5"}).json()["evidence"]
+    # The index still holds the old text, but a file edited since indexing is not quoted (K3).
+    stale = client.post("/search", json={"query": "5"}).json()
+    assert not stale["evidence"] and stale["changed_files"] == ["roof.md"]
     assert not client.post("/search", json={"query": "9"}).json()["evidence"]
     client.post("/index")
     final = client.get("/index/status").json()
@@ -224,3 +223,23 @@ def test_scan_operation_is_visible_and_overlapping_build_rejected(tmp_path, monk
         finish.set()
         thread.join(5)
     assert responses[0].status_code == 200
+
+
+def test_telemetry_times_every_search_sql_query_and_evidence_read_whatever_the_front_end(tmp_path):
+    root, _, client = make_client(tmp_path)
+    (root / "schedule.csv").write_text("Mark,Material grade\nB-1,S355\n")
+    client.post("/index")
+    client.post("/search", json={"query": "S355"})
+    client.post("/sql", json={"sql": "SELECT subject FROM components"})
+    client.post("/sql", json={"sql": "DELETE FROM facts"})  # refused: 400
+    client.get("/evidence/schedule.csv/tables/1/rows/1")
+    service = client.app.state.service
+    try:  # the MCP server holds a ticket the same way, and a service error inside it is its status
+        with service.admit():
+            service.read({"subject": "nobody"}, "schedule.csv")
+    except Exception:
+        pass
+    telemetry = client.get("/telemetry").json()
+    assert telemetry["query_ms"]["count"] == 5
+    assert telemetry["counters"]["queries_total"] == 5
+    assert telemetry["counters"]["query_errors_total"] == 2

@@ -1,7 +1,7 @@
 """The MCP server over stdio, started the way Claude Code, Codex and Pi start it.
 
-A real MCP client session: initialise, list tools, call query_sql and
-get_document_evidence. Expected rows are from the fixtures, as in test_sql.py."""
+A real MCP client session: initialise, list tools, call query_sql,
+get_document_evidence and search_evidence. Expected rows are from the fixtures, as in test_sql.py."""
 import asyncio
 import json
 from pathlib import Path
@@ -49,3 +49,29 @@ def test_the_index_team_gets_the_coverage_tool(tmp_path):
     gaps = {gap["file_id"]: gap["status"] for gap in report["gaps"]}
     assert gaps["project-harbour/cad/hangar-frame.jt"] == "NO_READER"
     assert gaps["project-harbour/scans/site-survey-scan.pdf"] == "NO_TEXT_LAYER"
+
+
+def test_search_evidence_names_a_file_that_changed_on_disc_and_does_not_quote_it(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "roof.md").write_text("# Roof\n\nThe roof load limit is 5 kN/m².\n")
+    (docs / "annex.md").write_text("# Annex\n\nThe roof load limit is 4 kN/m² in the annex.\n")
+    question = {"question": "What is the roof load limit?", "mode": "answer"}
+
+    async def edit_between_questions():
+        server = StdioServerParameters(command=sys.executable, cwd=str(ROOT),
+                                       args=["-m", "engineering_search.mcp_server", "--user", "maya",
+                                             "--documents", str(docs), "--state-dir", str(tmp_path / "state")])
+        async with stdio_client(server) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                before = json.loads((await session.call_tool("search_evidence", question)).content[0].text)
+                (docs / "roof.md").write_text("# Roof\n\nThe roof load limit is 9 kN/m².\n")
+                after = json.loads((await session.call_tool("search_evidence", question)).content[0].text)
+                return before, after
+
+    before, after = asyncio.run(edit_between_questions())
+    assert before["changed_files"] == [] and before["answer"]["file_id"] == "roof.md"
+    assert after["changed_files"] == ["roof.md"]
+    assert after["answer"]["file_id"] == "annex.md"
+    assert "5 kN/m²" not in json.dumps(after, ensure_ascii=False)

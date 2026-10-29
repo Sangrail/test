@@ -1,0 +1,13 @@
+# 11. Tables land in one fixed schema; the questions, not the files, shape the model
+
+Every table a reader finds (a CSV file, an XLSX sheet, a Markdown table, a DXF title block) is stored as rows in the fixed `source_tables`, `table_rows` and `facts` tables; no file ever creates a database table. Typed columns come only from agreed parameters, and the agreed parameters come from the questions that subject matter experts ask of the data, not from each file's headers.
+
+**Status:** accepted.
+
+**Serves:** [C3](../constraints/constraints.md#c3), [C4](../constraints/constraints.md#c4), [U2](../constraints/use-case.md#u2); on the way to [G6](../constraints/gaps.md#g6) and [G4](../constraints/gaps.md#g4). Leaves [G6](../constraints/gaps.md#g6) open (the ontology is the company's, applied by the connectors) and [G5](../constraints/gaps.md#g5) open (the SQL projection copies every permitted fact on each request).
+
+**Considered options:** a physical table per file (thousands of tables whose schema follows headers rather than questions; a changing SQL allowlist and permission filter, against ADR 0004 and ADR 0006; and still no common vocabulary across files); a full ontology built by the MVP (not the MVP's job, [G6](../constraints/gaps.md#g6): it needs profiling and expert questions over the real repository); the generic store with a few fixed fact rules, extended only from evaluated questions (chosen).
+
+**Consequences:** any table is indexed without set-up, and every row cites its file and line. Columns outside the fact rules can be searched and read, but not compared across files; a quantity in an unrecognised column becomes a fact named after its header (role `unknown`), so synonyms such as `swl_kn` and `safe_working_load` stay apart until an ontology maps them. After the MVP: profile the repository ([design/DATA-PROFILE.md](../../design/DATA-PROFILE.md)), collect the experts' quantitative and qualitative questions (also the real-question set for [G4](../constraints/gaps.md#g4)), derive the parameter and status vocabulary, have the connectors apply it, and add typed views per family of questions.
+
+**Implemented by:** [`store.py`](../../engineering_search/store.py), [`facts.py`](../../engineering_search/indexing/facts.py), [`sql.py`](../../engineering_search/sql.py), [`readers/csv.py`](../../engineering_search/indexing/readers/csv.py). **Tested by:** [`tests/test_facts.py`](../../tests/test_facts.py), [`tests/test_index.py`](../../tests/test_index.py), [`tests/test_sql.py`](../../tests/test_sql.py), [`tests/test_sql_questions.py`](../../tests/test_sql_questions.py).

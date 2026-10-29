@@ -1,3 +1,10 @@
+"""Adapters the service is given at the edges: the time budget, the audit store, telemetry, the index lock.
+
+Labels (docs/constraints/scope.md, features beyond the brief):
+  - Admission and Telemetry serve U4: answer within the budget or refuse at once, and measure it.
+  - SQLiteAuditStore is beyond the brief: a local stand-in for a durable audit (gap G2).
+  - FileLock is beyond the brief: it lets the web app and the MCP servers share one index.
+"""
 from __future__ import annotations
 
 from collections import deque
@@ -183,7 +190,8 @@ class Telemetry:
             values = sorted(v for v, _ in self.queries)
             return {
                 "window": "Last 10000 queries and 100 indexing runs, since process start",
-                "query_timer": "Server request receipt through response send; excludes client network time",
+                "query_timer": "Admission through release, for every search, SQL query and evidence read, "
+                               "over HTTP and MCP; excludes client network time",
                 "query_ms": {"count": len(values),
                              "min": min(values) if values else None,
                              "max": max(values) if values else None,

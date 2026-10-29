@@ -11,15 +11,13 @@ from engineering_search.app import create_app
 
 CEDAR = sorted(f"project-cedar/{p.name}" for p in (TEST_REPOSITORY / "project-cedar").glob("*.md"))
 READERS = {file_id: MockPermissionStore().readers(file_id) for file_id in CEDAR}
-from engineering_search.jobs import SQLiteJobQueue
 
 
 def setup(tmp_path, permissions=None, audit=None):
     root = tmp_path / "documents"
     seed_permission_demo(root)
     db = tmp_path / "audit.sqlite3"
-    app = create_app(root=root, audit=audit or SQLiteAuditStore(db), permissions=permissions,
-                     queue=SQLiteJobQueue(tmp_path / "jobs.sqlite3"), worker_count=0)
+    app = create_app(root=root, audit=audit or SQLiteAuditStore(db), permissions=permissions)
     client = TestClient(app)
     sign_in(client,"maya")
     assert client.post("/index").status_code == 200
@@ -73,8 +71,7 @@ def test_backend_route_and_api_boundary(tmp_path, reader):
     page = client.get("/admin",follow_redirects=False)
     assert page.status_code == 303 and page.headers["location"].startswith("/search")
     for method,path in [("GET","/index/status"),("POST","/index"),("POST","/scan"),
-                        ("GET","/uploads"),("POST","/uploads"),("PUT","/uploads/any/content"),
-                        ("POST","/uploads/any/retry"),("GET","/telemetry"),
+                        ("GET","/telemetry"),
                         ("GET","/admin/access"),("GET","/openapi.json")]:
         assert client.request(method,path).status_code == 403, path
     assert client.get("/static/index.html").status_code == 404
@@ -142,7 +139,31 @@ def test_folder_rules_cover_files_below_them(tmp_path):
     (root / "project-northgate" / "calcs").mkdir(parents=True)
     (root / "project-northgate" / "calcs" / "deep.md").write_text("# Deep\n\nFolderprobe 2.\n")
     client.post("/index")
-    found = lambda: {p["file_id"] for p in client.post("/search",json={"query":"Folderprobe"}).json()["evidence"]}
+    def found():
+        return {p["file_id"] for p in client.post("/search",json={"query":"Folderprobe"}).json()["evidence"]}
     assert found() == {"open.md", "project-northgate/calcs/deep.md"}
     sign_in(client,"kamal")  # Not a reader of project-northgate/, so not of the file two levels down.
     assert found() == {"open.md"}
+
+
+def test_forbidden_files_do_not_change_the_order_of_permitted_results(tmp_path):
+    # Two permitted passages, each with one of the two query words. Ranked on the whole
+    # index, twenty forbidden passages full of "alpha" would make "alpha" a common word
+    # and move the "beta" passage first: the order would tell Kamal about files he cannot read.
+    root, _, client = setup(tmp_path)
+    (root / "a.md").write_text("# Notes\n\nAlpha gamma delta.\n")
+    (root / "b.md").write_text("# Notes\n\nBeta gamma delta.\n")
+    sign_in(client, "kamal")
+
+    def order():
+        client.post("/auth/login", json={"user_id": "maya"})
+        client.post("/index")
+        sign_in(client, "kamal")
+        return [p["file_id"] for p in client.post("/search", json={"query": "alpha beta"}).json()["evidence"]]
+
+    before = order()
+    (root / "project-northgate").mkdir()
+    for n in range(20):
+        (root / "project-northgate" / f"f{n}.md").write_text(f"# Alpha {n}\n\nAlpha alpha alpha {n}.\n")
+    assert before == ["a.md", "b.md"]
+    assert order() == before

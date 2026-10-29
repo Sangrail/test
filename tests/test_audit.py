@@ -3,7 +3,6 @@ import pytest
 
 from engineering_search.adapters import SQLiteAuditStore
 from engineering_search.app import create_app
-from engineering_search.jobs import SQLiteJobQueue
 
 
 def setup(tmp_path):
@@ -11,7 +10,7 @@ def setup(tmp_path):
     for n in range(55):
         store.append({'event': 'test_event', 'sequence': n, 'timestamp': f'2026-10-28T12:00:{n:02d}Z',
                       'file_id': 'sensitive-file.md'})
-    app = create_app(root=tmp_path, audit=store, queue=SQLiteJobQueue(tmp_path / 'jobs.sqlite3'), worker_count=0)
+    app = create_app(root=tmp_path, audit=store)
     return store, TestClient(app)
 
 
@@ -23,7 +22,7 @@ def test_index_and_audit_access_require_index_team(tmp_path, identity):
     for path in ('/admin', '/audit', '/docs'):
         assert client.get(path, follow_redirects=False).status_code == 303
     for method, path in [('GET', '/audit/events'), ('GET', '/index/status'), ('POST', '/index'),
-                         ('POST', '/scan'), ('GET', '/uploads'), ('GET', '/admin/access'),
+                         ('POST', '/scan'), ('GET', '/admin/access'),
                          ('GET', '/telemetry'), ('GET', '/openapi.json')]:
         response = client.request(method, path, headers={'X-User': 'maya'})
         assert response.status_code == (403 if identity else 401)
@@ -64,7 +63,7 @@ def test_audit_read_failure_is_not_an_empty_log(tmp_path):
         def read_page(self, *args):
             raise OSError('sensitive-path')
     app = create_app(root=tmp_path, audit=SQLiteAuditStore(tmp_path / 'audit.sqlite3'),
-                     audit_reader=FailedReader(), queue=SQLiteJobQueue(tmp_path / 'jobs.sqlite3'), worker_count=0)
+                     audit_reader=FailedReader())
     client = TestClient(app)
     client.post('/auth/login', json={'user_id': 'maya'})
     response = client.get('/audit/events')

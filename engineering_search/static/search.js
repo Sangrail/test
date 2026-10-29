@@ -188,7 +188,7 @@ function renderAnswer(answer) {
     }
     if (answer.status !== 'not_found') {
       parts.push(quoted(answer), el('p', 'answer-source', `Source: ${where(answer)}`));
-      const version = el('details', 'answer-version'); version.append(el('summary', '', 'File version'), el('code', '', `SHA-256 ${answer.source_version}`));
+      const version = el('details', 'answer-version'); version.append(el('summary', '', 'Content fingerprint'), el('code', '', `SHA-256 ${answer.source_version}`));
       parts.push(version);
       if (answer.also_stated_in.length) {
         parts.push(el('h3', '', 'Other documents that also state a value'));
@@ -223,7 +223,7 @@ function renderResults(data, elapsed) {
     location.textContent = `${passage.file_id}${passage.page ? ` · page ${passage.page}` : ''} · lines ${passage.start_line}–${passage.end_line}`;
     const quote = document.createElement('pre'); quote.textContent = passage.text;
     const version = document.createElement('details');
-    const summary = document.createElement('summary'); summary.textContent = 'Source version';
+    const summary = document.createElement('summary'); summary.textContent = 'Content fingerprint';
     const hash = document.createElement('code'); hash.textContent = `SHA-256 ${passage.source_version}`;
     version.append(summary,hash); article.append(heading,location,quote,version); fragment.append(article);
   }
@@ -232,6 +232,7 @@ function renderResults(data, elapsed) {
   $('results-timing').textContent = `${elapsed.toFixed(0)} ms · browser round trip`;
   const first = (data.page-1)*data.limit+1, last = first+data.evidence.length-1;
   $('searched-for').textContent = `Searched for: ${data.searched_for}${data.ignored_words.length ? ` · ignored: ${data.ignored_words.join(', ')}` : ''}`;
+  notice(data.changed_files?.length ? `Not quoted: ${data.changed_files.join(', ')} changed on disc after indexing. Ask the index team to refresh the index.` : '', true);
   $('search-message').textContent = data.evidence.length ? `Showing ${first}–${last} of ${data.matched_passages} permitted passages available to ${data.user.name}.` : data.matched_passages ? 'No passages on this page. Results have changed; go back or search again.' : 'No matching passages in documents you can read. Try other words.';
   currentPage = data.page; totalPages = data.total_pages;
   $('search-pagination').hidden = !data.matched_passages;

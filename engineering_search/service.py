@@ -16,7 +16,6 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import logging
-import os
 from pathlib import Path
 from threading import Lock, RLock
 from time import perf_counter
@@ -30,10 +29,10 @@ from .indexing import Indexer, Inventory, SourceFile, coverage_report
 from .indexing.status import (FAILED, INDEXED, INDEXED_PARTIAL, NO_EXTRACTABLE_CONTENT, NO_TEXT_LAYER,
                               NOT_SUPPORTED)
 
-PARTLY_READ = {INDEXED_PARTIAL, NO_TEXT_LAYER, NO_EXTRACTABLE_CONTENT}  # indexed, with gaps
-from .jobs import JobQueue
 from .query import plan
-from .sql import Projection, SqlError, describe
+from .sql import Projection, SqlError, describe, is_sql_statement
+
+PARTLY_READ = {INDEXED_PARTIAL, NO_TEXT_LAYER, NO_EXTRACTABLE_CONTENT}  # indexed, with gaps
 
 log = logging.getLogger(__name__)
 
@@ -48,22 +47,40 @@ class ServiceError(Exception):
         self.status, self.detail = status, detail
 
 
+class Admitted:
+    """An admitted request. On release it frees its place and records its time and status in
+    the telemetry, so every search, SQL query and evidence read is measured the same way,
+    whichever front end (HTTP or MCP) it came through (K6). A front end that turns errors
+    into responses itself sets `status`."""
+    def __init__(self, ticket, telemetry: Telemetry) -> None:
+        self.ticket, self.telemetry, self.status, self.started = ticket, telemetry, 200, perf_counter()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, kind, error, traceback) -> None:
+        if error is not None:
+            self.status = error.status if isinstance(error, ServiceError) else 500
+        self.ticket.__exit__(kind, error, traceback)
+        self.telemetry.query((perf_counter() - self.started) * 1000, self.status)
+
+
 class SearchService:
     def __init__(self, root: Path, index: SearchIndex, audit: AuditStore, permissions: PermissionStore,
-                 queue: JobQueue, telemetry: Telemetry | None = None, indexer: Indexer | None = None,
+                 telemetry: Telemetry | None = None, indexer: Indexer | None = None,
                  index_lock: AbstractContextManager | None = None, admission: Admission | None = None):
         self.root = root.resolve()
         # Held from reading the index versions to publishing the changes, so another
         # process that shares the index file cannot publish a plan made from stale versions.
         self.index_lock = index_lock if index_lock is not None else nullcontext()
-        self.index, self.audit, self.permissions, self.queue = index, audit, permissions, queue
+        self.index, self.audit, self.permissions = index, audit, permissions
         self.telemetry = telemetry if telemetry is not None else Telemetry()
         # The front ends admit each search, read and SQL query only if it can finish within the budget.
         self.admission = admission if admission is not None else Admission()
         # The indexing line: finds, classifies and reads the files. The service publishes its plans.
         self.indexer = indexer if indexer is not None else Indexer(self.root)
-        # lock protects the index and the state. operation_lock allows one scan,
-        # index build or upload publish at a time.
+        # lock protects the index and the state. operation_lock allows one scan
+        # or index build at a time.
         self.lock = RLock()
         self.operation_lock = Lock()
         self.state = {"ready": False, "last_indexed_at": None, "last_scanned_at": None,
@@ -82,8 +99,9 @@ class SearchService:
         answered within the time budget. The front end calls this where the request
         arrives, before it waits for a thread, so all of its waiting counts."""
         try:
-            return self.admission.admit()
+            return Admitted(self.admission.admit(), self.telemetry)
         except Busy as busy:
+            self.telemetry.query(0.0, 503)
             raise ServiceError(503, {"message": f"The search service is busy ({busy.waiting} requests ahead). "
                                                 f"Try again in {busy.retry_after_seconds} s.",
                                      "busy": True, "retry_after_seconds": busy.retry_after_seconds}) from None
@@ -109,6 +127,9 @@ class SearchService:
         permissions, pick the answer, page the evidence, write the audit
         event, then return. No audit, no evidence.
         """
+        if is_sql_statement(query):
+            raise ServiceError(422, "This looks like a SQL statement. Ask the question in plain language; "
+                                    "the search does not run SQL written by a user.")
         request_id = str(uuid4())
         stage_start = perf_counter()
         with self.lock:
@@ -134,22 +155,36 @@ class SearchService:
             # Permissions and `within` decide the visible files before the index ranks or
             # limits anything, so forbidden files cannot push permitted passages out.
             visible = set(policy.allowed) & file_ids
-            permitted = self.index.candidates(query_plan, visible)
+            offset = (page - 1) * limit
+
+            def rank(visible: set[str]):
+                permitted = self.index.candidates(query_plan, visible)
+                if intent.mode == "list":
+                    listed = {f for f in visible if matches.get(f) == len(query_plan.terms)}
+                    result = list_documents(query_plan, intent.comparison,
+                                            {f: self.index.passages(f) for f in sorted(listed)})
+                    documents = result["documents"]
+                    result["documents"] = documents[(page - 1) * MAX_LISTED:page * MAX_LISTED]
+                    result["document_pages"] = max(1, -(-len(documents) // MAX_LISTED))
+                    result["truncated"] = len(documents) > page * MAX_LISTED
+                else:
+                    result = pick_answer(query_plan, permitted, self.index.passages)
+                return permitted, result
+
+            permitted, result = rank(visible)
+            # A quote must still be what the file on disc holds. A cited file that changed
+            # after it was indexed is refused, and the answer is picked again without it.
+            changed: set[str] = set()
+            while stale := self.changed_on_disc(
+                    {s["file_id"] for s in manifest(result)["sources"]}
+                    | {p.file_id for p in permitted[offset:offset + limit]}):
+                changed |= stale
+                visible -= stale
+                permitted, result = rank(visible)
             retrieval_ms = (perf_counter() - retrieval_start) * 1000 - policy_ms
-            if intent.mode == "list":
-                listed = {f for f in visible if matches.get(f) == len(query_plan.terms)}
-                result = list_documents(query_plan, intent.comparison,
-                                        {f: self.index.passages(f) for f in sorted(listed)})
-                documents = result["documents"]
-                result["documents"] = documents[(page - 1) * MAX_LISTED:page * MAX_LISTED]
-                result["document_pages"] = max(1, -(-len(documents) // MAX_LISTED))
-                result["truncated"] = len(documents) > page * MAX_LISTED
-            else:
-                result = pick_answer(query_plan, permitted, self.index.passages)
             result["mode"] = intent.mode
             # Pages are live views: permissions are checked again on each request.
             total = len(permitted)
-            offset = (page - 1) * limit
             passages = permitted[offset:offset + limit]
             total_pages = (total + limit - 1) // limit
 
@@ -165,7 +200,8 @@ class SearchService:
                                "reason": policy.reasons[file_id]} for file_id in sorted(file_ids)],
                 "matched_passages": total, "returned_passages": len(passages),
                 "page": page, "limit": limit, "query_characters": len(query),
-                "answer": manifest(result), "evidence": evidence_manifest(passages)})
+                "answer": manifest(result), "evidence": evidence_manifest(passages),
+                "refused_changed_files": sorted(changed)})
             audit_ms = (perf_counter() - audit_start) * 1000
             self.telemetry.record_stages({"request_id": request_id, "retrieval_ms": retrieval_ms,
                                           "authorisation_ms": policy_ms, "audit_ms": audit_ms,
@@ -175,6 +211,7 @@ class SearchService:
                     "user": user,
                     "searched_for": query_plan.searched_for(), "ignored_words": list(query_plan.ignored),
                     "answer": result,
+                    "changed_files": sorted(changed),
                     "indexed_at": self.state["last_indexed_at"], "matched_passages": total,
                     "truncated": total > len(passages),
                     "page": page, "limit": limit, "total_pages": total_pages,
@@ -194,6 +231,7 @@ class SearchService:
             passages = self.index.passages(file_id, page) if file_id in policy.allowed else []
             if not passages:
                 raise ServiceError(404, "No readable evidence for that file and page")
+            self.refuse_if_changed({file_id})
             self.commit_audit({"event": "evidence_read", "request_id": request_id, "timestamp": now(),
                                "actor_subject": user["subject"], "identity_issuer": "local-demo",
                                "permission_version": policy.version, "file_id": file_id, "page": page,
@@ -201,14 +239,39 @@ class SearchService:
             return {"request_id": request_id, "file_id": file_id, "page": page,
                     "evidence": [asdict(p) for p in passages]}
 
+    def changed_on_disc(self, file_ids: set[str]) -> set[str]:
+        """The files whose bytes on disc are no longer the bytes that were indexed (or that are gone).
+
+        Only the cited files are hashed, so the check costs a few milliseconds per answer."""
+        versions = self.index.versions()
+        changed = set()
+        for file_id in file_ids:
+            try:
+                fingerprint = hashlib.sha256((self.root / file_id).read_bytes()).hexdigest()
+            except OSError:
+                fingerprint = None
+            if fingerprint != versions.get(file_id):
+                changed.add(file_id)
+        return changed
+
+    def refuse_if_changed(self, file_ids: set[str]):
+        """Refuse rather than quote a file that has changed since it was indexed."""
+        if changed := self.changed_on_disc(file_ids):
+            raise ServiceError(409, {"message": "The file has changed since it was indexed, so its evidence "
+                                                "is not quoted. Refresh the index (POST /index) and ask again.",
+                                     "changed_files": sorted(changed)})
+
     # Structured queries ----------------------------------------------------
 
     def query_sql(self, user: dict, sql: str, limit: int = 100) -> dict:
         """Run one client-written SELECT over the structured rows of the files the user may read.
 
         The projection is built from the permitted files only, before the
-        statement runs (sql.py). The audit event records a hash of the statement,
-        the scope and the files in the result, never the rows."""
+        statement runs (sql.py). Files whose bytes changed since indexing are left
+        out of it and named in `changed_files` (ADR 0007): to check them, every
+        permitted file with tables is hashed, a cost that grows with the tables a
+        user may read. The audit event records a hash of the statement, the scope
+        and the files in the result, never the rows or the statement's text."""
         request_id = str(uuid4())
         with self.lock:
             if not self.state["ready"]:
@@ -220,21 +283,28 @@ class SearchService:
                 raise ServiceError(503, "Permissions unavailable; evidence withheld") from None
             allowed = indexed & set(policy.allowed)
             file_types = {f: s.file_type for f, s in (self.inventory.files if self.inventory else {}).items()}
-            projection = Projection(self.index.structured(allowed), file_types)
+            structured = self.index.structured(allowed)
+        changed = self.changed_on_disc({row[0] for row in structured["tables"]})
+        if changed:
+            structured = {name: [row for row in rows if row[0] not in changed] for name, rows in structured.items()}
+        projection = Projection(structured, file_types)
         try:
             try:
                 result = projection.query(sql, limit=limit)
             except SqlError as error:
-                self.commit_audit(self._sql_event(request_id, user, policy, sql, allowed, indexed, None, str(error)))
+                self.commit_audit(self._sql_event(request_id, user, policy, sql, allowed, indexed, None,
+                                                  error.category, changed=changed))
                 raise ServiceError(400, str(error)) from None
             cited = sorted({row[result["columns"].index("file_id")] for row in result["rows"]}
                            if "file_id" in result["columns"] else set())
-            self.commit_audit(self._sql_event(request_id, user, policy, sql, allowed, indexed, result, None, cited))
+            self.commit_audit(self._sql_event(request_id, user, policy, sql, allowed, indexed, result, None, cited,
+                                              changed))
         finally:
             projection.close()
-        return {"request_id": request_id, "scope": {"readable_files": len(allowed)}, **result}
+        return {"request_id": request_id, "scope": {"readable_files": len(allowed)},
+                "changed_files": sorted(changed), **result}
 
-    def _sql_event(self, request_id, user, policy, sql, allowed, indexed, result, error, cited=()):
+    def _sql_event(self, request_id, user, policy, sql, allowed, indexed, result, error, cited=(), changed=()):
         return {"event": "sql_query_executed" if error is None else "sql_query_refused",
                 "request_id": request_id, "timestamp": now(), "actor_subject": user["subject"],
                 "identity_issuer": "local-demo", "authorisation": "enforced_demo_policy",
@@ -242,7 +312,7 @@ class SearchService:
                 "sql_sha256": hashlib.sha256(sql.encode()).hexdigest(), "sql_characters": len(sql),
                 "files_in_scope": len(allowed), "files_excluded_by_policy": len(indexed - allowed),
                 "returned_rows": result["row_count"] if result else 0, "result_files": list(cited),
-                "error": error}
+                "left_out_changed_files": sorted(changed), "error": error}
 
     def sql_schema(self, user: dict, table: str | None = None) -> dict:
         """The tables and columns that query_sql accepts. Holds no document data."""
@@ -265,6 +335,7 @@ class SearchService:
             row = next((r for r in data["rows"] if r[1] == table_no and r[2] == row_no), None)
             if table is None or row is None:
                 raise ServiceError(404, "No readable evidence for that file, table and row")
+            self.refuse_if_changed({file_id})
             line, page = row[3], row[4]
             passage = next((p for p in self.index.passages(file_id, page)
                             if p.start_line <= line <= p.end_line), None)
@@ -340,15 +411,13 @@ class SearchService:
                 with self.lock:
                     old = self.index.versions()
                     previous = self.stored_inventory().files
-                blocked = self.queue.blocked_files()  # Uploads that the workers still own.
                 read_start = perf_counter()
-                plan = self.indexer.plan(old, skip=blocked, previous=previous)
+                plan = self.indexer.plan(old, previous=previous)
                 ingestion_seconds = max(perf_counter() - read_start, 1e-9)
                 indexable = plan.inventory.indexable()
                 total_bytes = sum(f.size for f in indexable.values())
                 with self.lock:
                     commit_start = perf_counter()
-                    self.queue.reconcile_ready(plan.versions)
                     self.index.apply(plan.upserts, plan.removals,
                                      [asdict(f) for f in plan.inventory.files.values()])
                     indexing_seconds = max(perf_counter() - commit_start, 1e-9)
@@ -432,50 +501,3 @@ class SearchService:
                     "searchable_passages": self.index.passage_count(),
                     "documents": rows, "watcher_enabled": False, "indexer_workers": 1,
                     "admission": self.admission.snapshot()}
-
-    # Uploads -------------------------------------------------------------
-
-    def save_upload(self, job: dict, content: bytes):
-        """Write an uploaded Markdown file safely, then queue it for indexing."""
-        path = self.root / job["file_id"]
-        if not path.resolve().is_relative_to(self.root):
-            raise ValueError("Upload directory must be within the source root")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_suffix(".part")
-        with temporary.open("xb") as stream:
-            stream.write(content)
-            stream.flush()
-            os.fsync(stream.fileno())
-        temporary.replace(path)
-        directory_fd = os.open(path.parent, os.O_RDONLY)
-        try:
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
-        source = self.indexer.source(path, content)
-        with self.operation_lock, self.lock:
-            if self.inventory is not None:
-                self.inventory.record(source)
-            self.queue.enqueue(job["id"], len(content), source.version)
-
-    def index_upload(self, job: dict, start: float):
-        """Index one uploaded file. The upload workers call this."""
-        path = self.root / job["file_id"]
-        if path.is_symlink() or not path.resolve().is_relative_to(self.root):
-            raise ValueError("Upload escaped its source folder")
-        document, source = self.indexer.extract(path)
-        if document.source_version != job["source_version"]:
-            raise ValueError("Uploaded content changed before indexing")
-        # File extraction can run at the same time as other work. Publish is a
-        # short serial section shared with full builds, so a rebuild cannot
-        # overwrite a worker commit.
-        with self.operation_lock, self.index_lock, self.lock:
-            self.index.upsert(document, asdict(source))
-            try:
-                self.queue.complete(job["id"], (perf_counter() - start) * 1000, len(document.passages))
-            except Exception:
-                self.index.remove(document.file_id)
-                raise
-            self.state.update(ready=True, last_indexed_at=now())
-            if self.inventory is not None:
-                self.inventory.record(source)

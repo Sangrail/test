@@ -10,6 +10,5 @@ documents/
 *.sqlite3-*
 *.zip
 *.egg-info/
-test-repository/uploads/
 .DS_Store
 .claude/settings.local.json

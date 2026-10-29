@@ -12,16 +12,15 @@ TOP_LEVEL = ("README.md", "ARCHITECTURE.md", "RUNNING.md", "TODO.md", "GLOSSARY.
 PATTERNS = ("engineering_search/*.py", "engineering_search/indexing/*.py", "engineering_search/indexing/readers/*.py", "engineering_search/static/*.html",
             "engineering_search/static/*.css", "engineering_search/static/*.js",
             "test-repository/**/*.md", "test-repository/**/*.pdf", "test-repository/**/*.txt",
-            "test-repository/**/*.csv", "test-repository/**/*.xlsx", "test-repository/**/*.jt",
+            "test-repository/**/*.csv", "test-repository/**/*.xlsx", "test-repository/**/*.jt", "test-repository/**/*.dxf",
             "evaluation/*.json", "evaluation/*.md", "evaluation/results/*.json", "scripts/*.py", "tests/*.py",
-            "design/*.md", "docs/*.md", "docs/adr/*.md")
+            "design/*.md", "docs/*.md", "docs/*.html", "docs/adr/*.md", "docs/constraints/*.md")
 
 
 def package(destination: Path) -> int:
     files = {ROOT / name for name in TOP_LEVEL}
     for pattern in PATTERNS:
         files.update(ROOT.glob(pattern))
-    files = {path for path in files if "uploads" not in path.relative_to(ROOT).parts}
     # Fail rather than silently omit required source or follow external symlinks.
     for path in files:
         if not path.is_file() or path.is_symlink() or not path.resolve().is_relative_to(ROOT):

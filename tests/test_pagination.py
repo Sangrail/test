@@ -11,7 +11,6 @@ from engineering_search.app import create_app
 
 CEDAR = sorted(f"project-cedar/{p.name}" for p in (TEST_REPOSITORY / "project-cedar").glob("*.md"))
 READERS = {file_id: MockPermissionStore().readers(file_id) for file_id in CEDAR}
-from engineering_search.jobs import SQLiteJobQueue
 
 
 def setup(tmp_path, permissions=None, audit=None):
@@ -19,8 +18,7 @@ def setup(tmp_path, permissions=None, audit=None):
     seed_permission_demo(root)
     db = tmp_path / "audit.sqlite3"
     app = create_app(root=root, permissions=permissions,
-                     audit=audit or SQLiteAuditStore(db), worker_count=0,
-                     queue=SQLiteJobQueue(tmp_path / "queue.sqlite3"))
+                     audit=audit or SQLiteAuditStore(db))
     client = TestClient(app)
     client.post("/auth/login", json={"user_id": "maya"})
     assert client.post("/index").status_code == 200

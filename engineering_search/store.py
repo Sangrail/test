@@ -22,7 +22,7 @@ from threading import RLock
 from .core import Document, Passage
 from .query import QueryPlan, plan
 
-# Most passages a single query ranks, after the permission and scope filter.
+# Most passages a single query returns, after the permission and scope filter.
 CANDIDATE_LIMIT = 1000
 
 SCHEMA = """
@@ -139,10 +139,6 @@ class SQLiteSearchIndex:
 
         files, if given, replaces the stored inventory (one dict per file, with a "file_id").
         """
-        self._publish(upserts, removals, files, replace_files=True)
-
-    def _publish(self, upserts: list[Document], removals: list[str], files: list[dict] | None,
-                 replace_files: bool) -> None:
         with self._lock:
             self._db.execute("BEGIN IMMEDIATE")
             try:
@@ -152,8 +148,7 @@ class SQLiteSearchIndex:
                     self._delete(document.file_id)
                     self._insert(document)
                 if files is not None:
-                    if replace_files:
-                        self._db.execute("DELETE FROM files")
+                    self._db.execute("DELETE FROM files")
                     self._db.executemany("INSERT OR REPLACE INTO files VALUES (?, ?)",
                                          [(f["file_id"], json.dumps(f, sort_keys=True)) for f in files])
                 self._db.execute("INSERT OR REPLACE INTO meta VALUES ('indexed_at', ?)",
@@ -162,10 +157,6 @@ class SQLiteSearchIndex:
             except BaseException:
                 self._db.execute("ROLLBACK")
                 raise
-
-    def upsert(self, document: Document, file: dict | None = None) -> None:
-        """Publish one document and, if given, its inventory record, in one transaction."""
-        self._publish([document], [], None if file is None else [file], replace_files=False)
 
     def remove(self, file_id: str) -> None:
         self.apply([], [file_id])
@@ -239,9 +230,12 @@ class SQLiteSearchIndex:
     def candidates(self, query: str | QueryPlan, files: set[str] | None = None) -> list[Passage]:
         """Passages that contain any query word, best first, from `files` only (None: all files).
 
-        `files` is applied inside the index query, before the CANDIDATE_LIMIT, so
-        passages outside it can never push the passages inside it out of the result.
-        Rank: passages that contain more of the query words first, then BM25.
+        Rank: passages that contain more of the query words first, then BM25. The
+        BM25 statistics (how common each word is, how long passages are) come from
+        the passages in `files` that match the query, copied into a temporary index,
+        never from the whole index: a forbidden file must not change the order of a
+        user's results (K13, ADR 0004). The copy costs time in proportion to the
+        number of permitted matches. CANDIDATE_LIMIT applies after the ranking.
         """
         query_plan = plan(query) if isinstance(query, str) else query
         if not query_plan.terms or files is not None and not files:
@@ -254,27 +248,31 @@ class SQLiteSearchIndex:
                 self._db.executemany("INSERT INTO temp.scope VALUES (?)", [(f,) for f in files])
                 scope = (" AND rowid IN (SELECT p.id FROM passages p"
                          " JOIN temp.scope s ON s.file_id = p.file_id)")
-            ranked = self._db.execute(
-                "SELECT rowid, bm25(passages_fts, ?, ?, ?) FROM passages_fts"
-                f" WHERE passages_fts MATCH ?{scope} ORDER BY 2 LIMIT ?",
-                (*WEIGHTS, query_plan.fts(), CANDIDATE_LIMIT)).fetchall()
+            self._db.execute("CREATE VIRTUAL TABLE IF NOT EXISTS temp.ranking USING fts5("
+                             "heading, text, source, tokenize = 'porter unicode61')")
+            self._db.execute("DELETE FROM temp.ranking")
+            self._db.execute("INSERT INTO temp.ranking (rowid, heading, text, source)"
+                             f" SELECT rowid, heading, text, source FROM passages_fts WHERE passages_fts MATCH ?{scope}",
+                             (query_plan.fts(),))
+            ranked = self._db.execute("SELECT rowid, bm25(ranking, ?, ?, ?) FROM temp.ranking WHERE ranking MATCH ?",
+                                      (*WEIGHTS, query_plan.fts())).fetchall()
             if not ranked:
                 return []
-            # Count how many query words each passage contains. Each count is
-            # one more index lookup per word, not a scan.
+            # Count how many query words each passage contains: one lookup per word.
             coverage = dict.fromkeys((rowid for rowid, _ in ranked), 0)
-            marks = ",".join("?" * len(coverage))
             if len(query_plan.terms) > 1:
                 for term in query_plan.terms:
-                    for (rowid,) in self._db.execute(
-                            f"SELECT rowid FROM passages_fts WHERE passages_fts MATCH ? AND rowid IN ({marks})",
-                            (term.fts(), *coverage)):
+                    for (rowid,) in self._db.execute("SELECT rowid FROM temp.ranking WHERE ranking MATCH ?",
+                                                     (term.fts(),)):
                         coverage[rowid] += 1
+            self._db.execute("CREATE TEMP TABLE IF NOT EXISTS ranked (id INTEGER PRIMARY KEY)")
+            self._db.execute("DELETE FROM temp.ranked")
+            self._db.executemany("INSERT INTO temp.ranked VALUES (?)", [(rowid,) for rowid in coverage])
             rows = {row[0]: row for row in self._db.execute(
-                "SELECT id, file_id, source_version, heading, start_line, end_line, text, page"
-                f" FROM passages WHERE id IN ({marks})", list(coverage))}
+                "SELECT p.id, p.file_id, p.source_version, p.heading, p.start_line, p.end_line, p.text, p.page"
+                " FROM passages p JOIN temp.ranked r ON r.id = p.id")}
         order = sorted(ranked, key=lambda r: (-coverage[r[0]], r[1], rows[r[0]][1], rows[r[0]][4]))
-        return [Passage(*rows[rowid][1:]) for rowid, _ in order]
+        return [Passage(*rows[rowid][1:]) for rowid, _ in order[:CANDIDATE_LIMIT]]
 
     def search(self, query: str, limit: int) -> tuple[list[Passage], int]:
         passages = self.candidates(query)

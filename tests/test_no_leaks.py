@@ -29,7 +29,6 @@ import pytest
 from engineering_search.access import USERS
 from engineering_search.adapters import SQLiteAuditStore
 from engineering_search.app import create_app
-from engineering_search.jobs import SQLiteJobQueue
 from engineering_search.service import ServiceError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,8 +95,7 @@ EVALUATION = [q["question"] for q in json.loads((ROOT / "evaluation/questions.js
 @pytest.fixture(scope="module")
 def client(tmp_path_factory):
     state = tmp_path_factory.mktemp("state")
-    app = create_app(root=REPOSITORY, audit=SQLiteAuditStore(state / "audit.sqlite3"),
-                     queue=SQLiteJobQueue(state / "queue.sqlite3"), worker_count=0)
+    app = create_app(root=REPOSITORY, audit=SQLiteAuditStore(state / "audit.sqlite3"))
     with TestClient(app) as client:
         client.post("/auth/login", json={"user_id": "maya"})
         assert client.post("/index").json()["failed_files"] == []
