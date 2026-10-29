@@ -81,17 +81,19 @@ class AdmissionMiddleware:
     It runs before the route waits for a worker thread, so time spent waiting for
     a thread counts against the budget. A refused request gets 503 with a
     Retry-After header at once, and no evidence."""
-    PATHS = (("POST", "/search"), ("POST", "/sql"), ("GET", "/evidence/"))
+    PATHS = (("POST", "/search", "search"), ("POST", "/sql", "sql"), ("GET", "/evidence/", "table_row"))
 
     def __init__(self, app, service: SearchService):
         self.app, self.service = app, service
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or not any(scope["method"] == method and scope["path"].startswith(path)
-                                              for method, path in self.PATHS):
+        operation = next((name for method, path, name in self.PATHS
+                          if scope["type"] == "http" and scope["method"] == method and scope["path"].startswith(path)),
+                         None)
+        if operation is None:
             return await self.app(scope, receive, send)
         try:
-            ticket = self.service.admit()
+            ticket = self.service.admit(operation=operation)  # the user is not known yet: no session lookup here
         except ServiceError as error:
             response = JSONResponse({"detail": error.detail}, status_code=error.status,
                                     headers={"Retry-After": str(error.detail["retry_after_seconds"])})

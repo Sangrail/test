@@ -14,6 +14,7 @@ from engineering_search.service import ServiceError
 from engineering_search.store import SQLiteSearchIndex
 
 MAYA = next(u for u in USERS if u["id"] == "maya")
+KAMAL = next(u for u in USERS if u["id"] == "kamal")
 QUESTION = "What is the roof load limit?"
 
 
@@ -28,6 +29,11 @@ def setup(tmp_path):
     client.post("/auth/login", json={"user_id": "maya"})
     assert client.post("/index").status_code == 200
     return root, client, app.state.service
+
+
+def refusals(service):
+    return [e["payload"] for e in service.audit.read_page(1, 100)["events"]
+            if e["payload"]["event"] == "request_refused"]
 
 
 def ask(client, question=QUESTION):
@@ -54,6 +60,9 @@ def test_a_file_edited_after_indexing_is_refused_until_the_index_is_refreshed(se
     with pytest.raises(ServiceError) as refused:
         service.read(MAYA, "roof.md")
     assert refused.value.status == 409 and refused.value.detail["changed_files"] == ["roof.md"]
+    (event,) = refusals(service)
+    assert (event["operation"], event["reason"], event["changed_files"]) == ("read", "changed_on_disc", ["roof.md"])
+    assert event["actor_subject"] == MAYA["subject"]
 
     assert client.post("/index").status_code == 200
     body = ask(client, "roof load limit 9 kN/m²")
@@ -112,6 +121,10 @@ def test_a_question_that_is_sql_is_refused(setup, statement):
     with pytest.raises(ServiceError) as refused:  # the MCP tool search_evidence calls this
         service.search(MAYA, statement)
     assert refused.value.status == 422
+    events = refusals(service)  # both refusals are audited, by length and hash, never by text
+    assert [(e["operation"], e["reason"], e["query_characters"]) for e in events] == [
+        ("search", "sql_statement", len(statement))] * 2
+    assert all(statement not in str(e) for e in events)
 
 
 @pytest.mark.parametrize("question", [
@@ -127,3 +140,16 @@ def test_a_question_that_is_sql_is_refused(setup, statement):
 def test_a_plain_question_that_starts_like_sql_is_answered(setup, question):
     _, client, _ = setup
     assert client.post("/search", json={"query": question}).status_code == 200
+
+
+def test_a_read_of_a_file_the_user_may_not_read_is_refused_and_audited(setup):
+    root, client, service = setup
+    (root / "project-northgate").mkdir()
+    (root / "project-northgate" / "calc.md").write_text("# Calc\n\nThe roof load limit is 1 kN/m².\n")
+    assert client.post("/index").status_code == 200
+    with pytest.raises(ServiceError) as refused:
+        service.read(KAMAL, "project-northgate/calc.md")
+    assert refused.value.status == 404  # the same answer as for a missing file
+    (event,) = refusals(service)
+    assert (event["operation"], event["reason"]) == ("read", "not_found_or_not_permitted")
+    assert event["actor_subject"] == KAMAL["subject"] and "evidence" not in event

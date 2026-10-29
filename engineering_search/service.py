@@ -92,16 +92,19 @@ class SearchService:
             self.state.update(ready=True, last_indexed_at=getattr(index, "indexed_at", lambda: None)())
             self.inventory = self.stored_inventory() or None
 
-    def admit(self):
+    def admit(self, user: dict | None = None, operation: str | None = None):
         """A ticket to hold for one search, read or SQL query (`with service.admit(): ...`).
 
         Raises ServiceError 503, with retry_after_seconds, if the request cannot be
         answered within the time budget. The front end calls this where the request
-        arrives, before it waits for a thread, so all of its waiting counts."""
+        arrives, before it waits for a thread, so all of its waiting counts. The
+        refusal is audited, with the user and the operation if the front end knows them."""
         try:
             return Admitted(self.admission.admit(), self.telemetry)
         except Busy as busy:
             self.telemetry.query(0.0, 503)
+            self.record_refusal(user, operation, "busy", waiting=busy.waiting,
+                                retry_after_seconds=busy.retry_after_seconds)
             raise ServiceError(503, {"message": f"The search service is busy ({busy.waiting} requests ahead). "
                                                 f"Try again in {busy.retry_after_seconds} s.",
                                      "busy": True, "retry_after_seconds": busy.retry_after_seconds}) from None
@@ -117,6 +120,21 @@ class SearchService:
             raise ServiceError(503, {"message": "Audit unavailable; evidence withheld",
                                      "request_id": event["request_id"]}) from None
 
+    def record_refusal(self, user: dict | None, operation: str | None, reason: str,
+                       request_id: str | None = None, **details) -> None:
+        """Audit a request refused before any evidence was prepared: who, which operation, why.
+
+        It holds no question text and no evidence. The request is refused either
+        way, so a failure to write the event is counted and logged, not raised."""
+        event = {"event": "request_refused", "reason": reason, "operation": operation,
+                 "request_id": request_id or str(uuid4()), "timestamp": now(),
+                 "actor_subject": user["subject"] if user else None, "identity_issuer": "local-demo", **details}
+        try:
+            self.audit.append(event)
+        except Exception:
+            self.telemetry.increment("audit_failures_total")
+            log.error("Could not audit a refused %s request (%s)", operation, reason)
+
     # Search --------------------------------------------------------------
 
     def search(self, user: dict, query: str, limit: int = 10, page: int = 1,
@@ -128,12 +146,15 @@ class SearchService:
         event, then return. No audit, no evidence.
         """
         if is_sql_statement(query):
+            self.record_refusal(user, "search", "sql_statement", query_characters=len(query),
+                                query_sha256=hashlib.sha256(query.encode()).hexdigest())
             raise ServiceError(422, "This looks like a SQL statement. Ask the question in plain language; "
                                     "the search does not run SQL written by a user.")
         request_id = str(uuid4())
         stage_start = perf_counter()
         with self.lock:
             if not self.state["ready"]:
+                self.record_refusal(user, "search", "index_not_built", request_id)
                 raise ServiceError(409, "Build the index with POST /index first")
             retrieval_start = perf_counter()
             # A question about a previous list ("of those, which…") is also a list question.
@@ -226,12 +247,15 @@ class SearchService:
             try:
                 policy = self.permissions.evaluate(user["subject"], {file_id})
             except Exception:
+                self.record_refusal(user, "read", "permissions_unavailable", request_id, file_id=file_id)
                 raise ServiceError(503, "Permissions unavailable; evidence withheld") from None
             # Same answer for "missing" and "not allowed", so file names do not leak.
             passages = self.index.passages(file_id, page) if file_id in policy.allowed else []
             if not passages:
+                self.record_refusal(user, "read", "not_found_or_not_permitted", request_id,
+                                    file_id=file_id, page=page)
                 raise ServiceError(404, "No readable evidence for that file and page")
-            self.refuse_if_changed({file_id})
+            self.refuse_if_changed({file_id}, user, "read", request_id)
             self.commit_audit({"event": "evidence_read", "request_id": request_id, "timestamp": now(),
                                "actor_subject": user["subject"], "identity_issuer": "local-demo",
                                "permission_version": policy.version, "file_id": file_id, "page": page,
@@ -254,9 +278,10 @@ class SearchService:
                 changed.add(file_id)
         return changed
 
-    def refuse_if_changed(self, file_ids: set[str]):
+    def refuse_if_changed(self, file_ids: set[str], user: dict, operation: str, request_id: str):
         """Refuse rather than quote a file that has changed since it was indexed."""
         if changed := self.changed_on_disc(file_ids):
+            self.record_refusal(user, operation, "changed_on_disc", request_id, changed_files=sorted(changed))
             raise ServiceError(409, {"message": "The file has changed since it was indexed, so its evidence "
                                                 "is not quoted. Refresh the index (POST /index) and ask again.",
                                      "changed_files": sorted(changed)})
@@ -275,11 +300,13 @@ class SearchService:
         request_id = str(uuid4())
         with self.lock:
             if not self.state["ready"]:
+                self.record_refusal(user, "sql", "index_not_built", request_id)
                 raise ServiceError(409, "Build the index with POST /index first")
             indexed = set(self.index.versions())
             try:
                 policy = self.permissions.evaluate(user["subject"], indexed)
             except Exception:
+                self.record_refusal(user, "sql", "permissions_unavailable", request_id)
                 raise ServiceError(503, "Permissions unavailable; evidence withheld") from None
             allowed = indexed & set(policy.allowed)
             file_types = {f: s.file_type for f, s in (self.inventory.files if self.inventory else {}).items()}
@@ -329,13 +356,16 @@ class SearchService:
             try:
                 policy = self.permissions.evaluate(user["subject"], {file_id})
             except Exception:
+                self.record_refusal(user, "table_row", "permissions_unavailable", request_id, file_id=file_id)
                 raise ServiceError(503, "Permissions unavailable; evidence withheld") from None
             data = self.index.structured({file_id} & set(policy.allowed))
             table = next((t for t in data["tables"] if t[1] == table_no), None)
             row = next((r for r in data["rows"] if r[1] == table_no and r[2] == row_no), None)
             if table is None or row is None:
+                self.record_refusal(user, "table_row", "not_found_or_not_permitted", request_id,
+                                    file_id=file_id, table_no=table_no, row_no=row_no)
                 raise ServiceError(404, "No readable evidence for that file, table and row")
-            self.refuse_if_changed({file_id})
+            self.refuse_if_changed({file_id}, user, "table_row", request_id)
             line, page = row[3], row[4]
             passage = next((p for p in self.index.passages(file_id, page)
                             if p.start_line <= line <= p.end_line), None)

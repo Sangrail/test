@@ -75,3 +75,6 @@ def test_a_busy_service_answers_503_with_retry_after_and_withholds_evidence(tmp_
         assert detail["busy"] is True and detail["retry_after_seconds"] == 1
         assert "evidence" not in response.json() and "answer" not in response.json()
         assert client.post("/sql", json={"sql": "SELECT 1"}).status_code == 503
+        refusals = [e["payload"] for e in app.state.service.audit.read_page(1, 10)["events"]
+                    if e["payload"]["event"] == "request_refused"]
+        assert [(e["operation"], e["reason"]) for e in refusals] == [("sql", "busy"), ("search", "busy")]

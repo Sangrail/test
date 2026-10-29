@@ -99,7 +99,7 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         if mode not in ("auto", "answer", "list"):
             return {"error": "mode must be auto, answer or list"}
         try:
-            with service.admit():
+            with service.admit(user, "search"):
                 result = service.search(user, question, max(1, min(limit, 50)), max(1, page), mode, within)
         except ServiceError as error:
             return {"error": error.detail}
@@ -111,7 +111,7 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
     def read_evidence(file_id: str, page: int | None = None) -> dict:
         """Read all indexed passages of one file, or of one page of a PDF."""
         try:
-            with service.admit():
+            with service.admit(user, "read"):
                 return service.read(user, file_id, page)
         except ServiceError as error:
             return {"error": error.detail}
@@ -147,7 +147,7 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         Example: SELECT subject, material_grade, allowable_load_kn_m2, file_id, table_no, row_no, line
         FROM components WHERE material_grade LIKE 'S355%' AND allowable_load_kn_m2 < 5"""
         try:
-            with service.admit():
+            with service.admit(user, "sql"):
                 return service.query_sql(user, sql, max(1, min(limit, 500)))
         except ServiceError as error:
             return {"error": error.detail}
@@ -157,7 +157,7 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         """The evidence for one table row from a query_sql result: column names, cells as read,
         line, page (or sheet), the typed facts, the file's content fingerprint (SHA-256) and the verbatim passage."""
         try:
-            with service.admit():
+            with service.admit(user, "table_row"):
                 return service.table_row_evidence(user, file_id, table_no, row_no)
         except ServiceError as error:
             return {"error": error.detail}

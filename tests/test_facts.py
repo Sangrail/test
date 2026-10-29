@@ -4,6 +4,7 @@ from pathlib import Path
 
 from openpyxl import Workbook
 
+from engineering_search.answer import parts
 from engineering_search.core import Table, TableRow
 from engineering_search.indexing import Indexer
 from engineering_search.indexing.facts import extract_facts
@@ -105,3 +106,18 @@ def test_tables_and_facts_are_stored_with_the_document_and_removed_with_it(tmp_p
     assert index.structured({"other.csv"})["facts"] == []  # Only the files asked for.
     index.remove("s.csv")
     assert index.structured({"s.csv"}) == {"documents": [], "tables": [], "rows": [], "facts": []}
+
+
+def test_a_csv_cell_with_a_line_break_keeps_its_row_whole_and_later_rows_keep_their_lines():
+    raw = b'Mark,Note,Material grade\nB-1,"Check bolts\nbefore lifting",S355\n\nB-2,Plain,S275\n'
+    lines = raw.decode().splitlines()
+    extraction = CsvReader().read("s.csv", "v1", raw)
+    (b1, b2) = extraction.tables[0].rows
+    assert b1.cells == ("B-1", "Check bolts\nbefore lifting", "S355") and b1.line == 2
+    assert b2.cells == ("B-2", "Plain", "S275") and lines[b2.line - 1] == "B-2,Plain,S275"
+    first, second = extraction.passages
+    assert (first.start_line, first.end_line) == (2, 3)
+    assert first.text == " ".join(lines[1:3])  # the written lines, joined
+    (part,) = parts(first)  # an answer quotes the whole row and cites both lines
+    assert (part.start_line, part.end_line) == (2, 3)
+    assert (second.start_line, second.end_line, second.text) == (5, 5, "B-2,Plain,S275")

@@ -38,7 +38,7 @@ The hardest of these is [G4](#g4): a retrieval system is only as good as its acc
 
 **The challenge:** a record of who asked what and which evidence was released, that survives and cannot be altered.
 
-**In the MVP:** every search, read and SQL query writes an audit event to a local SQLite file before evidence is released; no audit, no evidence. Requests refused before they reach the evidence (a question that is SQL, a busy service, a read the user may not make) are not audited. The file is not tamper-evident, not replicated and has no retention policy.
+**In the MVP:** every search, read and SQL query writes an audit event to a local SQLite file before evidence is released; no audit, no evidence. A request refused before any evidence is prepared (a question that is SQL, a busy service, a read the user may not make, a changed file) is audited too, as `request_refused` with the user, the operation and the reason; it holds no question text. Over HTTP a busy refusal comes before the session is read, so it has no user. The file is not tamper-evident, not replicated and has no retention policy.
 
 **Needed:** an append-only, central, retained audit store.
 
@@ -88,7 +88,7 @@ The hardest of these is [G4](#g4): a retrieval system is only as good as its acc
 
 **The challenge:** the user never writes SQL ([K9](clarifications.md#k9)), but the chat agent may. A statement reaches `query_sql` from the agent either way.
 
-**In the MVP:** a question that is a SQL statement is refused by `search_evidence` and `POST /search`, and the MCP instructions tell the agent not to pass the user's SQL on. The service cannot check that it obeys. The refusal recognises SQL by compiling it against the projection's tables ([ADR 0006](../adr/0006-the-user-never-writes-sql.md)), so a SELECT over a table the projection does not have is searched as words rather than refused.
+**In the MVP:** a question that is a SQL statement is refused by `search_evidence` and `POST /search`, and the MCP instructions tell the agent not to pass the user's SQL on. The service cannot check that it obeys. The refusal is for SQL a user types into the search; the agent's own SQL goes to `query_sql`, which accepts only the tables that `describe_schema` lists. It refuses typed SQL that names those tables. Typed SQL that names some other table (`SELECT name FROM users`) is searched as ordinary words and finds nothing, rather than being refused, because plain English such as "select the beams from the roof" has the same shape ([ADR 0006](../adr/0006-the-user-never-writes-sql.md)).
 
 **Needed:** a shell that keeps the user's text and the agent's tool calls apart, or a policy layer in the shell.
 
@@ -98,7 +98,7 @@ The hardest of these is [G4](#g4): a retrieval system is only as good as its acc
 
 **The challenge:** the brief assumes connectors for the supported files ([C3](constraints.md#c3)). The MVP's sample readers cover only enough formats to prove the flow.
 
-**In the MVP:** scanned PDFs (no OCR), CAD geometry, binary DXF, DWG, JT and CATIA are not read. Each such file is listed in the coverage report with its reason, so a missing answer is never silent. The CSV reader cites one line per row, so a quoted cell that spans several lines is cited at the wrong lines.
+**In the MVP:** scanned PDFs (no OCR), CAD geometry, binary DXF, DWG, JT and CATIA are not read. Each such file is listed in the coverage report with its reason, so a missing answer is never silent.
 
 **Needed:** the real connectors, behind the same reader interface.
 
