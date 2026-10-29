@@ -1,4 +1,4 @@
-# Run the service
+# Run the service (For the purposes of this MVP )
 
 Each person runs an independent copy of the service. The web server, the index and the audit log are all on the machine that runs the service. You do not need a central server, an account, an API key or a cloud database.
 
