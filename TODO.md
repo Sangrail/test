@@ -75,8 +75,6 @@ Updated 2026-10-29. This is an MVP, not the final platform. This document lists 
 
 ## Next (phase 2)
 
-- [ ] **Evaluate the design records database** ([ADR 0021](docs/adr/0021-design-records-in-one-database.md)) after a few real changes. It is the source of truth, versioned and append-only, with the documents generated from it. Known weaknesses, from the review in [docs/records/README.md](docs/records/README.md#weaknesses-and-what-comes-next): a binary source that does not merge; standing typed by hand rather than derived from tests (R5–R8 have no enforcing test linked); no change sets, commit trailers or approval; no links between items (derives from, limits, defers), so the flow from intent and the reach of scope are prose; scope items without a direction (floor or ceiling); no capabilities, evidence or non-goals. Next: link the tests that enforce R5–R8, add links between items, and make the bounding invariants queries in the suite.
-
 - [ ] **Document and question research.** Profile the real repository: formats, versions, structure, tables, revisions, and where the parameters are. Collect real questions from engineering leads, with the answers and sources that they need. Add them to `evaluation/questions.json`, and keep some back from the developers. See [design/DATA-PROFILE.md](design/DATA-PROFILE.md).
 - [ ] **Parameter dictionary, version 1.** The 20 to 30 parameters that leads ask about, with their names, other names and units. Extend the fact rules from it.
 - [ ] **Project and revision metadata.** Get project, discipline, revision and status from the repository connector. See [design/EXTRACTION.md](design/EXTRACTION.md).

@@ -1,6 +1,5 @@
 # Requirements and constraints added during the MVP (R)
 
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 Requirements and constraints that the product owner added while the MVP was built. Each is marked with its pillar: intent or constraint.
 

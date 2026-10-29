@@ -3,7 +3,6 @@ status: accepted
 date: 2026-10-28
 version: 1
 ---
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Put all search logic in one service, used by the web page and the chat agent
 

@@ -3,7 +3,6 @@ status: accepted (partly implemented)
 date: 2026-10-29
 version: 1
 ---
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Evaluate retrieval, natural-language-to-SQL and the agent's reply, and gate releases on the results
 

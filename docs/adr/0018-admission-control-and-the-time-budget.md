@@ -3,7 +3,6 @@ status: accepted (MVP; the scaling work is open)
 date: 2026-10-29
 version: 2
 ---
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Answer within the time budget or refuse at once, and record what does not scale
 

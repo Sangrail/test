@@ -1,6 +1,5 @@
 # Production requirements (P)
 
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 What a service for a whole organisation needs and **the MVP does not meet**. They are out of scope by [S1](scope.md#s1), and recorded so that no one mistakes the MVP for a platform. [docs/README.md](../README.md#making-it-available-to-an-organisation) explains why each is its own engineering work.
 

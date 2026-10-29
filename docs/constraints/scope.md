@@ -1,6 +1,5 @@
 # Scope (S)
 
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 Scope is the arbiter of how far the MVP goes. The intent and the constraints may ask for more; scope says how far down that road this work goes. **Exceeding** scope is acceptable, and is recorded (a decision that goes beyond it links the scope item with *exceeds*). **Falling short** of scope is a failure to flag.
 

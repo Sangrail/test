@@ -3,7 +3,6 @@ status: superseded in part by 0016 (CSV and XLSX are read); amended by 0020 (the
 date: 2026-10-28
 version: 3
 ---
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Start with Markdown and simple text-layer PDF
 

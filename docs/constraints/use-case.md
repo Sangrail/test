@@ -1,6 +1,5 @@
 # Use case (U)
 
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 The use case in the brief: who needs what, how fast and with what confidence. Each item is quoted or closely paraphrased from [the brief](../Starting_document.md).
 

@@ -1,6 +1,5 @@
 # Architecture decision records
 
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 These records explain the decisions of the MVP, and how each one serves the intent, the constraints and the scope. They are generated from the design records database, [docs/records/design.sqlite](../records/README.md), which is the source of truth and keeps every version of every record ([ADR 0021](0021-design-records-in-one-database.md)). **Accepted** means that the direction is agreed. It does not mean that every part is implemented: each record has an "Implementation" section that says what the code does now.
 

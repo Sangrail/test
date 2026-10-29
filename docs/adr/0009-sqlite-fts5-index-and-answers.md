@@ -3,7 +3,6 @@ status: accepted, amended by 0017 (bound list comparisons, signed numbers, list 
 date: 2026-10-28
 version: 1
 ---
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Use a SQLite FTS5 inverted index, and answer with exact text
 

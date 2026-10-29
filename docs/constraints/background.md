@@ -1,6 +1,5 @@
 # Background (B)
 
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 The problem, as [the brief](../Starting_document.md) states it. These are facts about the situation, not requirements; the use case and the constraints answer them.
 

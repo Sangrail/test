@@ -3,7 +3,6 @@ status: superseded in part by 0017 (permissions apply inside the lookup, before 
 date: 2026-10-28
 version: 1
 ---
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Check permissions before answers, counts and pages
 

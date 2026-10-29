@@ -1,6 +1,5 @@
 # Constraints from the brief (C)
 
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 The environment that [the brief](../Starting_document.md) says **already exists**. The MVP does not design or build any of it. Where the MVP needs one of these to run end to end, it uses the simplest stand-in that proves the chain from question to cited answer, and names it as a stand-in. For example, connectors already extract metadata, text and properties from supported files ([C3](environment.md#c3)), so the MVP's PDF, Markdown, CSV and XLSX readers are placeholders for them, not a proposal to build extraction ([ADR 0020](../adr/0020-assume-the-environment-and-stand-in-for-it.md)).
 

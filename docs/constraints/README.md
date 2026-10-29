@@ -1,6 +1,5 @@
 # Intent, constraints and scope
 
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 The background, constraints, use case, task and scope from [the brief](../Starting_document.md), what the product owner added while the MVP was built, and the production requirements that it does not meet. They are kept, with every earlier version, in the design records database ([docs/records](../records/README.md)), with the [decision records](../adr/README.md), the fourth pillar.
 

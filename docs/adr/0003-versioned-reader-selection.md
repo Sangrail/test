@@ -3,7 +3,6 @@ status: accepted, amended by 0020 (the readers are stand-ins for connectors)
 date: 2026-10-28
 version: 3
 ---
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Select a tested reader for each format and version, and record it
 

@@ -3,7 +3,6 @@ status: superseded in part by 0016
 date: 2026-10-28
 version: 1
 ---
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Defer the facts store and embeddings until the questions and the data are known
 

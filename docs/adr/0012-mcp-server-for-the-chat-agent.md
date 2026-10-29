@@ -3,7 +3,6 @@ status: superseded in part by 0016 (the tools) and 0018 (admission); stdio and t
 date: 2026-10-28
 version: 1
 ---
-<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Give the chat agent an MCP server over stdio, and accept an unverified user for the MVP only
 
