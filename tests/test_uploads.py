@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from engineering_search.adapters import SQLiteAuditStore
 from engineering_search.app import create_app
-from engineering_search.core import extract
+from engineering_search.indexing import Indexer
 from engineering_search.store import SQLiteSearchIndex
 from engineering_search.jobs import SQLiteJobQueue
 
@@ -66,22 +66,21 @@ def test_upload_is_queued_then_searchable_only_after_worker_commit(tmp_path):
 
 
 def test_two_workers_extract_concurrently_and_publish_independent_files(tmp_path, monkeypatch):
-    import engineering_search.service as module
     root, queue, app = setup(tmp_path, workers=2)
     release, both_entered = Event(), Event()
     guard = Lock()
     entered = []
-    original = module.extract
+    original = Indexer.extract
 
-    def blocked_extract(path, root):
+    def blocked_extract(self, path):
         with guard:
             entered.append(path)
             if len(entered) == 2:
                 both_entered.set()
         assert release.wait(5)
-        return original(path, root)
+        return original(self, path)
 
-    monkeypatch.setattr(module, "extract", blocked_extract)
+    monkeypatch.setattr(Indexer, "extract", blocked_extract)
     with TestClient(app) as client:
         assert client.post("/auth/login", json={"user_id": "maya"}).status_code == 200
         first, _ = upload(client, "one.md", b"# One\n\nUnique firstbeam.\n")
@@ -179,9 +178,9 @@ def test_single_document_update_removes_old_tokens(tmp_path):
     path = tmp_path / "source.md"
     path.write_text("# Beam\n\nOldparameter 17.\n")
     index = SQLiteSearchIndex()
-    index.upsert(extract(path, tmp_path)[0])
+    index.upsert(Indexer(tmp_path).extract(path)[0])
     path.write_text("# Beam\n\nNewparameter 29.\n")
-    index.upsert(extract(path, tmp_path)[0])
+    index.upsert(Indexer(tmp_path).extract(path)[0])
     assert index.search("oldparameter", 10) == ([], 0)
     assert index.search("newparameter", 10)[1] == 1
     assert index.passage_count() == 1

@@ -24,7 +24,8 @@ The MVP reads Markdown (`.md`) and simple PDF files that have a text layer. It d
 
 | Folder or file | Contents |
 | --- | --- |
-| `engineering_search/` | The service: index, search, permissions, audit, web pages and the MCP server |
+| `engineering_search/` | The service: search, permissions, audit, web pages and the MCP server |
+| `engineering_search/indexing/` | The indexer: file type detection, the file inventory, the readers, and the plan of changes to the index |
 | `test-repository/` | Test documents only (138 files). It stands in for the company's document repository. See `test-repository/TEST-DATA.txt` |
 | `evaluation/` | Test questions, saved scores, and [what they mean](evaluation/README.md) |
 | `scripts/` | Scoring, test-PDF generation, packaging and benchmark scripts |
@@ -62,6 +63,17 @@ uv run --frozen python -m engineering_search
 Then open <http://127.0.0.1:8000/search>. Select a demo user. The sign-in screen tells you what each user can do and what to try.
 
 The service indexes `test-repository/` when it starts. It keeps the index in `.runtime/`. When you start it again, it reads and hashes every file, and extracts passages only from the files that changed.
+
+## How indexing works
+
+The service has two lines: indexing and searching. They meet only at the index. The indexer is in [`engineering_search/indexing/`](engineering_search/indexing/).
+
+1. **Scan.** The indexer lists every file in the document folder. It skips symbolic links and hidden files.
+2. **Detect the file type.** The MVP uses the file extension: `.md` is Markdown and `.pdf` is PDF. Other known extensions get a name (for example `text`, `dwg` or `catia`), and the rest are `unknown`. A later detector can read the file bytes (libmagic) without changes elsewhere.
+3. **Read what it can.** Only Markdown and PDF have readers. The indexer reads and hashes those files. It lists the other files as unsupported, with their type and size, and does not read them. A file that cannot be read is reported, and the other files are still indexed.
+4. **Plan the changes.** The indexer compares the file versions with the index, and extracts passages only from new and changed files. The search service writes the changes to the index in one transaction.
+
+The index operations page (`/admin`) shows the type of each file, and the files that are not indexed. On `test-repository/`, the scan finds 133 Markdown files, 5 PDF files and 2 unsupported text files. [ARCHITECTURE.md](ARCHITECTURE.md#the-indexing-line) gives the details.
 
 ## How search works
 
@@ -240,7 +252,6 @@ Known defects. These are errors in the code, found in an independent review and 
 - **Retrieval limit before permissions.** The index lookup keeps 1,000 passages before permissions and `within` are applied. Permitted results can be lost, and forbidden files can change a user's result.
 - **Signs ignored.** "-2 kN/m²" is compared as 2 kN/m².
 - **Lists stop at 200 documents.** The rest cannot be retrieved, because `page` does not page the list.
-- **One unreadable file stops the index refresh.** A file read error (for example, `PermissionError`) fails the whole refresh, although extraction errors are skipped.
 - **Two processes can overwrite a newer index.** The web service and the MCP server do not coordinate their index refreshes on a shared state folder.
 - **PDFs without text count as indexed.** They are not reported as not searchable.
 

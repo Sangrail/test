@@ -263,7 +263,7 @@ For each problem, send:
 | Claude Desktop does not show the servers | The JSON is not valid, or Claude Desktop was not restarted. Check the commas and brackets. Quit Claude Desktop fully and start it again |
 | Claude Desktop shows `spawn uv ENOENT` | Claude Desktop cannot find `uv`. Use the full path from `which uv` in `command` |
 | The first question is slow | The server indexes new and changed files when it starts. The next start reads and hashes every file, and extracts only the changed files |
-| Index refresh fails with 503 at start | The service cannot read one of the files (for example, a permission error). This stops the whole refresh. Make every `.md` and `.pdf` file readable. Do not start the web service on the same state folder at the same time |
+| Index refresh fails with 503 at start | The document folder is missing, or a folder in it cannot be read. Check `--documents`. Do not start the web service on the same state folder at the same time |
 | A warning about pydantic shows in the log | The warning is harmless. The server writes it to stderr, not to the MCP channel |
 | Results look out of date | Delete `.runtime/index-*.sqlite3`. The server makes the index again at the next start |
 

@@ -63,12 +63,11 @@ uv run --frozen python -m engineering_search --documents /absolute/path/to/docum
 
 The service reads `.md` files (UTF-8) and `.pdf` files. It does not follow symbolic links. It does not change or move the documents.
 
-If the service cannot extract a file (for example, invalid UTF-8 or a damaged PDF), it does not stop. It skips the file and shows the file in `failed_files` in the index result. The other files are indexed.
+The service detects the type of each file from its extension. It lists files of other types (for example `.txt`, `.docx` or `.dwg`) as unsupported in `/admin`, with their type and size, and does not read them.
 
-Two known defects:
+If the service cannot read or extract a file (for example, a permission error, invalid UTF-8 or a damaged PDF), it does not stop. It skips the file and shows the file in `failed_files` in the index result. The other files are indexed.
 
-- If the operating system refuses to read a file (for example, a permission error), the whole index refresh fails with status 503. The previous index stays. Make sure that the service can read every `.md` and `.pdf` file in the folder.
-- A PDF without a text layer (for example, a scan) is indexed with zero passages. It is not in `failed_files`, and the index status can show `up_to_date`. Its content cannot be found.
+Known defect: a PDF without a text layer (for example, a scan) is indexed with zero passages. It is not in `failed_files`, and the index status can show `up_to_date`. Its content cannot be found.
 
 The access rules in `engineering_search/access.py` apply to your files too. If no rule matches a path, the whole-repository rule applies, and all three users can read the file.
 

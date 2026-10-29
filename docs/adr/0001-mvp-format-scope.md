@@ -26,4 +26,4 @@ The brief limits the MVP to Markdown and simple PDF (S2). It excludes OCR and th
 
 ## Implementation
 
-Done. [`core.py`](../../engineering_search/core.py): `source_files` selects `.md` and `.pdf`. `extract` reads Markdown by headings and blank lines, and PDF page by page with pypdf (at most 15 lines in each passage). A file that cannot be read is skipped and reported ([ADR 0005](0005-coverage-and-reader-gaps.md)). Uploads accept Markdown only. Tests: `tests/test_index.py`, `tests/test_use_case.py`.
+Done. The [indexing package](../../engineering_search/indexing/): `ExtensionDetector` names `.md` files `markdown` and `.pdf` files `pdf`. Only these two types have readers in `readers.py`. The Markdown reader splits by headings and blank lines. The PDF reader works page by page with pypdf (at most 15 lines in each passage). Files of other types are listed as unsupported and are not read. A file that cannot be read is skipped and reported ([ADR 0005](0005-coverage-and-reader-gaps.md)). Uploads accept Markdown only. Tests: `tests/test_indexer.py`, `tests/test_index.py`, `tests/test_use_case.py`.

@@ -9,7 +9,7 @@ TOP_LEVEL = ("README.md", "ARCHITECTURE.md", "RUNNING.md", "TODO.md", "GLOSSARY.
              "design/system-design.svg", "design/system-design.png", "design/make_diagram.py",
              "design/code-architecture.svg", "design/code-architecture.png", "design/make_architecture.py",
              "pyproject.toml", "uv.lock", ".gitignore")
-PATTERNS = ("engineering_search/*.py", "engineering_search/static/*.html",
+PATTERNS = ("engineering_search/*.py", "engineering_search/indexing/*.py", "engineering_search/static/*.html",
             "engineering_search/static/*.css", "engineering_search/static/*.js",
             "test-repository/**/*.md", "test-repository/**/*.pdf", "test-repository/**/*.txt",
             "evaluation/*.json", "evaluation/*.md", "evaluation/results/*.json", "scripts/*.py", "tests/*.py",

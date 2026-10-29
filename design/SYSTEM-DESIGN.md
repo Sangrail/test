@@ -15,7 +15,7 @@
 
 Source: [system-design.svg](system-design.svg). Solid boxes are the MVP. Dashed boxes are optional or later. Grey boxes are existing systems named in the brief. [code-architecture.png](code-architecture.png) shows the modules of the code, their layers and their imports.
 
-The diagram is a summary. Some of its labels state the intended behaviour, not the behaviour with the known defects: "Before answer, counts and pages" (the 1,000-passage lookup limit applies before permissions), "each result page" (the leak test checks five pages), "Read only new and changed files" (every file is read and hashed; only changed files are extracted), and "Unreadable files are skipped and reported" (a file read error stops the refresh, and PDFs without text are not reported). Part 1 and [ARCHITECTURE.md](../ARCHITECTURE.md) are correct where the diagram differs.
+The diagram is a summary. Some of its labels state the intended behaviour, not the behaviour with the known defects: "Before answer, counts and pages" (the 1,000-passage lookup limit applies before permissions), "each result page" (the leak test checks five pages), "Read only new and changed files" (every file is read and hashed; only changed files are extracted), and "Unreadable files are skipped and reported" (PDFs without text are not reported). The diagram also shows the readers in `core.py`: they are now in the [indexing package](../engineering_search/indexing/), with file type detection. Part 1 and [ARCHITECTURE.md](../ARCHITECTURE.md) are correct where the diagram differs.
 
 ## Part 1: What is built now
 
@@ -59,14 +59,14 @@ read_evidence(file_id, page?)
 
 ### Known defects
 
-[ARCHITECTURE.md](../ARCHITECTURE.md#known-defects) lists them with code locations. In summary: a wrong parameter can be marked `found`; the retrieval limit applies before permissions; signs are ignored in number comparisons; lists stop at 200 documents; one unreadable file stops the index refresh; two processes can overwrite a newer index; PDFs without text count as indexed.
+[ARCHITECTURE.md](../ARCHITECTURE.md#known-defects) lists them with code locations. In summary: a wrong parameter can be marked `found`; the retrieval limit applies before permissions; signs are ignored in number comparisons; lists stop at 200 documents; two processes can overwrite a newer index; PDFs without text count as indexed.
 
 ### How the built system uses the brief's constraints
 
 | Constraint in the brief | Built now | Proposed |
 | --- | --- | --- |
 | Files live in an existing repository | A local folder stands in for it. The service reads it and never writes into it, except Markdown uploads | Read from the repository through its connector. Change detection feeds the queue |
-| Connectors and APIs extract metadata, text and properties | Built-in readers for Markdown and text-layer PDF (`core.py`) | **Extraction connectors**, called by the indexer workers. Our code only normalises their output into passages |
+| Connectors and APIs extract metadata, text and properties The indexer (`engineering_search/indexing/`): file type detection by extension, and built-in readers for Markdown and text-layer PDF. Other types are listed as unsupported | **Extraction connectors**, called by the indexer workers. Our code only normalises their output into passages |
 | Structured and/or semantic stores | `index-<id>.sqlite3`: `documents`, `passages`, `passages_fts` (keyword index) and `meta` | Add section trees, metadata and a facts store ([EXTRACTION.md](EXTRACTION.md)). A semantic store (`vectors`) only if the questions show a gain |
 | A chat-agent shell calls backend APIs or tools | A stdio MCP server with `search_evidence` and `read_evidence`. The user comes from an unverified `--user` flag | A remote MCP server behind company sign-in. Add `verify_citations` |
 | A users-to-files permissions database exists | Path rules in `access.py` | Sync the permissions into the index, and apply them inside retrieval, before any limit |
@@ -148,7 +148,7 @@ The quote makes the source traceable. It does not prove that the quoted value an
    - **Proposed:** permissions synced into the index and applied inside retrieval.
 5. **Some questions need computation, not search.** **Built:** query-time comparison for list questions, with the limits in [Answer text and numbers](#answer-text-and-numbers). Calculations ("total load on…") are out of scope.
 6. **Ingestion.**
-   - **Built:** one persistent SQLite index in the state folder. A refresh reads and hashes every file, and extracts only changed files. Changes apply in one transaction.
+   - **Built:** one persistent SQLite index in the state folder. The indexer (`engineering_search/indexing/`) lists every file, detects its type by extension, reads and hashes the files that have a reader, and extracts only changed files. Changes apply in one transaction.
    - **Now:** two ingestion paths (full refresh and the upload queue). Uploads are written into the document folder. Two processes that share a state folder do not coordinate their refreshes.
    - **Proposed:** one ingestion path through the queue, with publication that rejects stale work.
 7. **Scale.**

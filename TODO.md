@@ -4,7 +4,8 @@ Updated 2026-10-28. This is an MVP, not the final platform. This document lists 
 
 ## Done
 
-- [x] Index Markdown and simple PDF files (text layer only), page by page. Skip and report files that cannot be extracted. (A file read error still stops the refresh, and PDFs without text are not reported. See [Known defects](#known-defects-fix-first).)
+- [x] Index Markdown and simple PDF files (text layer only), page by page. Skip and report files that cannot be read or extracted. (PDFs without text are not reported. See [Known defects](#known-defects-fix-first).)
+- [x] Indexer as its own component in `engineering_search/indexing/`, tested alone in `tests/test_indexer.py`. Detect the file type by extension. List every file with its type, and list files without a reader as unsupported without reading them. [ARCHITECTURE.md](ARCHITECTURE.md#the-indexing-line).
 - [x] Keep the index in SQLite with an FTS5 inverted index. Extract only new and changed files when the index is updated (every file is still read and hashed). [ADR 0009](docs/adr/0009-sqlite-fts5-index-and-answers.md).
 - [x] Change plain-language questions into index queries: stop words, synonyms, prefix search for codes such as S355. Show the user what was searched for.
 - [x] Answer one value with the exact sentence or table row, and its file, page, lines and version. Show up to five other documents that also state a value. Say "not found" or "closest match" when the best passages do not state it. (`found` can still be a wrong value. See [Known defects](#known-defects-fix-first).)
@@ -38,17 +39,19 @@ Updated 2026-10-28. This is an MVP, not the final platform. This document lists 
 - **PDF:** text layer only. No OCR. Tables come out as lines of text. Some characters are lost, for example foot and inch marks.
 - **Uploads:** Markdown only.
 - **CAD, BIM and other formats:** out of scope for the MVP. Each format and version needs a tested reader. [ADR 0001](docs/adr/0001-mvp-format-scope.md), [ADR 0003](docs/adr/0003-versioned-reader-selection.md), [design/DATA-PROFILE.md](design/DATA-PROFILE.md).
-- **Coverage:** failed files are reported in each index result, but there is no stored report of unsupported or unreadable files. PDFs without a text layer are counted as indexed. [ADR 0005](docs/adr/0005-coverage-and-reader-gaps.md).
+- **File types:** detected from the extension only. A misnamed or damaged file is found only when its reader fails, and the format version is not known.
+- **Coverage:** failed files are reported in each index result. Unsupported and unreadable files are listed in `/index/status` with their type, from the last scan. The list is in memory only: there is no stored report. PDFs without a text layer are counted as indexed. [ADR 0005](docs/adr/0005-coverage-and-reader-gaps.md).
 
 ## Known defects (fix first)
 
-An independent review on 2026-10-28 found and reproduced these errors. They are not fixed. The current tests pass with them. [ARCHITECTURE.md](ARCHITECTURE.md#known-defects) gives the code location of each one.
+An independent review on 2026-10-28 found and reproduced these errors. The open items are not fixed, and the current tests pass with them. [ARCHITECTURE.md](ARCHITECTURE.md#known-defects) gives the code location of each one.
+
+- [x] **Skip files that cannot be read.** Fixed with the indexer component: a file read error is reported in `failed_files`, and the other files are indexed. Test: `tests/test_indexer.py`.
 
 - [ ] **Bind the value to the question words.** `found` checks the question words against the whole document. A floor load can be the `found` answer to a roof load question, and a list comparison can cite a floor load for a roof load filter. Withhold ambiguous matches, or mark them as unverified candidates. Add regression tests.
 - [ ] **Apply permissions and `within` before the retrieval limit.** The 1,000-passage limit applies first. Permitted results can be lost, and forbidden files can change a user's result. Add a test that adding forbidden files leaves a user's results unchanged.
 - [ ] **Read signed quantities.** "-2 kN/m²" is compared as 2 kN/m². Parse the sign, or reject notation that the parser does not support.
 - [ ] **Page the document list.** A list returns at most 200 documents, and `page` does not page it. Page the list, or document the limit in the API response.
-- [ ] **Skip files that cannot be read.** Move the file read into the per-file error handler, so that one `PermissionError` does not stop the refresh.
 - [ ] **Coordinate index refreshes across processes.** The web service and the MCP server can publish an older index over a newer one. Use a lock across processes, or reject stale publication.
 - [ ] **Report PDFs without text.** Give them a separate "no text" outcome, not "indexed".
 - [ ] **Make the leak test check every page.** `tests/test_no_leaks.py` stops after five pages of 50 passages.
@@ -61,7 +64,7 @@ An independent review on 2026-10-28 found and reproduced these errors. They are 
 - [ ] **Parameter dictionary, version 1.** The 20 to 30 parameters that leads ask about, with their names, other names and units.
 - [ ] **Revisions and supersession.** Record which document or revision replaces which. Show the current value first. Get an authority rule from the business for conflicts.
 - [ ] **Viewer.** Let a user open the cited source at its page, sheet or element, in the cited version, with the same permissions. Select it with the readers. See [design/DATA-PROFILE.md](design/DATA-PROFILE.md) section 5.
-- [ ] **Reader registry.** Detect the format and version of each file from its content, and select a tested reader. Record the reader and its version for each file. Report files that no reader can read, grouped by format and version. [ADR 0003](docs/adr/0003-versioned-reader-selection.md).
+- [ ] **Content-based detection and a versioned reader registry.** The `Detector` and the type-to-reader map exist. Add a detector that reads the file bytes (libmagic) and the format version, and select a tested reader for each format and version. Record the reader and its version for each file. Report files that no reader can read, grouped by format and version. [ADR 0003](docs/adr/0003-versioned-reader-selection.md).
 - [ ] **Coverage report.** List unsupported, unreadable and empty files for the index team. [ADR 0005](docs/adr/0005-coverage-and-reader-gaps.md).
 - [ ] **PDF upload.**
 - [ ] **More tests.** An automated MCP test, scored "not found" and list questions, and browser tests for the web pages. See [evaluation/README.md](evaluation/README.md).

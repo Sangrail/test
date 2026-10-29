@@ -48,7 +48,7 @@ function render(data) {
   $('source-root').title = data.document_root;
   $('last-scan').textContent = date(data.last_scanned_at);
   $('last-index').textContent = date(data.last_indexed_at);
-  $('inventory-count').textContent = `${number(data.source_files)} files on disk`;
+  $('inventory-count').textContent = `${number(data.source_files)} indexable files · ${number(data.unsupported_files)} not supported`;
   const run = data.last_index_run;
   $('total-time').textContent = milliseconds(run ? run.total_seconds*1000 : null);
   $('ingestion-time').textContent = milliseconds(run ? run.ingestion_seconds*1000 : null);
@@ -63,16 +63,16 @@ function render(data) {
 function renderRows() {
   if (!current) return;
   const term = $('file-filter').value.toLocaleLowerCase();
-  const rows = current.documents.filter(row => row.file_id.toLocaleLowerCase().includes(term) && (!$('changes-only').checked || row.status !== 'indexed'));
+  const rows = current.documents.filter(row => row.file_id.toLocaleLowerCase().includes(term) && (!$('changes-only').checked || ['added','edited','deleted'].includes(row.status)));
   page = Math.max(0, Math.min(page, Math.ceil(rows.length/pageSize)-1));
   const fragment = document.createDocumentFragment();
   for (const row of rows.slice(page*pageSize, (page+1)*pageSize)) {
     const tr = document.createElement('tr');
     const name = document.createElement('td'); name.textContent = row.file_id;
-    const size = document.createElement('td'); size.textContent = row.bytes == null ? '—' : `${(row.bytes/1024).toFixed(1)} KB`;
+    const size = document.createElement('td'); size.textContent = [row.file_type, row.bytes == null ? null : `${(row.bytes/1024).toFixed(1)} KB`].filter(Boolean).join(' · ') || '—';
     const state = document.createElement('td');
     const badge = document.createElement('span'); badge.className = `badge ${row.status}`;
-    badge.textContent = {indexed:'Indexed', added:'New', edited:'Modified', deleted:'Deleted'}[row.status];
+    badge.textContent = {indexed:'Indexed', added:'New', edited:'Modified', deleted:'Deleted', unsupported:'No reader', unreadable:'Cannot read'}[row.status];
     state.append(badge); tr.append(name, size, state); fragment.append(tr);
   }
   $('document-rows').replaceChildren(fragment);

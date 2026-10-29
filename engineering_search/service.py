@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from datetime import datetime, timezone
-import hashlib
 import logging
 import os
 from pathlib import Path
@@ -23,7 +22,8 @@ from uuid import uuid4
 from .access import PermissionStore
 from .adapters import Telemetry
 from .answer import answer as pick_answer, list_documents, manifest, understand
-from .core import AuditStore, SearchIndex, evidence_manifest, extract, scan_files, source_files
+from .core import AuditStore, SearchIndex, evidence_manifest
+from .indexing import INDEXABLE, UNREADABLE, UNSUPPORTED, Indexer, Inventory
 from .jobs import JobQueue
 from .query import plan
 
@@ -42,10 +42,12 @@ class ServiceError(Exception):
 
 class SearchService:
     def __init__(self, root: Path, index: SearchIndex, audit: AuditStore, permissions: PermissionStore,
-                 queue: JobQueue, telemetry: Telemetry | None = None):
+                 queue: JobQueue, telemetry: Telemetry | None = None, indexer: Indexer | None = None):
         self.root = root.resolve()
         self.index, self.audit, self.permissions, self.queue = index, audit, permissions, queue
         self.telemetry = telemetry if telemetry is not None else Telemetry()
+        # The indexing line: finds, classifies and reads the files. The service publishes its plans.
+        self.indexer = indexer if indexer is not None else Indexer(self.root)
         # lock protects the index and the state. operation_lock allows one scan,
         # index build or upload publish at a time.
         self.lock = RLock()
@@ -53,8 +55,8 @@ class SearchService:
         self.state = {"ready": False, "last_indexed_at": None, "last_scanned_at": None,
                       "operation": None, "scan_error": None, "index_error": None,
                       "last_index_run": None, "last_scan_seconds": None}
-        # The files found by the last scan: file_id -> {source_version, bytes}.
-        self.observed: dict[str, dict] | None = None
+        # The files found by the last scan, with their file types.
+        self.inventory: Inventory | None = None
         if index.versions():  # A persisted index is searchable straight away.
             self.state.update(ready=True, last_indexed_at=getattr(index, "indexed_at", lambda: None)())
 
@@ -194,13 +196,13 @@ class SearchService:
         self.operation_lock.release()
 
     def scan(self) -> dict:
-        """Find the files in the document folder and their versions. Does not change the index."""
+        """Find the files in the document folder, their types and versions. Does not change the index."""
         self._begin("scanning")
         start = perf_counter()
         try:
-            snapshot = scan_files(self.root)
+            inventory = self.indexer.scan()
             with self.lock:
-                self.observed = snapshot
+                self.inventory = inventory
                 self.state.update(last_scanned_at=now(), scan_error=None,
                                   last_scan_seconds=perf_counter() - start)
         except Exception:
@@ -214,8 +216,10 @@ class SearchService:
     def reindex(self) -> dict:
         """Bring the index up to date with the document folder.
 
-        Only new and changed files are read. A file that cannot be read is
-        skipped and reported. All changes are applied in one transaction.
+        The indexer scans every file, detects its type, and extracts the new
+        and changed files that have a reader. The service publishes the plan
+        in one transaction. A file that cannot be read or extracted is
+        skipped and reported.
         """
         start = perf_counter()
         self._begin("indexing")
@@ -224,47 +228,32 @@ class SearchService:
                 old = self.index.versions()
             blocked = self.queue.blocked_files()  # Uploads that the workers still own.
             read_start = perf_counter()
-            documents, snapshot, versions, failed, total_bytes = [], {}, {}, [], 0
-            for path in source_files(self.root):
-                file_id = path.relative_to(self.root).as_posix()
-                raw = path.read_bytes()
-                version = hashlib.sha256(raw).hexdigest()
-                snapshot[file_id] = {"source_version": version, "bytes": len(raw)}
-                total_bytes += len(raw)
-                if file_id in blocked:
-                    continue
-                if old.get(file_id) != version:
-                    try:
-                        documents.append(extract(path, self.root)[0])
-                    except Exception as error:  # One bad file must not stop the whole build.
-                        log.warning("Could not read %s: %s", file_id, error)
-                        failed.append({"file_id": file_id, "error": type(error).__name__})
-                        continue
-                versions[file_id] = version
+            plan = self.indexer.plan(old, skip=blocked)
             ingestion_seconds = max(perf_counter() - read_start, 1e-9)
-            removed = sorted(old.keys() - versions.keys() - blocked)
+            indexable = plan.inventory.indexable()
+            total_bytes = sum(f.size for f in indexable.values())
             with self.lock:
                 commit_start = perf_counter()
-                self.queue.reconcile_ready(versions)
-                self.index.apply(documents, removed)
+                self.queue.reconcile_ready(plan.versions)
+                self.index.apply(plan.upserts, plan.removals)
                 indexing_seconds = max(perf_counter() - commit_start, 1e-9)
-                self.observed = snapshot
+                self.inventory = plan.inventory
                 self.state.update(ready=True, last_indexed_at=now(), last_scanned_at=now(),
                                   scan_error=None, index_error=None, last_scan_seconds=ingestion_seconds)
                 result = {"indexed_at": self.state["last_indexed_at"], "workers": 1,
-                          "files": len(versions), "read_files": len(documents), "bytes": total_bytes,
-                          "failed_files": failed, "scanned_files": len(snapshot),
+                          "files": len(plan.versions), "read_files": len(plan.upserts), "bytes": total_bytes,
+                          "failed_files": plan.failed, "scanned_files": len(indexable),
+                          "file_types": plan.inventory.by_type(),
+                          "unsupported_files": len(plan.inventory.with_outcome(UNSUPPORTED)),
                           "passages": self.index.passage_count(),
-                          "added": len(versions.keys() - old.keys()),
-                          "edited": sum(old[k] != v for k, v in versions.items() if k in old),
-                          "deleted": len(removed),
+                          "added": plan.added, "edited": plan.edited, "deleted": len(plan.removals),
                           "ingestion_seconds": ingestion_seconds,
                           "indexing_seconds": indexing_seconds,
                           "total_seconds": perf_counter() - start,
-                          "ingestion_files_per_second": len(snapshot) / ingestion_seconds,
+                          "ingestion_files_per_second": len(indexable) / ingestion_seconds,
                           "ingestion_bytes_per_second": total_bytes / ingestion_seconds,
-                          "indexing_files_per_second": len(documents) / indexing_seconds,
-                          "indexing_passages_per_second": sum(len(d.passages) for d in documents) / indexing_seconds,
+                          "indexing_files_per_second": len(plan.upserts) / indexing_seconds,
+                          "indexing_passages_per_second": sum(len(d.passages) for d in plan.upserts) / indexing_seconds,
                           "index_strategy": "incremental"}
                 self.state["last_index_run"] = result
             self.telemetry.record_index(result)
@@ -279,29 +268,39 @@ class SearchService:
             self._end()
 
     def status(self) -> dict:
-        """The index state, and each file found by the last scan compared with the index."""
+        """The index state, and each file found by the last scan compared with the index.
+
+        Files that cannot be indexed (no reader for the type, or unreadable)
+        are listed with that status. They are not pending changes.
+        """
         with self.lock:
             versions = self.index.versions()
             rows = []
             changes = {"added": 0, "edited": 0, "deleted": 0}
-            if self.observed is not None:
-                for file_id in sorted(self.observed.keys() | versions.keys()):
-                    source = self.observed.get(file_id)
-                    status = ("deleted" if source is None else "added" if file_id not in versions
-                              else "edited" if source["source_version"] != versions[file_id]
+            inventory = self.inventory
+            if inventory is not None:
+                for file_id in sorted(inventory.files.keys() | versions.keys()):
+                    source = inventory.files.get(file_id)
+                    status = ("deleted" if source is None else source.outcome if source.outcome != INDEXABLE
+                              else "added" if file_id not in versions
+                              else "edited" if source.version != versions[file_id]
                               else "indexed")
                     if status in changes:
                         changes[status] += 1
                     rows.append({"file_id": file_id, "status": status,
-                                 "bytes": source["bytes"] if source else None})
+                                 "file_type": source.file_type if source else None,
+                                 "bytes": source.size if source else None})
             state = self.state
             index_status = (state["operation"] or
                             ("error" if state["scan_error"] or state["index_error"] else
                              "not_indexed" if not state["ready"] else
-                             "not_scanned" if self.observed is None else
+                             "not_scanned" if inventory is None else
                              "out_of_date" if any(changes.values()) else "up_to_date"))
             return {**state, "status": index_status, "document_root": str(self.root),
-                    "source_files": len(self.observed) if self.observed is not None else None,
+                    "source_files": len(inventory.indexable()) if inventory is not None else None,
+                    "file_types": inventory.by_type() if inventory is not None else None,
+                    "unsupported_files": len(inventory.with_outcome(UNSUPPORTED)) if inventory is not None else None,
+                    "unreadable_files": len(inventory.with_outcome(UNREADABLE)) if inventory is not None else None,
                     "indexed_files": len(versions), "pending_changes": changes,
                     "searchable_passages": self.index.passage_count(),
                     "documents": rows, "watcher_enabled": False, "indexer_workers": 1}
@@ -325,18 +324,18 @@ class SearchService:
             os.fsync(directory_fd)
         finally:
             os.close(directory_fd)
-        version = hashlib.sha256(content).hexdigest()
+        source = self.indexer.source(path, content)
         with self.operation_lock, self.lock:
-            if self.observed is not None:
-                self.observed[job["file_id"]] = {"source_version": version, "bytes": len(content)}
-            self.queue.enqueue(job["id"], len(content), version)
+            if self.inventory is not None:
+                self.inventory.record(source)
+            self.queue.enqueue(job["id"], len(content), source.version)
 
     def index_upload(self, job: dict, start: float):
         """Index one uploaded file. The upload workers call this."""
         path = self.root / job["file_id"]
         if path.is_symlink() or not path.resolve().is_relative_to(self.root):
             raise ValueError("Upload escaped its source folder")
-        document, size = extract(path, self.root)
+        document, source = self.indexer.extract(path)
         if document.source_version != job["source_version"]:
             raise ValueError("Uploaded content changed before indexing")
         # File extraction can run at the same time as other work. Publish is a
@@ -350,5 +349,5 @@ class SearchService:
                 self.index.remove(document.file_id)
                 raise
             self.state.update(ready=True, last_indexed_at=now())
-            if self.observed is not None:
-                self.observed[document.file_id] = {"source_version": document.source_version, "bytes": size}
+            if self.inventory is not None:
+                self.inventory.record(source)

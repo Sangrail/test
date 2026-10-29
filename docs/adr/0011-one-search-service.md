@@ -16,7 +16,7 @@ The use case has two front ends: a search bar on a web page, and a chat-agent sh
 - [`app.py`](../../engineering_search/app.py) is the HTTP layer only. It does sign-in, roles, request checks and the routes. Each route calls the service. The upload routes are an MVP shortcut: they call `service.queue` directly for the job steps.
 - [`mcp_server.py`](../../engineering_search/mcp_server.py) calls the same service directly, with the same index, permissions and audit log. It does not start the web app.
 - The service raises `ServiceError(status, detail)`. The web app changes it into an HTTP reply. The MCP server returns it as an error result.
-- Every import points down: entry points (`__main__.py`, `mcp_server.py`) → [`runtime.py`](../../engineering_search/runtime.py) → `app.py` → `service.py` → domain logic (`answer.py`, `access.py`) and adapters (`store.py`, `adapters.py`, `jobs.py`) → `core.py` and `query.py`. `service.py` does not import `store.py`. `runtime.py` opens the stores and gives them to the service as objects. [design/code-architecture.png](../../design/code-architecture.png) shows each import.
+- Every import points down: entry points (`__main__.py`, `mcp_server.py`) → [`runtime.py`](../../engineering_search/runtime.py) → `app.py` → `service.py` → the indexer (`indexing/`), domain logic (`answer.py`, `access.py`) and adapters (`store.py`, `adapters.py`, `jobs.py`) → `core.py` and `query.py`. `service.py` does not import `store.py`. `runtime.py` opens the stores and gives them to the service as objects. [design/code-architecture.png](../../design/code-architecture.png) shows each import.
 
 ## Consequences
 

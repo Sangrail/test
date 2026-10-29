@@ -170,6 +170,21 @@ def test_rescan_detects_changes_without_modifying_index(tmp_path):
     assert client.post("/search", json={"query": "9"}).json()["evidence"]
 
 
+def test_status_lists_file_types_and_files_that_cannot_be_indexed(tmp_path):
+    root, _, client = make_client(tmp_path)
+    (root / "roof.md").write_text("# Roof\n\nLoad limit 5 kN.\n")
+    (root / "plan.dwg").write_bytes(b"\x00\x01")
+    indexed = client.post("/index").json()
+    assert indexed["file_types"] == {"dwg": 1, "markdown": 1}
+    assert indexed["unsupported_files"] == 1 and indexed["files"] == 1
+    status = client.get("/index/status").json()
+    assert status["status"] == "up_to_date"  # An unsupported file is not a pending change.
+    assert status["source_files"] == 1 and status["unsupported_files"] == 1
+    rows = {r["file_id"]: r for r in status["documents"]}
+    assert rows["plan.dwg"] == {"file_id": "plan.dwg", "status": "unsupported", "file_type": "dwg", "bytes": 2}
+    assert rows["roof.md"]["status"] == "indexed" and rows["roof.md"]["file_type"] == "markdown"
+
+
 def test_empty_folder_scan_failure_and_dashboard(tmp_path):
     root, _, client = make_client(tmp_path)
     assert client.get("/").status_code == 200
@@ -186,17 +201,17 @@ def test_empty_folder_scan_failure_and_dashboard(tmp_path):
 
 def test_scan_operation_is_visible_and_overlapping_build_rejected(tmp_path, monkeypatch):
     from threading import Event, Thread
-    import engineering_search.service as service_module
+    from engineering_search.indexing import Indexer
     root, _, client = make_client(tmp_path)
     entered, finish = Event(), Event()
-    original_scan = service_module.scan_files
+    original_scan = Indexer.scan
 
-    def slow_scan(root):
+    def slow_scan(self):
         entered.set()
         assert finish.wait(5)
-        return original_scan(root)
+        return original_scan(self)
 
-    monkeypatch.setattr(service_module, "scan_files", slow_scan)
+    monkeypatch.setattr(Indexer, "scan", slow_scan)
     responses = []
     thread = Thread(target=lambda: responses.append(client.post("/scan")))
     thread.start()

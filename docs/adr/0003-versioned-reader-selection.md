@@ -26,4 +26,4 @@ The repository holds years of files (C2). One format can have many versions, and
 
 ## Implementation
 
-Planned. Today `extract` in [`core.py`](../../engineering_search/core.py) selects the reader by extension: `.md` or `.pdf` (pypdf). There is no format probe, no registry and no record of the reader version. No JT or CATIA SDK has been selected. CAD stays out of scope ([ADR 0001](0001-mvp-format-scope.md)).
+Partial. The [indexing package](../../engineering_search/indexing/) separates detection from reading. A `Detector` names the file type, and `READERS` maps each type to a reader. The only detector is `ExtensionDetector`, which uses the file extension, not the content. Thus the decision "detect the format and version from the content" is not met yet: a content detector (libmagic) can replace it through `Indexer(root, detector=...)`. There is no format version, and no record of the reader version. No JT or CATIA SDK has been selected. CAD stays out of scope ([ADR 0001](0001-mvp-format-scope.md)).

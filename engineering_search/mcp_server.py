@@ -45,7 +45,7 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
     if user is None:
         raise ValueError(f"Unknown user {user_id!r}; choose one of {[u['id'] for u in USERS]}")
     service = build_service(documents, state)
-    service.reindex()  # Reads only new or changed files; the index is kept between runs.
+    service.reindex()  # Hashes every file, extracts only new or changed files; the index is kept between runs.
     server = FastMCP("engineering-search", instructions=INSTRUCTIONS)
 
     @server.tool()

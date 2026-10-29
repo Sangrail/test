@@ -11,6 +11,18 @@ _Avoid_: File version without qualification
 **Format version**:
 The revision of a file format in which a document is encoded. A document's age alone does not establish its format version or readability.
 
+**File type**:
+The name that a detector gives to a file, for example `markdown`, `pdf` or `dwg`. The MVP detects it from the file extension. A file type without a reader is unsupported.
+
+**Detector**:
+The part of the indexer that names the file type of each file. The MVP detector uses the extension. A later detector can read the file content.
+
+**Inventory**:
+Every file found by one scan, with its file type and its outcome: indexable, unsupported or unreadable.
+
+**Indexer**:
+The component that scans the document folder, detects file types, reads the files that have a reader, and plans the changes to the search index. It is in `engineering_search/indexing/`. It does not write the index.
+
 **Reader**:
 A concrete implementation that interprets a file format and produces content suitable for indexing. Its supported format versions must be established through verification.
 

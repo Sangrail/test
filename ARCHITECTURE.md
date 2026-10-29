@@ -8,9 +8,20 @@ This document describes the code as it runs now. [design/SYSTEM-DESIGN.md](desig
 
 Source: [design/code-architecture.svg](design/code-architecture.svg), made by [design/make_architecture.py](design/make_architecture.py). Change the script when a module or an import changes. [design/system-design.png](design/system-design.png) shows the wider system and the phases.
 
-The diagram shows the modules by layer. Every import points down the page. There are two processes: the web server (`python -m engineering_search`) and the MCP server, which the chat client starts. Each process has its own `SearchService`. They share the SQLite files in the state folder.
+The diagram shows the modules by layer. Every import points down the page. There are two processes: the web server (`python -m engineering_search`) and the MCP server, which the chat client starts. Each process has its own `SearchService`. They share the SQLite files in the state folder. The diagram was drawn before the [indexing package](#the-indexing-line) was added: it still shows file reading in `core.py`.
 
-## The path of one question
+## Two lines: indexing and searching
+
+The service does two separate jobs. They meet only at the index.
+
+| Line | What it does | Code |
+| --- | --- | --- |
+| **Indexing** | Find every file in the document folder, detect its type, read the files that have a reader, and plan the changes to the index | [`engineering_search/indexing/`](engineering_search/indexing/): `Indexer`. `SearchService.scan`, `reindex` and the upload workers call it, and `SearchService` publishes its plan |
+| **Searching** | Change a question into an index query, look it up, check permissions, select the answer, audit and return | [`query.py`](engineering_search/query.py), [`answer.py`](engineering_search/answer.py), the lookups in [`store.py`](engineering_search/store.py), and `SearchService.search` |
+
+The index ([`store.py`](engineering_search/store.py)) is shared: indexing writes it through `SearchService`, and searching reads it. The indexing package does not import the store, the service or the web app, and nothing on the search line imports the indexing package.
+
+## The path of one question (the searching line)
 
 [`SearchService.search`](engineering_search/service.py) does these steps in this order. The web page, the HTTP API and the MCP server all call it.
 
@@ -27,12 +38,13 @@ The diagram shows the modules by layer. Every import points down the page. There
 
 | Module | Responsibility |
 | --- | --- |
-| [`core.py`](engineering_search/core.py) | Finds source files (`.md`, `.pdf`). Reads them into passages. Defines `Passage`, `Document` and the `SearchIndex` and `AuditStore` interfaces |
+| [`indexing/`](engineering_search/indexing/) | The indexing line. `detect.py` (file type detection), `inventory.py` (the files of a scan, with type and outcome), `readers.py` (Markdown and PDF readers), `indexer.py` (`Indexer`: scan, plan, extract) |
+| [`core.py`](engineering_search/core.py) | Defines `Passage`, `Document` and the `SearchIndex` and `AuditStore` interfaces |
 | [`store.py`](engineering_search/store.py) | `SQLiteSearchIndex`: the documents, passages and FTS5 tables. Changes are applied in one transaction |
 | [`query.py`](engineering_search/query.py) | Changes a question into an index query: stop words, synonyms, prefix terms |
 | [`answer.py`](engineering_search/answer.py) | Selects the answer text, makes document lists, compares numbers with unit conversion |
 | [`access.py`](engineering_search/access.py) | Pretend users, path-based access rules, sessions. The access assumptions are at the top of the file |
-| [`service.py`](engineering_search/service.py) | `SearchService`: search, read a file, reindex, scan, status and upload publish. The web app and the MCP server share it. It has no web code |
+| [`service.py`](engineering_search/service.py) | `SearchService`: search, read a file, reindex, scan, status and upload publish. It calls the `Indexer` and publishes its plans to the index under its locks. The web app and the MCP server share it. It has no web code |
 | [`app.py`](engineering_search/app.py) | The web app: HTTP routes, pretend sign-in, the index-team boundary, uploads and the web pages. It changes requests into `SearchService` calls |
 | [`mcp_server.py`](engineering_search/mcp_server.py) | The MCP server (stdio) with `search_evidence` and `read_evidence`. It uses `SearchService` directly, without the web app |
 | [`runtime.py`](engineering_search/runtime.py) | Opens the index, queue and audit files in the state folder. Builds the web app or the service alone |
@@ -45,24 +57,56 @@ Every import points down the layers of the diagram:
 - `__main__.py` imports `runtime.py`. `mcp_server.py` imports `runtime.py`, `service.py` and `access.py`.
 - `runtime.py` imports `app.py`, `service.py` and the stores. It opens the SQLite files and gives them to the service as objects.
 - `app.py` imports `service.py`, `access.py`, `adapters.py`, `jobs.py`, `store.py` and `core.py`. It imports the stores only to make defaults when none are given (the tests do this, with an in-memory index).
-- `service.py` imports `query.py`, `answer.py`, `access.py`, `adapters.py`, `jobs.py` and `core.py`. It does not import `store.py`: it gets the index as an object.
+- `service.py` imports `indexing/`, `query.py`, `answer.py`, `access.py`, `adapters.py`, `jobs.py` and `core.py`. It does not import `store.py`: it gets the index as an object.
+- `indexing/` imports only `core.py`.
 - `answer.py` and `store.py` import `core.py` and `query.py`. `core.py`, `query.py`, `access.py`, `adapters.py` and `jobs.py` import nothing from the package.
 
 Only `app.py` knows HTTP. Only `mcp_server.py` knows MCP. SQL is only in `store.py`, `adapters.py` and `jobs.py`.
 
-## Reading files
+## The indexing line
 
-[`extract`](engineering_search/core.py) reads one file and returns its passages.
+All of it is in [`engineering_search/indexing/`](engineering_search/indexing/). [`tests/test_indexer.py`](tests/test_indexer.py) tests it with a folder only: no web app, no index database and no queue.
 
-- **Markdown:** the reader splits the text at headings and blank lines. It does not split inside code fences. Line numbers are lines of the file.
+```text
+Indexer.scan()          every file → detect type → read and hash if a reader exists → Inventory
+Indexer.plan(indexed)   scan, compare with the indexed versions, extract new and changed files → IndexPlan
+SearchService           index.apply(plan.upserts, plan.removals), in one transaction, under its locks
+```
+
+### 1. Detect the file type
+
+[`ExtensionDetector`](engineering_search/indexing/detect.py) names the type of each file from its extension, in any case: `.md` is `markdown`, `.pdf` is `pdf`. It also names types that have no reader, for example `.txt` (`text`), `.docx`, `.dwg`, `.dxf`, `.jt`, CATIA and `.ifc`. Any other extension is `unknown`. Detection does not read the file.
+
+A detector is any object with `detect(path) -> str` (the `Detector` protocol). A later detector can read the first bytes of the file with libmagic, and find the format version ([ADR 0003](docs/adr/0003-versioned-reader-selection.md)). Pass it as `Indexer(root, detector=...)`. Nothing else changes.
+
+### 2. Scan into an inventory
+
+[`Indexer.scan`](engineering_search/indexing/indexer.py) lists every regular file below the document folder. It does not follow symbolic links, and it skips hidden files and folders (names that start with `.`). An unreadable folder fails the scan. Each file gets one outcome ([`inventory.py`](engineering_search/indexing/inventory.py)):
+
+| Outcome | Meaning |
+| --- | --- |
+| `indexable` | A reader exists for the type. The bytes were read and hashed (SHA-256) |
+| `unsupported` | No reader for the type. The file is listed with its type and size, and is not read |
+| `unreadable` | A reader exists, but the file could not be read (for example, `PermissionError`) |
+
+The inventory is held in memory by `SearchService` until the next scan. It is not stored in the index. `/index/status` and the index operations page show the type of each file, the count of each type (`file_types`), and the `unsupported` and `unreadable` files. These files are not pending changes.
+
+### 3. Read the files that have a reader
+
+[`readers.py`](engineering_search/indexing/readers.py) maps each file type to a reader. A reader takes the bytes of one file and returns its passages. Only `markdown` and `pdf` have readers.
+
+- **Markdown:** the reader splits the UTF-8 text at headings and blank lines. It does not split inside code fences. Line numbers are lines of the file.
 - **PDF:** the reader uses pypdf to get the text layer of each page. It splits each page at numbered headings (for example "3.1 Roof load limit") and blank lines. A passage has at most 15 lines. Line numbers are lines of the page text, and each passage has its page number.
 
-If extraction fails for a file (for example, invalid UTF-8 or a damaged PDF), the index build skips it and reports it in `failed_files`. The other files are indexed.
+### 4. Plan the index changes
 
-Two cases are not handled this way:
+[`Indexer.plan`](engineering_search/indexing/indexer.py) takes the versions that are in the index now (file ID → SHA-256). It extracts only the indexable files whose version is new or changed. It returns an `IndexPlan`: the documents to write, the file IDs to remove, the versions after publish, and the failed files. The indexer never writes the index.
 
-- **The first read of the file fails** (for example, `PermissionError`). This read happens before the per-file error handler, so the whole refresh fails with status 503. The previous index stays, and the other changed files are not indexed.
-- **A PDF has no text layer** (for example, a scan). It is indexed with zero passages and is not in `failed_files`. The index status can show `up_to_date`. The service does not report that the file is not searchable.
+If a file cannot be read or extracted (for example, `PermissionError`, invalid UTF-8 or a damaged PDF), the plan skips it and reports it in `failed_files`. The other files are indexed. A failed file is removed from the index, so an old version is not kept as if it were current.
+
+One case is not handled: **a PDF with no text layer** (for example, a scan) is indexed with zero passages and is not in `failed_files`. The index status can show `up_to_date`. The service does not report that the file is not searchable.
+
+Uploads use the same component: the upload workers call `Indexer.extract` for one file.
 
 ## The index
 
@@ -75,7 +119,7 @@ The index is one SQLite file, `<state-dir>/index-<id>.sqlite3`.
 | `passages_fts` | The FTS5 inverted index of each passage's heading, text and file-path words. It uses the `porter unicode61` tokenizer, so "loads" matches "load" |
 | `meta` | The time of the last change |
 
-A rebuild reads the bytes of every supported file and computes its SHA-256. It extracts passages only from new and changed files, and removes deleted files. `read_files` in the index result counts the extracted files, not the files that were read and hashed. All changes are applied in one transaction. If the transaction fails, the old index stays.
+A rebuild runs the [indexing line](#the-indexing-line): it reads the bytes of every indexable file and computes its SHA-256. It extracts passages only from new and changed files, and removes deleted files. `read_files` in the index result counts the extracted files, not the files that were read and hashed. All changes are applied in one transaction. If the transaction fails, the old index stays.
 
 The ranking:
 
@@ -125,7 +169,8 @@ The MVP takes these shortcuts on purpose, to deliver quickly. Each one is accept
 | Errors | `ServiceError` carries an HTTP status code, also in the service | Simple: the web app returns the status, the MCP server returns the message. The service knows HTTP status numbers | Acceptable. Use named error types if more callers come |
 | Index state | The last scan and the index state are in memory | After a restart, the index operations page shows "not scanned" until the next scan | Store the state with the index |
 | Telemetry | In memory | Resets when the service stops | A metrics system |
-| Readers | The file extension selects the reader (`.md` or `.pdf`) | A damaged or wrong file is found only when it fails | Detect the format and version from the content ([ADR 0003](docs/adr/0003-versioned-reader-selection.md)) |
+| File types | `ExtensionDetector` names the type from the file extension. The type selects the reader (`markdown` or `pdf`) | A damaged or misnamed file is found only when its reader fails. The format version is not known | A detector that reads the content (libmagic) and the format version ([ADR 0003](docs/adr/0003-versioned-reader-selection.md)) |
+| Inventory | The scan inventory (types and outcomes) is in memory | After a restart, the file types are not known until the next scan | Store the inventory with the index |
 | Query words | Stop words and synonyms are lists in `query.py` | Changes need a code change. The lists fit the test questions | A parameter dictionary that engineers maintain |
 | Answer rules | Value patterns and units are regular expressions in `answer.py` | They fit the test documents. Other notations are missed | Index-time facts store ([design/EXTRACTION.md](design/EXTRACTION.md)) |
 | List answers | A list question reads all passages of each matching document from SQLite. At most 200 documents are returned, and the list is not paged | Fast for 138 files. Slow for many thousands of matches. Documents after the first 200 cannot be retrieved | Facts and metadata in the index, with filters in the query. Page the document list |
@@ -143,6 +188,7 @@ These are errors in the code, not shortcuts. They were found in an independent r
 | The index lookup is limited to 1,000 passages before permissions and `within` are applied | Permitted evidence can be lost. Adding forbidden files can change a user's result to `not_found`. `within` cannot recover a file that fell outside the limit | [`store.py`](engineering_search/store.py) `CANDIDATE_LIMIT`, [`service.py`](engineering_search/service.py) `search` |
 | Number comparisons ignore a minus sign | "-2 kN/m²" is read as 2 kN/m² and can meet "greater than 1 kN/m²" | [`answer.py`](engineering_search/answer.py) `QUANTITY` |
 | A list answer returns at most 200 documents, and `page` does not page it | `count` and `truncated` are correct, but the other documents cannot be retrieved. A follow-up with `within` uses only the 200 returned | [`answer.py`](engineering_search/answer.py) `MAX_LISTED` |
-| A file read error stops the whole index refresh | One unreadable file (for example, `PermissionError`) fails the refresh with 503. Other changed files are not indexed | [`service.py`](engineering_search/service.py) `reindex` |
 | Index refreshes in two processes are not coordinated | An older version of a file can overwrite a newer one in the shared index | [`service.py`](engineering_search/service.py) `SearchService.__init__` and `reindex` |
-| A PDF without a text layer is counted as indexed | Coverage looks better than it is, and "not found" is ambiguous | [`core.py`](engineering_search/core.py) `extract` |
+| A PDF without a text layer is counted as indexed | Coverage looks better than it is, and "not found" is ambiguous | [`indexing/readers.py`](engineering_search/indexing/readers.py) `read_pdf` |
+
+Fixed since the review: a file read error no longer stops the whole index refresh. The indexer reports the file as `unreadable` in `failed_files` and indexes the others ([`tests/test_indexer.py`](tests/test_indexer.py)).

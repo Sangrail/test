@@ -52,9 +52,9 @@ Each record cites the parts of the brief that it serves, with these IDs.
 | --- | --- | --- | --- |
 | [0001](0001-mvp-format-scope.md) | Markdown and text-layer PDF are the MVP formats | S1, S2, U5 | Done |
 | [0002](0002-independent-local-instances.md) | Each tester runs an independent local instance | S1, S3, C2 | Done |
-| [0003](0003-versioned-reader-selection.md) | Select and record a tested reader for each format and version | C2, C3, U4 | Planned |
+| [0003](0003-versioned-reader-selection.md) | Select and record a tested reader for each format and version | C2, C3, U4 | Partial. Detection by extension, reader for each type |
 | [0004](0004-persistent-evidence.md) | Store extracted passages with their source version | U3, U4, U5 | Done, except reader provenance |
-| [0005](0005-coverage-and-reader-gaps.md) | Report files that cannot be read | C2, C3, U4 | Partial. A read error stops the refresh |
+| [0005](0005-coverage-and-reader-gaps.md) | Report files that cannot be read | C2, C3, U4 | Partial. No stored report, no "no text" outcome |
 | [0006](0006-permissions-before-results.md) | Check permissions before answers, counts and pages | R1, U1 | Done. Known defect: retrieval limit applies first |
 | [0007](0007-telemetry-and-audit.md) | Telemetry and an audit record before evidence is released | U3, U4, R1 | Done |
 | [0008](0008-index-team-and-audit-viewer.md) | Search users and the index team are separate roles | R1, U1 | Done |
