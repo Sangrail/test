@@ -4,7 +4,13 @@
 
 1. Run the full suite: `uv run --frozen pytest -q`. Commit only if it passes. Report the real numbers.
 2. Review new and changed tests for tautologies: a test must be able to fail when the behaviour breaks. No asserting a value the test just set, no re-implementing the code under test, no mocks that make the assertion trivially true.
-3. Commit at each significant, tested milestone, on a feature branch. Merge to `main` only when asked.
+3. Check the change against the constraints and the use case. For each changed file, look up the records that govern it (`governing_records` on the `design-records` MCP server, then `get_constraint` and `get_decision`; or query `design/records/records.sqlite`). Then ask how the new code affects the system:
+   - **Within the constraints?** Does it respect the requirements (R) and the scope (S)? Does it build something the brief says already exists (C1–C5 are *assumed*; their stand-ins stay minimal)? Does it break an accepted decision?
+   - **Towards the use case?** Does it move a use case (U1–U6) forward, hold it, or set it back? Not yet meeting a use case is fine when the change is on the way to it; say which one and what is still missing.
+   - **Production requirements?** Does it add to a known gap (P1–P6), for example another single point on the query path (P1) or another place that trusts an unverified user (P2)?
+   - **Flag, do not hide.** If the change steps outside a constraint or the scope, or works against a use case, stop and tell the user before committing, and say so in the commit message. If the constraint or the decision is what should change, propose a new decision record rather than a quiet exception.
+   - **Record it.** End the commit message with a `Constraints:` line that names what the change serves and anything it flags, for example `Constraints: serves U3, R1; stand-in for C3 only; flags P1 (one more lock on the query path).`
+4. Commit at each significant, tested milestone, on a feature branch. Merge to `main` only when asked.
 
 ## Design
 

@@ -124,6 +124,11 @@ def create_server(documents: Path, state: Path, user_id: str) -> FastMCP:
         except ServiceError as error:
             return {"error": error.detail}
 
+    # The premise for a system like this is that, in order to build the indexer, you need an idea
+    # of the kinds of questions you want to ask. In order to answer that, you need to understand
+    # what kind of data you have and what kind of data you can extract from said data.
+    # This takes you down the path of semantic search, potentially, but having two broad kinds
+    # of metadata: structured and unstructured
     @server.tool()
     def query_sql(sql: str, limit: int = 100) -> dict:
         """Run ONE SQLite SELECT over the structured data (tables and typed facts) of the files the
