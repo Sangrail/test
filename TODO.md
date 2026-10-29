@@ -107,6 +107,6 @@ These gaps make the MVP unsafe as a shared service. Each one must be closed firs
 - [ ] **Permissions.** The rules are in `access.py`. Get them from the repository.
 - [ ] **Audit.** The SQLite audit log is local, with no protection against changes and no retention rules. Define retention, backup and protection.
 - [ ] **Language model data.** A chat agent sends the permitted text and rows to the language model provider. Get approval for the documents that may go to it.
-- [ ] **Scale.** One process answers about 10 requests a second; admission control refuses the rest. Several worker processes, a shared queue, and load tests at the expected size and concurrency in CI. See [ADR 0018](docs/adr/0018-admission-control-and-the-time-budget.md) and [design/SCALING.md](design/SCALING.md).
+- [ ] **Scale.** One process answers about 10 requests a second; admission control refuses the rest. Several worker processes, a shared queue, and load tests at the expected size and concurrency in CI. See [ADR 0018](docs/adr/0018-admission-control-and-the-time-budget.md), [design/SCALING.md](design/SCALING.md) and [docs/README.md](docs/README.md#making-it-available-to-an-organisation).
 - [ ] **Telemetry.** In memory only. It resets when the service stops.
 - [ ] **Installation.** Only macOS is tested. Test each supported operating system.

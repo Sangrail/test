@@ -6,21 +6,21 @@ date: 2026-10-28
 
 > **Superseded in part** by [ADR 0016](0016-structured-facts-and-client-written-sql.md) (five structured tools and a coverage tool for the index team) and [ADR 0018](0018-admission-control-and-the-time-budget.md) (admission control). The stdio transport and the identity hole stand.
 
-**Serves:** C5 (a chat-agent shell calls backend APIs and tools), U6 (no file formats, schema, query languages or jargon), S1 (MVP only), R1 (no information from forbidden documents).
+**Serves:** [C5](../constraints/environment.md#c5) (a chat-agent shell calls backend APIs and tools), [U6](../constraints/use-case.md#u6) (no file formats, schema, query languages or jargon), [S1](../constraints/scope.md#s1) (MVP only), [R1](../constraints/requirements.md#r1) (no information from forbidden documents). **Not met:** [P2](../constraints/production.md#p2) (verified identity), [P5](../constraints/production.md#p5) (approved use of language models).
 
 ## Context
 
-The constraints include a chat-agent shell that can call backend APIs and tools (C5). The users do not want to learn file formats, schema, query languages or jargon (U6). A chat agent lets them ask in their own words, and lets the agent ask follow-up questions. The Model Context Protocol (MCP) is the standard way for chat clients (Claude Desktop, Claude Code and others) to call tools. The simplest MCP transport is stdio: the chat client starts the server as a local process. A stdio server has no sign-in. It knows the user only from its start command. R1 is an absolute requirement, so this is a security hole.
+The constraints include a chat-agent shell that can call backend APIs and tools ([C5](../constraints/environment.md#c5)). The users do not want to learn file formats, schema, query languages or jargon ([U6](../constraints/use-case.md#u6)). A chat agent lets them ask in their own words, and lets the agent ask follow-up questions. The Model Context Protocol (MCP) is the standard way for chat clients (Claude Desktop, Claude Code and others) to call tools. The simplest MCP transport is stdio: the chat client starts the server as a local process. A stdio server has no sign-in. It knows the user only from its start command. [R1](../constraints/requirements.md#r1) is an absolute requirement, so this is a security hole.
 
 ## Decision
 
 - Provide an MCP server with two tools:
   - `search_evidence(question, mode, within, limit, page)`: the same search as the search bar.
   - `read_evidence(file_id, page)`: all indexed passages of one readable file.
-- Use the stdio transport for the MVP (S1).
+- Use the stdio transport for the MVP ([S1](../constraints/scope.md#s1)).
 - Take the user from the `--user` flag (or `SEARCH_USER`). Nothing verifies it.
-- Accept this hole for the MVP only, with public and synthetic test data only (S3). Record it in the module docstring, [docs/MCP.md](../MCP.md), the README and the system design diagram.
-- The tool results contain the same permitted evidence as the web page. The agent must quote the answer and its source, not write its own value (U4).
+- Accept this hole for the MVP only, with public and synthetic test data only ([S3](../constraints/scope.md#s3)). Record it in the module docstring, [docs/MCP.md](../MCP.md), the README and the system design diagram.
+- The tool results contain the same permitted evidence as the web page. The agent must quote the answer and its source, not write its own value ([U4](../constraints/use-case.md#u4)).
 
 ## Consequences
 

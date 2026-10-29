@@ -4,11 +4,11 @@ date: 2026-10-28
 ---
 # Keep search users and the index team separate
 
-**Serves:** R1 (no information from forbidden documents), U1 (selected managers and leads search).
+**Serves:** [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [U1](../constraints/use-case.md#u1) (selected managers and leads search).
 
 ## Context
 
-The use case is for engineering managers and leads who search (U1). Index operations, uploads, telemetry, the access rules and the audit log are a different job, with sensitive information: the audit log names files that some users cannot read. Permission to search must not give access to these operations (R1).
+The use case is for engineering managers and leads who search ([U1](../constraints/use-case.md#u1)). Index operations, uploads, telemetry, the access rules and the audit log are a different job, with sensitive information: the audit log names files that some users cannot read. Permission to search must not give access to these operations ([R1](../constraints/requirements.md#r1)).
 
 ## Decision
 

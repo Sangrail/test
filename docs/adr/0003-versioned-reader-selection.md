@@ -4,11 +4,11 @@ date: 2026-10-28
 ---
 # Select a tested reader for each format and version, and record it
 
-**Serves:** C2 (years of files in an existing repository), C3 (connectors extract from supported files), U4 (100% confidence in the source).
+**Serves:** [C2](../constraints/environment.md#c2) (years of files in an existing repository), [C3](../constraints/environment.md#c3) (connectors extract from supported files), [U4](../constraints/use-case.md#u4) (100% confidence in the source).
 
 ## Context
 
-The repository holds years of files (C2). One format can have many versions, and an old version can need a different reader. The brief says that connectors and APIs extract from *supported* files (C3), so the system must know which files are supported. To have confidence in the source (U4), the system must also know how each file was read: a new reader can read the same file differently.
+The repository holds years of files ([C2](../constraints/environment.md#c2)). One format can have many versions, and an old version can need a different reader. The brief says that connectors and APIs extract from *supported* files ([C3](../constraints/environment.md#c3)), so the system must know which files are supported. To have confidence in the source ([U4](../constraints/use-case.md#u4)), the system must also know how each file was read: a new reader can read the same file differently.
 
 ## Decision
 

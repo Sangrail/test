@@ -4,11 +4,11 @@ date: 2026-10-28
 ---
 # Store extracted passages with their source version
 
-**Serves:** U3 (under 10 seconds), U4 (100% confidence in the source), U5 (no need to open the file).
+**Serves:** [U3](../constraints/use-case.md#u3) (under 10 seconds), [U4](../constraints/use-case.md#u4) (100% confidence in the source), [U5](../constraints/use-case.md#u5) (no need to open the file).
 
 ## Context
 
-To answer in under 10 seconds (U3) across many documents, search cannot open every file for each question. To give 100% confidence in the source (U4), each answer must point to an exact, fixed version of the file. The user must not need to open the file to check it (U5).
+To answer in under 10 seconds ([U3](../constraints/use-case.md#u3)) across many documents, search cannot open every file for each question. To give 100% confidence in the source ([U4](../constraints/use-case.md#u4)), each answer must point to an exact, fixed version of the file. The user must not need to open the file to check it ([U5](../constraints/use-case.md#u5)).
 
 ## Decision
 

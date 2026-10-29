@@ -4,11 +4,11 @@ date: 2026-10-28
 ---
 # Measure from the start, and audit before evidence is released
 
-**Serves:** U3 (under 10 seconds), U4 (100% confidence in the source), R1 (no information from forbidden documents).
+**Serves:** [U3](../constraints/use-case.md#u3) (under 10 seconds), [U4](../constraints/use-case.md#u4) (100% confidence in the source), [R1](../constraints/requirements.md#r1) (no information from forbidden documents). **Not met:** [P4](../constraints/production.md#p4) (durable, protected audit).
 
 ## Context
 
-The use case sets a time limit (U3), so the time of each stage must be measured from the first version. It also asks for 100% confidence in the source (U4) and strict permissions (R1). The company must be able to show, after the event, which evidence each user got and which matches were withheld. Telemetry (performance) and audit (security) have different purposes and must stay separate.
+The use case sets a time limit ([U3](../constraints/use-case.md#u3)), so the time of each stage must be measured from the first version. It also asks for 100% confidence in the source ([U4](../constraints/use-case.md#u4)) and strict permissions ([R1](../constraints/requirements.md#r1)). The company must be able to show, after the event, which evidence each user got and which matches were withheld. Telemetry (performance) and audit (security) have different purposes and must stay separate.
 
 ## Decision
 
@@ -21,6 +21,7 @@ The use case sets a time limit (U3), so the time of each stage must be measured 
 ## Consequences
 
 - The audit log shows that permitted evidence reached the user and that excluded matches did not.
+- The audit log is a local SQLite file, with no protection against changes and no retention rules. A production audit must be durable and protected ([P4](../constraints/production.md#p4)).
 - File names in the audit log are sensitive. Only the index team can read the log ([ADR 0008](0008-index-team-and-audit-viewer.md)).
 - Fast searches alone do not prove a useful or complete index. Coverage ([ADR 0005](0005-coverage-and-reader-gaps.md)) and quality ([ADR 0015](0015-acceptance-tests-enforce-the-use-case.md)) are separate measures.
 

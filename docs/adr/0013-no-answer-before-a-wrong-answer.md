@@ -6,11 +6,11 @@ date: 2026-10-28
 
 > **Superseded in part** by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md): the question words are bound to the sentence, its heading, the file path or the title, not checked against the whole document, and a new status, `unverified`, marks an unbound value. The principle stands.
 
-**Serves:** U4 (100% confidence in the source), R2 (an answer, not passages), R1 (no information from forbidden documents), U1 (load limit, material or approval status).
+**Serves:** [U4](../constraints/use-case.md#u4) (100% confidence in the source), [R2](../constraints/requirements.md#r2) (an answer, not passages), [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [U1](../constraints/use-case.md#u1) (load limit, material or approval status).
 
 ## Context
 
-The user asks for one parameter (U1) and must trust the source 100% (U4). The user also asked for an answer, not a list of passages (R2). Word search always finds something: a question about a project that does not exist still matches "roof" and "load" in other projects. If the service always gives its best match as the answer, a user can get the load limit of the wrong project, with a correct-looking source. That is worse than no answer. Two documents can also state different values for the same parameter, for example a draft and an approved revision.
+The user asks for one parameter ([U1](../constraints/use-case.md#u1)) and must trust the source 100% ([U4](../constraints/use-case.md#u4)). The user also asked for an answer, not a list of passages ([R2](../constraints/requirements.md#r2)). Word search always finds something: a question about a project that does not exist still matches "roof" and "load" in other projects. If the service always gives its best match as the answer, a user can get the load limit of the wrong project, with a correct-looking source. That is worse than no answer. Two documents can also state different values for the same parameter, for example a draft and an approved revision.
 
 ## Decision
 
@@ -21,7 +21,7 @@ The user asks for one parameter (U1) and must trust the source 100% (U4). The us
 - Check the question words against the whole document text, not only the passage. A project name is often in the title, not in the sentence with the value.
 - Copy the answer exactly from the document. Never write, round or convert the answer text.
 - Show other readable files that also state a value as "also stated in", so the user sees conflicts (at most `MAX_ALSO_STATED`, 5).
-- Use only readable files for each of these steps (R1, [ADR 0006](0006-permissions-before-results.md)).
+- Use only readable files for each of these steps ([R1](../constraints/requirements.md#r1), [ADR 0006](0006-permissions-before-results.md)).
 
 ## Consequences
 

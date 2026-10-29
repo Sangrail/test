@@ -4,11 +4,11 @@ date: 2026-10-28
 ---
 # Index the whole repository, and control access with folder and file rules
 
-**Serves:** R1 (no information from forbidden documents), C2 (files in an existing repository), U2 (100+ documents).
+**Serves:** [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [C2](../constraints/environment.md#c2) (files in an existing repository), [U2](../constraints/use-case.md#u2) (100+ documents). **Not met:** [P3](../constraints/production.md#p3) (permissions from the repository).
 
 ## Context
 
-The first prototype gave per-file grants to ten demonstration files, and gave all other files to two users only. That made most of the repository look out of scope, and it did not match how the existing repository (C2) controls access. File shares and document systems set permissions on folders, and files inherit them, as in Windows. The search must cover all 100+ documents (U2) and still never give a user information from a document that the user cannot read (R1).
+The first prototype gave per-file grants to ten demonstration files, and gave all other files to two users only. That made most of the repository look out of scope, and it did not match how the existing repository ([C2](../constraints/environment.md#c2)) controls access. File shares and document systems set permissions on folders, and files inherit them, as in Windows. The search must cover all 100+ documents ([U2](../constraints/use-case.md#u2)) and still never give a user information from a document that the user cannot read ([R1](../constraints/requirements.md#r1)).
 
 ## Decision
 
@@ -21,7 +21,7 @@ The full list of assumptions is at the top of [`access.py`](../../engineering_se
 
 ## Consequences
 
-- The rules are simpler than Windows (NTFS) permissions, which merge inherited and explicit entries and have "deny" entries. A production service must get the effective permissions from the repository through its connector, not copy them into a Python file.
+- The rules are simpler than Windows (NTFS) permissions, which merge inherited and explicit entries and have "deny" entries. A production service must get the effective permissions from the repository through its connector, not copy them into a Python file ([P3](../constraints/production.md#p3)).
 - The rules are small and easy to read for a demonstration. The sign-in screen and the README show which folders each user can read.
 
 ## Implementation

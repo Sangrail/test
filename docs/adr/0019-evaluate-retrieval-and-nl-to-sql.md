@@ -4,7 +4,7 @@ date: 2026-10-29
 ---
 # Evaluate retrieval, natural-language-to-SQL and the agent's reply, and gate releases on the results
 
-**Serves:** U1 (find the parameter), U4 (100% confidence in the source), U6 (plain language), R1 (no information from forbidden documents), R4 (the tests enforce the use case).
+**Serves:** [U1](../constraints/use-case.md#u1) (find the parameter), [U4](../constraints/use-case.md#u4) (100% confidence in the source), [U6](../constraints/use-case.md#u6) (plain language), [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [R4](../constraints/requirements.md#r4) (the tests enforce the use case). **Not met:** [P6](../constraints/production.md#p6) (quality measured on real, held-back questions).
 
 Supersedes in part [ADR 0015](0015-acceptance-tests-enforce-the-use-case.md): its measurement part (17 questions, one script) is extended here. Its acceptance tests stay.
 

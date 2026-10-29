@@ -4,11 +4,11 @@ date: 2026-10-29
 ---
 # Answer within the time budget or refuse at once, and record what does not scale
 
-**Serves:** U3 (under 10 seconds), U4 (trust), R1 (no information from forbidden documents), C5 (a chat-agent shell calls the service).
+**Serves:** [U3](../constraints/use-case.md#u3) (under 10 seconds), [U4](../constraints/use-case.md#u4) (trust), [C5](../constraints/environment.md#c5) (a chat-agent shell calls the service), [S1](../constraints/scope.md#s1) (MVP only). **Not met:** [P1](../constraints/production.md#p1) (any number of users, each answered within 10 seconds).
 
 ## Context
 
-The use case asks for an answer in under 10 seconds (U3). The MVP was measured with one user at a time. With many users, it fails:
+The use case asks for an answer in under 10 seconds ([U3](../constraints/use-case.md#u3)). The MVP was measured with one user at a time. With many users, it fails:
 
 - **One process serves one request at a time.** `SearchService.lock` is held from the file match to the audit write, and the index has one SQLite connection. Throughput is about 10 requests a second on the 148 test files, whatever the load.
 - **The constrained SQL path copies data for each request.** [ADR 0016](0016-structured-facts-and-client-written-sql.md) builds an in-memory projection of every permitted fact, then runs the statement. That costs about 2 µs a fact to build and 1 µs a fact to query the `components` view: 0.6 s at 200,000 facts, 3 s at 1,000,000. The build is under the service lock.

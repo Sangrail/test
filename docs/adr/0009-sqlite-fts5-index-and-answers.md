@@ -6,11 +6,11 @@ date: 2026-10-28
 
 > **Amended** by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md): list comparisons need a bound line, numbers keep their sign, and lists are paged. Filters over tables use SQL ([ADR 0016](0016-structured-facts-and-client-written-sql.md)).
 
-**Serves:** U1 (find a parameter), U2 (100+ documents), U3 (under 10 seconds), U4 (100% confidence in the source), U6 (plain language), R2 (an answer, not passages), R3 (lists of documents).
+**Serves:** [U1](../constraints/use-case.md#u1) (find a parameter), [U2](../constraints/use-case.md#u2) (100+ documents), [U3](../constraints/use-case.md#u3) (under 10 seconds), [U4](../constraints/use-case.md#u4) (100% confidence in the source), [U6](../constraints/use-case.md#u6) (plain language), [R2](../constraints/requirements.md#r2) (an answer, not passages), [R3](../constraints/requirements.md#r3) (lists of documents).
 
 ## Context
 
-The first prototype kept passages in memory and needed every question word to match exactly. Plain-language questions (U6) found nothing for 76% of the test questions. Search across 100+ documents in under 10 seconds (U2, U3) needs an index, not a scan of the passages, as dtSearch and Lucene do. The first prototype also returned passages. The user asked for an answer (R2), and for lists of documents (R3). Confidence in the source (U4) means that the service must not write or change the answer text.
+The first prototype kept passages in memory and needed every question word to match exactly. Plain-language questions ([U6](../constraints/use-case.md#u6)) found nothing for 76% of the test questions. Search across 100+ documents in under 10 seconds ([U2](../constraints/use-case.md#u2), [U3](../constraints/use-case.md#u3)) needs an index, not a scan of the passages, as dtSearch and Lucene do. The first prototype also returned passages. The user asked for an answer ([R2](../constraints/requirements.md#r2)), and for lists of documents ([R3](../constraints/requirements.md#r3)). Confidence in the source ([U4](../constraints/use-case.md#u4)) means that the service must not write or change the answer text.
 
 ## Decision
 

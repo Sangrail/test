@@ -4,7 +4,7 @@ date: 2026-10-29
 ---
 # Bind each answer to its subject, and apply permissions before the retrieval limit
 
-**Serves:** U4 (100% confidence in the source), R1 (no information from forbidden documents), R2 (an answer, not passages), R3 (lists by value).
+**Serves:** [U4](../constraints/use-case.md#u4) (100% confidence in the source), [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [R2](../constraints/requirements.md#r2) (an answer, not passages), [R3](../constraints/requirements.md#r3) (lists by value).
 
 Supersedes in part [ADR 0013](0013-no-answer-before-a-wrong-answer.md) (the whole-document word check) and [ADR 0006](0006-permissions-before-results.md) (permissions after the lookup). Amends [ADR 0009](0009-sqlite-fts5-index-and-answers.md) (list comparisons and paging).
 
@@ -12,8 +12,8 @@ Supersedes in part [ADR 0013](0013-no-answer-before-a-wrong-answer.md) (the whol
 
 An independent review on 28 October 2026 reproduced four errors in the text path:
 
-1. **A wrong parameter was `found`.** ADR 0013 checked the question words against the whole document. "Roof load is not specified. Floor load limit is 5 kN/m²." answered "What is the roof load?" with the floor load, status `found`. A list comparison could also qualify a document by a floor load for a roof load filter. This is the wrong answer that ADR 0013 exists to prevent (U4).
-2. **Forbidden files changed a user's results.** ADR 0006 checked permissions after the index lookup, and the lookup kept the 1,000 best passages from all files. Forbidden passages that ranked higher pushed permitted ones out. No forbidden text was shown, but a forbidden file changed what a user saw, which breaks R1 in spirit.
+1. **A wrong parameter was `found`.** ADR 0013 checked the question words against the whole document. "Roof load is not specified. Floor load limit is 5 kN/m²." answered "What is the roof load?" with the floor load, status `found`. A list comparison could also qualify a document by a floor load for a roof load filter. This is the wrong answer that ADR 0013 exists to prevent ([U4](../constraints/use-case.md#u4)).
+2. **Forbidden files changed a user's results.** ADR 0006 checked permissions after the index lookup, and the lookup kept the 1,000 best passages from all files. Forbidden passages that ranked higher pushed permitted ones out. No forbidden text was shown, but a forbidden file changed what a user saw, which breaks [R1](../constraints/requirements.md#r1) in spirit.
 3. **Signs were ignored.** "-2 kN/m²" compared as 2 kN/m².
 4. **Lists stopped at 200 documents** and `page` did not page them.
 

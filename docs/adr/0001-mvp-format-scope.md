@@ -6,11 +6,11 @@ date: 2026-10-28
 
 > **Superseded in part** by [ADR 0016](0016-structured-facts-and-client-written-sql.md): CSV and XLSX are now read, with their tables. The rest of this record stands.
 
-**Serves:** S1 (MVP only), S2 (Markdown and simple PDF, no OCR, no CAD), U5 (no CAD file or PDF viewer).
+**Serves:** [S1](../constraints/scope.md#s1) (MVP only), [S2](../constraints/scope.md#s2) (Markdown and simple PDF, no OCR, no CAD), [U5](../constraints/use-case.md#u5) (no CAD file or PDF viewer).
 
 ## Context
 
-The brief limits the MVP to Markdown and simple PDF (S2). It excludes OCR and the CAD formats DXF, DWG, JT and CATIA. The MVP must prove the full path from a question to an answer with an exact source (U4, U5) before the system takes on complex formats. A real repository holds many formats and versions (C2), so the format boundary must stay open for later readers ([ADR 0003](0003-versioned-reader-selection.md)).
+The brief limits the MVP to Markdown and simple PDF ([S2](../constraints/scope.md#s2)). It excludes OCR and the CAD formats DXF, DWG, JT and CATIA. The MVP must prove the full path from a question to an answer with an exact source ([U4](../constraints/use-case.md#u4), [U5](../constraints/use-case.md#u5)) before the system takes on complex formats. A real repository holds many formats and versions ([C2](../constraints/environment.md#c2)), so the format boundary must stay open for later readers ([ADR 0003](0003-versioned-reader-selection.md)).
 
 ## Decision
 
@@ -22,9 +22,9 @@ The brief limits the MVP to Markdown and simple PDF (S2). It excludes OCR and th
 
 ## Consequences
 
-- The user sees the exact text and its file, page and lines, so the user does not need to open the PDF (U5).
+- The user sees the exact text and its file, page and lines, so the user does not need to open the PDF ([U5](../constraints/use-case.md#u5)).
 - A PDF with some text does not mean that all its pages, tables or images are searchable. A scanned page gives no text.
-- The 10-second target (U3) is measured on the test corpus only. It is not a promise for any file or any computer.
+- The 10-second target ([U3](../constraints/use-case.md#u3)) is measured on the test corpus only. It is not a promise for any file or any computer.
 
 ## Implementation
 

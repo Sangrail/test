@@ -4,7 +4,7 @@ date: 2026-10-29
 ---
 # Read tables into typed facts at index time, and let the MCP client write constrained SQL
 
-**Serves:** U1 (load limit, material or approval status), U2 (100+ documents), U4 (100% confidence in the source), U6 (no query languages for the user), R1 (no information from forbidden documents), R3 (lists by value), C3 (connectors extract properties), C4 (structured and/or semantic stores), C5 (a chat-agent shell calls tools).
+**Serves:** [U1](../constraints/use-case.md#u1) (load limit, material or approval status), [U2](../constraints/use-case.md#u2) (100+ documents), [U4](../constraints/use-case.md#u4) (100% confidence in the source), [U6](../constraints/use-case.md#u6) (no query languages for the user), [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [R3](../constraints/requirements.md#r3) (lists by value), [C3](../constraints/environment.md#c3) (connectors extract properties), [C4](../constraints/environment.md#c4) (structured and/or semantic stores), [C5](../constraints/environment.md#c5) (a chat-agent shell calls tools), [S4](../constraints/scope.md#s4) (the 29 October design inputs).
 
 Supersedes in part [ADR 0014](0014-defer-facts-store-and-embeddings.md): the facts store is no longer deferred for tables. Embeddings stay deferred. Extends the formats of [ADR 0001](0001-mvp-format-scope.md) with CSV and XLSX.
 
@@ -20,7 +20,7 @@ Who writes the structured query has three options:
 
 1. **The service plans it from the plain-language question.** No LLM, but a rule-based planner for joins and filters is a query language in disguise, and it is brittle.
 2. **A server-side LLM writes SQL.** Needs an API key and a provider on the server, and sends questions to it. The design inputs rule it out.
-3. **The chat agent that already reads the question writes SQL, and the server constrains it.** The LLM is already in the loop (C5). The user still asks in plain language (U6). The server owns safety and permissions.
+3. **The chat agent that already reads the question writes SQL, and the server constrains it.** The LLM is already in the loop ([C5](../constraints/environment.md#c5)). The user still asks in plain language ([U6](../constraints/use-case.md#u6)). The server owns safety and permissions.
 
 ## Decision
 

@@ -4,11 +4,11 @@ date: 2026-10-28
 ---
 # Report the files that cannot be read
 
-**Serves:** C2 (years of files in an existing repository), C3 (supported files only), U4 (100% confidence in the source).
+**Serves:** [C2](../constraints/environment.md#c2) (years of files in an existing repository), [C3](../constraints/environment.md#c3) (supported files only), [U4](../constraints/use-case.md#u4) (100% confidence in the source).
 
 ## Context
 
-If a search finds nothing, the user must not think that no document states the value when the true reason is that a file could not be read. That would break confidence in the answer (U4). The repository holds years of files (C2), and connectors read only supported files (C3), so some files will not be readable. A 20-year-old drawing is a question of compatibility. Its age does not prove that it is supported or obsolete.
+If a search finds nothing, the user must not think that no document states the value when the true reason is that a file could not be read. That would break confidence in the answer ([U4](../constraints/use-case.md#u4)). The repository holds years of files ([C2](../constraints/environment.md#c2)), and connectors read only supported files ([C3](../constraints/environment.md#c3)), so some files will not be readable. A 20-year-old drawing is a question of compatibility. Its age does not prove that it is supported or obsolete.
 
 ## Decision
 

@@ -292,7 +292,7 @@ The use case asks for an answer in under 10 seconds. One process answers one req
 
 Index operations and uploads are not admitted. `/index/status` shows the index team the learnt service time and spread, requests in flight, refusals and capacity.
 
-Measured with `scripts/load_test.py` (one process, budget 8 s): at 100 and at 1,000 simultaneous requests, every answered request finished within 5.7 s and every refusal came back within 0.25 s. About 50 of each burst are answered. This bounds the time a user waits; it does not add capacity. [ADR 0018](docs/adr/0018-admission-control-and-the-time-budget.md) gives the numbers and the work needed to serve the company: concurrent reads, several worker processes, SQL without a copy per request, and load tests at the real size.
+Measured with `scripts/load_test.py` (one process, budget 8 s): at 100 and at 1,000 simultaneous requests, every answered request finished within 5.7 s and every refusal came back within 0.25 s. About 50 of each burst are answered. This bounds the time a user waits; it does not add capacity. [ADR 0018](docs/adr/0018-admission-control-and-the-time-budget.md) gives the numbers and the work needed to serve the company: concurrent reads, several worker processes, SQL without a copy per request, and load tests at the real size. Serving the whole organisation, with any number of users each answered within 10 seconds and no single point of failure, is its own engineering work: [docs/README.md](docs/README.md#making-it-available-to-an-organisation) sets out what it needs.
 
 Over local stdio each chat client starts its own MCP server process, so MCP users do not queue behind each other in one process. They share the machine and the SQLite files.
 
