@@ -1,14 +1,15 @@
 ---
 status: accepted
 date: 2026-10-29
+version: 2
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Read tables into typed facts at index time, and let the MCP client write constrained SQL
 
 Supersedes in part [ADR 0014](0014-defer-facts-store-and-embeddings.md): the facts store is no longer deferred for tables. Embeddings stay deferred. Extends the formats of [ADR 0001](0001-mvp-format-scope.md) with CSV and XLSX.
 
-**Serves:** [U1](../constraints/use-case.md#u1) (load limit, material or approval status), [U2](../constraints/use-case.md#u2) (100+ documents), [U4](../constraints/use-case.md#u4) (100% confidence in the source), [U6](../constraints/use-case.md#u6) (no query languages for the user), [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [R3](../constraints/requirements.md#r3) (lists by value), [C3](../constraints/environment.md#c3) (connectors extract properties), [C4](../constraints/environment.md#c4) (structured and/or semantic stores), [C5](../constraints/environment.md#c5) (a chat-agent shell calls tools), [S4](../constraints/scope.md#s4) (the 29 October design inputs).
+**Serves:** [U1](../constraints/use-case.md#u1) (load limit, material or approval status), [U2](../constraints/use-case.md#u2) (100+ documents), [U4](../constraints/use-case.md#u4) (100% confidence in the source), [U6](../constraints/use-case.md#u6) (no query languages for the user), [R1](../constraints/requirements.md#r1) (no information from forbidden documents), [R3](../constraints/requirements.md#r3) (lists by value), [C3](../constraints/environment.md#c3) (connectors extract properties), [C4](../constraints/environment.md#c4) (structured and/or semantic stores), [C5](../constraints/environment.md#c5) (a chat-agent shell calls tools), [S4](../constraints/scope.md#s4) (the 29 October design inputs). **Exceeds scope:** [S5](../constraints/scope.md#s5) (reads tables into facts itself).
 
 ## Context
 
@@ -52,3 +53,10 @@ Who writes the structured query has three options:
 Done for CSV, XLSX and Markdown tables. Readers: [`readers/csv.py`](../../engineering_search/indexing/readers/csv.py), [`readers/xlsx.py`](../../engineering_search/indexing/readers/xlsx.py) (`openpyxl`; a formula with no cached value is left empty and the file is `INDEXED_PARTIAL`), [`readers/markdown.py`](../../engineering_search/indexing/readers/markdown.py). Facts: [`indexing/facts.py`](../../engineering_search/indexing/facts.py), units in [`units.py`](../../engineering_search/units.py). Store: `source_tables`, `table_rows` and `facts` in [`store.py`](../../engineering_search/store.py). Projection and safety: [`sql.py`](../../engineering_search/sql.py). Service: `query_sql`, `sql_schema`, `table_row_evidence` in [`service.py`](../../engineering_search/service.py). HTTP: `POST /sql`, `GET /sql/schema`, `GET /evidence/{file_id}/tables/{n}/rows/{n}`. MCP tools in [`mcp_server.py`](../../engineering_search/mcp_server.py).
 
 Tests: `tests/test_facts.py` (the rules), `tests/test_sql.py` (expected rows by hand from the fixtures, permissions, refused statements, audit, citations, the example queries in docs/MCP.md), `tests/test_mcp_stdio.py` (a real MCP client over stdio), `tests/test_no_leaks.py` (CSV and XLSX files included). Not done: tables in PDF files, facts from prose, bound parameters in `query_sql`.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 2 | 2026-10-29 | now | Record that extracting typed facts from tables exceeds scope [S5](../constraints/scope.md#s5). | sangrail (via Claude Code) |
+| 1 | 2026-10-29 | 2026-10-29 (Displaced by version 2) | Recorded when the decision was made. | sangrail |

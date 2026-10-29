@@ -1,13 +1,13 @@
 # Background (B)
 
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 The problem, as [the brief](../Starting_document.md) states it. These are facts about the situation, not requirements; the use case and the constraints answer them.
 
-| ID | Constraint | Standing |
-| --- | --- | --- |
-| [B1](#b1) | Years of design information in files and documents | context |
-| [B2](#b2) | Users do not know which files hold the answer | context |
+| ID | Item | Pillar | Standing | Version |
+| --- | --- | --- | --- | --- |
+| [B1](#b1) | Years of design information in files and documents | intent | context | 1 |
+| [B2](#b2) | Users do not know which files hold the answer | intent | context | 1 |
 
 <a id="b1"></a>
 
@@ -15,7 +15,7 @@ The problem, as [the brief](../Starting_document.md) states it. These are facts 
 
 > A company has years of engineering and infrastructure design information stored in design files and related project documents.
 
-**Source:** [The brief](../../docs/Starting_document.md), background.
+**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), background.
 
 **Standing:** *context*. A fact about the problem, not a requirement to meet.
 
@@ -25,13 +25,17 @@ The problem, as [the brief](../Starting_document.md) states it. These are facts 
 
 **Decisions:** none yet.
 
+**History:**
+
+- Version 1, from 2026-10-29, active. Recorded from the background of the brief.
+
 <a id="b2"></a>
 
 ## B2. Users do not know which files hold the answer
 
 > Users often do not know which files contain the information they need.
 
-**Source:** [The brief](../../docs/Starting_document.md), background.
+**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), background.
 
 **Standing:** *context*. A fact about the problem, not a requirement to meet.
 
@@ -40,3 +44,7 @@ The problem, as [the brief](../Starting_document.md) states it. These are facts 
 **Where the MVP stands:** Each question searches every permitted file, and each answer names its file, location and version.
 
 **Decisions:** none yet.
+
+**History:**
+
+- Version 1, from 2026-10-29, active. Recorded from the background of the brief.

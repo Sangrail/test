@@ -1,8 +1,9 @@
 ---
 status: accepted
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Measure from the start, and audit before evidence is released
 
@@ -30,3 +31,9 @@ The use case sets a time limit ([U3](../constraints/use-case.md#u3)), so the tim
 ## Implementation
 
 Done. `SearchService.commit_audit` in [`service.py`](../../engineering_search/service.py) writes to `audit.sqlite3` ([`adapters.py`](../../engineering_search/adapters.py)) and raises `ServiceError(503)` on failure. `Telemetry` keeps the last 10,000 queries and 100 index runs in memory, so it resets on restart. The audit log is durable but not protected against changes, and has no retention rules. Tests: `tests/test_audit.py`.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |

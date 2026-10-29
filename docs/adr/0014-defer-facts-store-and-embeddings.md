@@ -1,8 +1,9 @@
 ---
 status: superseded in part by 0016
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Defer the facts store and embeddings until the questions and the data are known
 
@@ -36,3 +37,11 @@ There is no one design that suits all repositories. A facts store made without t
 ## Implementation
 
 Superseded in part by [ADR 0016](0016-structured-facts-and-client-written-sql.md): typed facts from tables are implemented, and the MCP client writes constrained SQL over them. Still deferred: facts from prose, and embeddings. The design is in [design/EXTRACTION.md](../../design/EXTRACTION.md) and [design/DATA-PROFILE.md](../../design/DATA-PROFILE.md).
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |
+
+- Superseded in part by [ADR 0016](0016-structured-facts-and-client-written-sql.md).

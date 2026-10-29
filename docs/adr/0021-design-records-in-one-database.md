@@ -1,10 +1,11 @@
 ---
 status: accepted (to be evaluated after a few changes)
 date: 2026-10-29
+version: 2
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
-# Keep the brief, the constraints and the decision records in one SQLite database, and generate their pages from it
+# Keep intent, constraints, scope and decisions in one versioned SQLite database, the source of truth, and generate the documents from it
 
 **Serves:** [T1](../constraints/task.md#t1) (clarify the requirements), [R4](../constraints/requirements.md#r4) (the tests enforce the use case).
 
@@ -14,21 +15,27 @@ The constraints are cited by every decision record and by other documents. The l
 
 ## Decision
 
-- **One SQLite database**, `design/records/records.sqlite`, holds the brief verbatim by section, the constraint groups and constraints with their standing, the decision records (metadata, notes and sections), and the links between them: which constraints a decision serves, leaves unmet or cites; which decisions supersede, amend or extend which; which files implement, test or measure a decision; and which files stand in for, enforce, measure or deliver a constraint. It is only a tracking database for the design; the product does not read it.
-- **It is the source.** `python -m design_records generate` writes every ADR page, the ADR index, the constraint pages and a SQL dump (`records.sql`) for review in diffs. Each generated page says so at the top. docs/README.md and the dated design inputs stay hand-written.
-- **A check runs in the suite** ([`tests/test_design_records.py`](../../tests/test_design_records.py)). It fails when a generated page differs from what the database produces; a file named in the database does not exist; a decision mentions a constraint or a code file that it does not link; the brief in the database differs from docs/Starting_document.md; a link or anchor in a generated page is broken; or a foreign key is broken.
-- **A read-only MCP server** (`python -m design_records mcp`) gives an agent the records during development: an overview, a constraint or a decision with its links, a search, the decisions and constraints that govern a file, the check, and read-only SQL. AGENTS.md tells agents to consult it before a design change. It is registered for Claude Code in `.mcp.json`.
-- **A browser view** (`design/records/index.html`) reads the SQLite file directly with sql.js and shows the brief with its constraints, each constraint and decision with its links and files, and a matrix of constraints against decisions. It changes nothing.
+- **One SQLite database is the source of truth**, `docs/records/design.sqlite`, with its schema in [`design_records/schema.sql`](../../design_records/schema.sql). It holds the brief verbatim by section; the items of intent, constraint and scope, each with its pillar and standing; the decision records; and the links between them and to the files of the repository. It is a tracking database for the design; the product does not read it.
+- **Every record is versioned and append-only.** An item or a decision has a stable ID and a list of versions: *proposed* (a draft), *active* (at most one), *displaced* or *withdrawn*, each with its reason, author and dates. Triggers refuse edits and deletes of active and past versions. Changes are plain SQL in the `sqlite3` shell, through views: an update of `constraint_current` or `decision_current` adds a version and displaces the old one; `drafts` holds versions being written; a delete withdraws a record and keeps its history.
+- **A decision link records the item version it was made under.** When the wording or meaning of an item changes, or it is withdrawn, the `needs_review` view lists the decisions made under the old version until a review confirms them or a new version changes them. A new assessment (standing, where the MVP stands) does not.
+- **The documents are build artefacts.** `python -m design_records generate` writes every ADR page, the ADR index, the constraint pages, a SQL dump (`docs/records/design.sql`) for review in diffs, and a self-contained browser view (`docs/records/index.html`) of the pillars, the decisions, a timeline of every change and a matrix. A pre-commit hook (`.githooks/pre-commit`) runs it and stages the result. Nobody edits these files.
+- **A check runs in the suite** ([`tests/test_design_records.py`](../../tests/test_design_records.py)). It fails when a generated file differs from what the database produces; the database schema differs from schema.sql; a file named in the database does not exist; a decision mentions an item or a code file that it does not link; the brief differs from docs/Starting_document.md; a link is broken; or a foreign key is broken. Open drafts, decisions that need review and scope items not met are warnings.
+- **An MCP server** (`python -m design_records mcp`) gives an agent the records while it works: the records that govern a file, an item or a decision with its history, what needs review, drafts, search, the check and read-only SQL. It can propose a change, which becomes a draft. It cannot activate one: a person does, so an agent cannot change the spec to fit its code.
 
 ## Consequences
 
-- A change to a decision is an edit to the database, then `generate`. Editing a generated page by hand fails the test. The edit is less convenient than editing Markdown: the `sqlite3` shell's `edit()` function opens a text field in an editor.
-- The database is binary in git. `records.sql` is the form to review; the check keeps it in step.
-- Prose stays in text fields. The database checks that the structure, the links and the files are consistent, not that the words are right.
-- To be evaluated after a few real changes. If editing prose in SQLite is too awkward, keep the structure in the database and move the prose to files that it references. Write tools for the MCP server are a later option; for now every write goes through `generate` and the check.
-- **No history yet.** Rows are updated in place, so the database cannot say what a constraint said when a decision was made, which decisions rest on a constraint that has since changed, or which records are active and which displaced. Before the records become a living spec that features work within, they need append-only versions, links from decisions to the constraint versions they were made under, features as records, and proposals instead of writes for agents. The weaknesses and the design are in [design/records/README.md](../../design/records/README.md#weaknesses-and-what-comes-next).
-- **A binary source does not merge.** Two branches that change records conflict on the database file. Making text files the source, with SQLite built from them as an index, is the likely next step and is to be decided before history is built.
+- The database, not the git history, says what an item said when a decision was made, which decisions rest on items that have changed since, and what is active and what displaced.
+- The database is binary in git, so two branches that change records conflict on it and git cannot merge them. `design.sql` makes a change reviewable but does not merge. The alternative, a text dump as the source with SQLite built from it, keeps merging but makes the database a derived copy; the product owner chose the database as the source. With one writer this holds; with several, it is the first thing to break.
+- Prose is in text columns. The check keeps the structure, the links and the files consistent, not the words true. Standing is typed by hand, not derived from evidence.
+- To be evaluated after a few real changes. The review of the approach, and what a living specification still needs, are in [docs/records/README.md](../records/README.md#weaknesses-and-what-comes-next).
 
 ## Implementation
 
-Done. Schema, rendering and checks: [`design_records/records.py`](../../design_records/records.py). MCP server: [`design_records/mcp_server.py`](../../design_records/mcp_server.py). Database, dump, view and how to edit: [design/records/](../../design/records/README.md). Tests: [`tests/test_design_records.py`](../../tests/test_design_records.py) (the generated pages match the database, the records are consistent, and each check fails on a broken copy of the database; the MCP tools return the links from the database).
+Done. Schema: [`design_records/schema.sql`](../../design_records/schema.sql). Rendering and checks: [`design_records/records.py`](../../design_records/records.py), with the template of the browser view, [`design_records/viewer.html`](../../design_records/viewer.html). MCP server: [`design_records/mcp_server.py`](../../design_records/mcp_server.py). Database, dump, view and how to change the records: [docs/records/](../records/README.md). Tests: [`tests/test_design_records.py`](../../tests/test_design_records.py) (the generated files match the database; a change adds a version and cannot rewrite the past; a changed item flags the decisions made under it; each check fails on a broken copy; the viewer needs no network; the MCP server proposes drafts and cannot activate them).
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 2 | 2026-10-29 | now | The product owner made the database the source of truth, with history, generated documents, a pre-commit hook and an MCP server that proposes drafts. | sangrail (via Claude Code) |
+| 1 | 2026-10-29 | 2026-10-29 (Displaced by version 2) | Recorded when the decision was made. | sangrail |

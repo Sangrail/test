@@ -1,15 +1,18 @@
-"""Design records: the brief, the constraints and the architecture decision records of this
-project, in one SQLite database (design/records/records.sqlite).
+"""Design records: intent, constraints, scope and the architecture decision records of this
+project, with every version of each, in one SQLite database (docs/records/design.sqlite).
 
-The database is the source. The ADR pages, the ADR index and the constraint pages are
-generated from it, with a SQL dump for review:
+The database is the source of truth. The ADR pages, the ADR index, the constraint pages, a
+self-contained browser view and a SQL dump are build artefacts, generated from it at commit
+time by .githooks/pre-commit:
 
-    uv run --frozen python -m design_records generate   # write the pages and the dump
-    uv run --frozen python -m design_records check      # list differences and broken links
-    uv run --frozen python -m design_records mcp        # a read-only MCP server over stdio
+    uv run --frozen python -m design_records generate   # write the generated files
+    uv run --frozen python -m design_records check      # list differences, broken links, warnings
+    uv run --frozen python -m design_records mcp        # the MCP server over stdio
 
-    records.py     the schema, rendering the pages, and the consistency checks
-    mcp_server.py  tools to look up constraints, decisions and the files they govern
+    schema.sql     the tables, the append-only guards, and the views that take plain SQL changes
+    records.py     rendering the generated files, and the consistency checks
+    viewer.html    the template of the browser view
+    mcp_server.py  tools to look up records and their history, and to propose drafts
 
-tests/test_design_records.py runs the check in the suite. See design/records/README.md.
+tests/test_design_records.py runs the check in the suite. See docs/records/README.md.
 """

@@ -1,8 +1,9 @@
 ---
 status: superseded in part by 0017 (permissions apply inside the lookup, before the limit)
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Check permissions before answers, counts and pages
 
@@ -31,3 +32,11 @@ The use case is for selected users ([U1](../constraints/use-case.md#u1)), and do
 ## Implementation
 
 Done. `SearchService.search` and `SearchService.read` in [`service.py`](../../engineering_search/service.py). The service finds the matching files, evaluates permissions on them, and gives the index lookup the set of permitted files (and `within`). The lookup ([`store.py`](../../engineering_search/store.py)) applies that set inside the FTS5 query, before the 1,000-candidate limit, so forbidden passages cannot push permitted ones out. The SQL path builds a projection of permitted files only ([ADR 0016](0016-structured-facts-and-client-written-sql.md)). `POST /search` takes `page` and `limit` (at most 50). Tests: `tests/test_no_leaks.py` asks every evaluation question, and questions made from the text of each forbidden file, in each mode, for each user, and checks the first five pages and the last page. Also `test_forbidden_passages_cannot_push_a_permitted_passage_past_the_candidate_limit` in `tests/test_binding.py`, `tests/test_sql.py`, `tests/test_access.py`, `tests/test_pagination.py` and `tests/test_use_case.py`.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |
+
+- Superseded in part by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md).

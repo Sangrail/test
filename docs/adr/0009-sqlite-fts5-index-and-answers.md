@@ -1,8 +1,9 @@
 ---
 status: accepted, amended by 0017 (bound list comparisons, signed numbers, list paging)
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Use a SQLite FTS5 inverted index, and answer with exact text
 
@@ -35,3 +36,11 @@ The first prototype kept passages in memory and needed every question word to ma
 Done. [`store.py`](../../engineering_search/store.py) (index, up to 1,000 candidates from permitted files), [`query.py`](../../engineering_search/query.py) (query plan), [`answer.py`](../../engineering_search/answer.py) (answer and list), [`units.py`](../../engineering_search/units.py) (quantities, with sign, in SI units). A list comparison counts a quantity only in a sentence bound to the question words. A list is paged at 200 documents, with the total count. Measured by `scripts/evaluate.py`. Enforced by `tests/test_use_case.py`, `tests/test_index.py` and `tests/test_binding.py`.
 
 Limits: the incremental update reads and hashes every file; only extraction is incremental. Filters over tables now use SQL ([ADR 0016](0016-structured-facts-and-client-written-sql.md)); the text path stays for values in prose.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |
+
+- Amended by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md).

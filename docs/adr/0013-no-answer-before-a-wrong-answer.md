@@ -1,8 +1,9 @@
 ---
 status: superseded in part by 0017 (binding and the unverified status)
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Give no answer, or a partial answer, before a wrong answer
 
@@ -36,3 +37,11 @@ The user asks for one parameter ([U1](../constraints/use-case.md#u1)) and must t
 Done for the known case. `pick_answer()` in [`answer.py`](../../engineering_search/answer.py) checks that the cited sentence is bound to the question words: through the sentence, its heading, the file path or the document title. If the document has every word but the sentence does not name some of them, the status is `unverified`, with `unbound_words`. "Roof load is not specified. Floor load limit is 5 kN/m²." no longer answers "What is the roof load?" as `found`. The web page and the MCP server show the status and the missing or unbound words. Tests: `tests/test_binding.py`, `test_no_answer_is_given_when_no_document_states_it` and `test_one_value_is_answered_from_its_exact_source` in `tests/test_use_case.py`, and the `answer_correct` metric of `scripts/evaluate.py`.
 
 Limits: binding is a word check. A sentence that names the subject can still state a different parameter. The document-title rule is a heuristic: the first passage counts as the title only if it starts in the first three lines.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |
+
+- Superseded in part by [ADR 0017](0017-bind-answers-and-permit-before-the-limit.md).

@@ -4,7 +4,7 @@ This repository is a **minimum viable product built in about four to five hours*
 
 > A selected engineering lead asks, in plain language, for a critical engineering parameter across 100+ project documents, and gets an answer in under 10 seconds, with the exact source, without opening a design file or a viewer, and without ever seeing information from a document they may not read.
 
-The constraints come from [the brief](Starting_document.md) and from decisions made while the MVP was built. They are listed, one anchor each, in [constraints/](constraints/README.md). Every decision record in [adr/](adr/README.md) links to the constraints it serves. Both are generated from one SQLite database of design records ([design/records/](../design/records/README.md)), so the links cannot drift.
+The constraints come from [the brief](Starting_document.md) and from decisions made while the MVP was built. They are listed, one anchor each, in [constraints/](constraints/README.md). Every decision record in [adr/](adr/README.md) links to the constraints it serves. Both are generated from one SQLite database of design records ([records/](records/README.md)), the source of truth, which keeps every version of each item and decision, so the links cannot drift and the history is kept.
 
 The reality is a far more complex system. Real repositories hold years of files in many formats and versions, with their own permissions, owners and approval workflows. Real users ask questions that no one wrote down in advance. And making a search service **highly available to a whole organisation**, so that any number of people get a trustworthy answer within 10 seconds, is its own engineering challenge, separate from proving that the answer can be found at all. The MVP does not attempt it. This page says what the MVP proves, what it does not, and what that challenge involves.
 
@@ -86,7 +86,7 @@ None of this changes what the MVP proved: the questions, the extraction, the two
 | --- | --- |
 | [constraints/](constraints/README.md) | The background, constraints, use case, task and scope from the brief, the requirements added during the MVP, and the production requirements the MVP does not meet, one anchor each. Generated |
 | [adr/](adr/README.md) | The architecture decision records, each linked to the constraints it serves. Generated |
-| [design/records/](../design/records/README.md) | The SQLite database that holds the brief, the constraints and the decision records, and generates the two folders above. With a browser view and an MCP server for agents |
+| [records/](records/README.md) | The source of truth: the SQLite database of intent, constraints, scope and decisions, with every version of each. It generates the two folders above and a [self-contained browser view](records/index.html) at commit time, and an MCP server gives it to agents |
 | [MCP.md](MCP.md) | How to connect a chat client to the MCP server, the tools, example SQL and what was verified |
 | [METRICS.md](METRICS.md) | What is measured, how, and why the scores are optimistic |
 | [Starting_document.md](Starting_document.md) | The original brief |

@@ -1,8 +1,9 @@
 ---
 status: accepted
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Put all search logic in one service, used by the web page and the chat agent
 
@@ -30,3 +31,9 @@ The use case has two front ends: a search bar on a web page, and a chat-agent sh
 ## Implementation
 
 Done. Tests go through the web app (`tests/test_*.py`) and through the service directly (`tests/test_no_leaks.py` calls `service.read`). `scripts/check_mcp.py` starts the MCP server as a chat client does and calls its tools.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |

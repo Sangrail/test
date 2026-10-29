@@ -1,8 +1,9 @@
 ---
 status: superseded in part by 0019 (evaluation); the acceptance tests stand
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Enforce the use case with acceptance tests on a public test repository
 
@@ -39,3 +40,11 @@ The use case must be enforced by tests ([R4](../constraints/requirements.md#r4))
 ## Implementation
 
 Done. Run `uv run --frozen pytest -q` and `uv run --frozen python -m scripts.evaluate`. The current figures are in [docs/METRICS.md](../METRICS.md).
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |
+
+- Superseded in part by [ADR 0019](0019-evaluate-retrieval-and-nl-to-sql.md).

@@ -1,8 +1,9 @@
 ---
 status: accepted
 date: 2026-10-29
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Assume the environment in the brief exists, and use stand-ins only to prove the chain
 
@@ -42,3 +43,9 @@ The MVP still needs files to be read, stored and queried to run end to end, so i
 ## Implementation
 
 Done in the documents: [docs/README.md](../README.md#what-is-assumed-and-what-stands-in-for-it), the constraint pages ([C1](../constraints/environment.md#c1) to [C5](../constraints/environment.md#c5) have the standing *assumed* and list their stand-ins), and the docstring of the reader package, [`engineering_search/indexing/readers/__init__.py`](../../engineering_search/indexing/readers/__init__.py). No behaviour changed.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-29 | now | Recorded when the decision was made. | sangrail |

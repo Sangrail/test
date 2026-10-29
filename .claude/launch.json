@@ -17,21 +17,6 @@
         "8011"
       ],
       "port": 8011
-    },
-    {
-      "name": "design-records",
-      "runtimeExecutable": "uv",
-      "runtimeArgs": [
-        "run",
-        "--frozen",
-        "python",
-        "-m",
-        "http.server",
-        "8012",
-        "--bind",
-        "127.0.0.1"
-      ],
-      "port": 8012
     }
   ]
 }

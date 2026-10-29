@@ -1,8 +1,9 @@
 ---
 status: superseded in part by 0016 (the tools) and 0018 (admission); stdio and the identity hole stand
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Give the chat agent an MCP server over stdio, and accept an unverified user for the MVP only
 
@@ -34,3 +35,12 @@ The constraints include a chat-agent shell that can call backend APIs and tools 
 ## Implementation
 
 Done for stdio, with the hole. [`mcp_server.py`](../../engineering_search/mcp_server.py), with `mcp==1.27.2` (FastMCP). [ADR 0016](0016-structured-facts-and-client-written-sql.md) adds the structured tools: `describe_schema`, `list_tables`, `describe_table`, `query_sql` and `get_document_evidence`. The index team also gets `get_index_coverage`. Verified on 29 October 2026 with Claude Code, Codex and Pi over local stdio; the project files `.mcp.json` and `.pi/mcp.json` start the server. Install and test steps: [docs/MCP.md](../MCP.md). Checks: `uv run --frozen python -m scripts.check_mcp` and `tests/test_mcp_stdio.py`, which run the server as a chat client does. The remote server with OAuth is in [TODO.md](../../TODO.md#before-use-as-a-shared-service).
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |
+
+- Superseded in part by [ADR 0016](0016-structured-facts-and-client-written-sql.md).
+- Superseded in part by [ADR 0018](0018-admission-control-and-the-time-budget.md).

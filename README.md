@@ -50,9 +50,10 @@ Claude Code, Codex and Pi each answered this question over local stdio, with cit
 | `scripts/` | Scoring, fixture generation, the MCP check, packaging and benchmark scripts |
 | `tests/` | Automated tests, including the leak test and a real stdio MCP client test |
 | `design/` | System design, extraction design and diagrams |
-| `docs/` | [What the MVP is and is not](docs/README.md), MCP setup, metrics, the generated decision records and constraints, and two dated design inputs |
-| `design/records/` | The design records database: the brief, the constraints and the decision records, with a browser view. [How to use it](design/records/README.md) |
-| `design_records/` | Generates the decision records and constraint pages from the database, checks them, and serves them to agents over MCP |
+| `docs/` | [What the MVP is and is not](docs/README.md), MCP setup, metrics, the design records with the decision records and constraints generated from them, and two dated design inputs |
+| `docs/records/` | The design records database, the source of truth for intent, constraints, scope and decisions, with every version of each, and a self-contained browser view. [How to use it](docs/records/README.md) |
+| `design_records/` | The schema of the database; generates the decision records, the constraint pages and the view from it at commit time; checks them; and serves the records to agents over MCP |
+| `.githooks/` | The pre-commit hook that regenerates the records' documents. Turn on with `git config core.hooksPath .githooks` |
 | `.mcp.json`, `.pi/mcp.json` | Project MCP configuration for Claude Code (the search server and the design-records server) and Pi |
 | `AGENTS.md` | The routine for coding agents: test before every commit, no tautological tests |
 
@@ -67,7 +68,7 @@ Other documents:
 - [docs/METRICS.md](docs/METRICS.md) and [evaluation/README.md](evaluation/README.md): the scores and their limits.
 - [TODO.md](TODO.md): what is done, the gaps, and the next work.
 - [GLOSSARY.md](GLOSSARY.md): the terms these documents use.
-- The [decision records](docs/adr/README.md) and the [constraints](docs/constraints/README.md), generated from the [design records database](design/records/README.md). [ADR 0016](docs/adr/0016-structured-facts-and-client-written-sql.md) records why the MCP client writes the SQL.
+- The [decision records](docs/adr/README.md) and the [constraints](docs/constraints/README.md), generated from the [design records database](docs/records/README.md), which keeps every version of each. [ADR 0016](docs/adr/0016-structured-facts-and-client-written-sql.md) records why the MCP client writes the SQL.
 - Design inputs, dated 29 October 2026 and kept unchanged: [the handoff](docs/CODEX_ENGINEERING_SEARCH_HANDOFF.md) and [the design notes](docs/engineering_knowledge_search_design_notes.html).
 
 ## Quick start

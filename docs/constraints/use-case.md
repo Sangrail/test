@@ -1,17 +1,17 @@
 # Use case (U)
 
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 The use case in the brief: who needs what, how fast and with what confidence. Each item is quoted or closely paraphrased from [the brief](../Starting_document.md).
 
-| ID | Constraint | Standing |
-| --- | --- | --- |
-| [U1](#u1) | Find a critical engineering parameter | partly met |
-| [U2](#u2) | Across 100+ project documents | met |
-| [U3](#u3) | In under 10 seconds | partly met |
-| [U4](#u4) | With 100% confidence in the source | partly met |
-| [U5](#u5) | Without opening a design file or viewer | met |
-| [U6](#u6) | No formats, schema, query languages or jargon | met |
+| ID | Item | Pillar | Standing | Version |
+| --- | --- | --- | --- | --- |
+| [U1](#u1) | Find a critical engineering parameter | intent | partly met | 1 |
+| [U2](#u2) | Across 100+ project documents | intent | met | 1 |
+| [U3](#u3) | In under 10 seconds | intent | partly met | 1 |
+| [U4](#u4) | With 100% confidence in the source | intent | partly met | 1 |
+| [U5](#u5) | Without opening a design file or viewer | intent | met | 1 |
+| [U6](#u6) | No formats, schema, query languages or jargon | intent | met | 1 |
 
 <a id="u1"></a>
 
@@ -19,7 +19,7 @@ The use case in the brief: who needs what, how fast and with what confidence. Ea
 
 > A selected engineering manager or lead can find a critical engineering parameter: a load limit, a material specification or a compliance approval status.
 
-**Source:** [The brief](../../docs/Starting_document.md), use case.
+**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), use case.
 
 **Standing:** *partly met*. Met in part. Where the MVP stands says what is missing.
 
@@ -42,15 +42,19 @@ The use case in the brief: who needs what, how fast and with what confidence. Ea
 - [ADR 0016](../adr/0016-structured-facts-and-client-written-sql.md): Read tables into typed facts at index time, and let the MCP client write constrained SQL
 - [ADR 0019](../adr/0019-evaluate-retrieval-and-nl-to-sql.md): Evaluate retrieval, natural-language-to-SQL and the agent's reply, and gate releases on the results
 
+**History:**
+
+- Version 1, from 2026-10-28, active. First recorded with the use case and the constraints of the brief.
+
 <a id="u2"></a>
 
 ## U2. Across 100+ project documents
 
 > The parameter is found across 100 or more project documents.
 
-**Source:** [The brief](../../docs/Starting_document.md), use case.
+**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), use case.
 
-**Standing:** *met*. Met by the MVP, on the test data.
+**Standing:** *met*. Met by the MVP, on the test data. For a scope item: the MVP goes this far.
 
 **What it means for the design:** Search must not depend on the user knowing which file to open. The system needs an index, not a scan.
 
@@ -65,13 +69,17 @@ The use case in the brief: who needs what, how fast and with what confidence. Ea
 - [ADR 0015](../adr/0015-acceptance-tests-enforce-the-use-case.md): Enforce the use case with acceptance tests on a public test repository
 - [ADR 0016](../adr/0016-structured-facts-and-client-written-sql.md): Read tables into typed facts at index time, and let the MCP client write constrained SQL
 
+**History:**
+
+- Version 1, from 2026-10-28, active. First recorded with the use case and the constraints of the brief.
+
 <a id="u3"></a>
 
 ## U3. In under 10 seconds
 
 > The answer comes in under 10 seconds.
 
-**Source:** [The brief](../../docs/Starting_document.md), use case.
+**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), use case.
 
 **Standing:** *partly met*. Met in part. Where the MVP stands says what is missing.
 
@@ -92,13 +100,17 @@ The use case in the brief: who needs what, how fast and with what confidence. Ea
 - [ADR 0015](../adr/0015-acceptance-tests-enforce-the-use-case.md): Enforce the use case with acceptance tests on a public test repository
 - [ADR 0018](../adr/0018-admission-control-and-the-time-budget.md): Answer within the time budget or refuse at once, and record what does not scale
 
+**History:**
+
+- Version 1, from 2026-10-28, active. First recorded with the use case and the constraints of the brief.
+
 <a id="u4"></a>
 
 ## U4. With 100% confidence in the source
 
 > The user has 100% confidence in the source of the answer.
 
-**Source:** [The brief](../../docs/Starting_document.md), use case.
+**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), use case.
 
 **Standing:** *partly met*. Met in part. Where the MVP stands says what is missing.
 
@@ -128,15 +140,19 @@ The use case in the brief: who needs what, how fast and with what confidence. Ea
 - [ADR 0018](../adr/0018-admission-control-and-the-time-budget.md): Answer within the time budget or refuse at once, and record what does not scale
 - [ADR 0019](../adr/0019-evaluate-retrieval-and-nl-to-sql.md): Evaluate retrieval, natural-language-to-SQL and the agent's reply, and gate releases on the results
 
+**History:**
+
+- Version 1, from 2026-10-28, active. First recorded with the use case and the constraints of the brief.
+
 <a id="u5"></a>
 
 ## U5. Without opening a design file or viewer
 
 > The user does not open a single design file (CAD) or tool (PDF viewer).
 
-**Source:** [The brief](../../docs/Starting_document.md), use case.
+**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), use case.
 
-**Standing:** *met*. Met by the MVP, on the test data.
+**Standing:** *met*. Met by the MVP, on the test data. For a scope item: the MVP goes this far.
 
 **What it means for the design:** The answer must carry its evidence: the exact text or row, with enough context to trust it.
 
@@ -150,15 +166,19 @@ The use case in the brief: who needs what, how fast and with what confidence. Ea
 - [ADR 0004](../adr/0004-persistent-evidence.md): Store extracted passages with their source version
 - [ADR 0015](../adr/0015-acceptance-tests-enforce-the-use-case.md): Enforce the use case with acceptance tests on a public test repository
 
+**History:**
+
+- Version 1, from 2026-10-28, active. First recorded with the use case and the constraints of the brief.
+
 <a id="u6"></a>
 
 ## U6. No formats, schema, query languages or jargon
 
 > Users do not want to learn file formats, schema details, query languages or system-specific jargon.
 
-**Source:** [The brief](../../docs/Starting_document.md), background.
+**Pillar:** intent. **Source:** [The brief](../../docs/Starting_document.md), background.
 
-**Standing:** *met*. Met by the MVP, on the test data.
+**Standing:** *met*. Met by the MVP, on the test data. For a scope item: the MVP goes this far.
 
 **What it means for the design:** Questions are in plain language. If a query language is needed, something other than the user writes it.
 
@@ -174,3 +194,7 @@ The use case in the brief: who needs what, how fast and with what confidence. Ea
 - [ADR 0012](../adr/0012-mcp-server-for-the-chat-agent.md): Give the chat agent an MCP server over stdio, and accept an unverified user for the MVP only
 - [ADR 0016](../adr/0016-structured-facts-and-client-written-sql.md): Read tables into typed facts at index time, and let the MCP client write constrained SQL
 - [ADR 0019](../adr/0019-evaluate-retrieval-and-nl-to-sql.md): Evaluate retrieval, natural-language-to-SQL and the agent's reply, and gate releases on the results
+
+**History:**
+
+- Version 1, from 2026-10-28, active. First recorded with the use case and the constraints of the brief.

@@ -1,8 +1,9 @@
 ---
 status: accepted
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Store extracted passages with their source version
 
@@ -29,3 +30,9 @@ To answer in under 10 seconds ([U3](../constraints/use-case.md#u3)) across many 
 ## Implementation
 
 Done. [`store.py`](../../engineering_search/store.py): `SQLiteSearchIndex` keeps `documents` (file and SHA-256), `passages` (text, heading, lines, page), the FTS5 index, `files` (type, format version, reader and reader version, status, warnings) and, for tables, `source_tables`, `table_rows` and `facts` ([ADR 0016](0016-structured-facts-and-client-written-sql.md)), in `index-<id>.sqlite3` ([ADR 0009](0009-sqlite-fts5-index-and-answers.md)). `apply` and `upsert` write a document, its tables, facts and file record in one transaction. A new reader version re-extracts the file. Tests: `tests/test_index.py` (persistence and one transaction), `tests/test_coverage.py` (statuses survive a restart), `tests/test_use_case.py` (each answer checked against the file).
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |

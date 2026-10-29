@@ -1,8 +1,9 @@
 ---
 status: superseded in part by 0016 (CSV and XLSX are read); amended by 0020 (the readers are stand-ins for connectors)
 date: 2026-10-28
+version: 3
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Start with Markdown and simple text-layer PDF
 
@@ -10,7 +11,7 @@ date: 2026-10-28
 
 > **Amended** by [ADR 0020](0020-assume-the-environment-and-stand-in-for-it.md): the readers are stand-ins for the connectors that the brief says exist ([C3](../constraints/environment.md#c3)), written to prove the chain, not extraction to be built.
 
-**Serves:** [S1](../constraints/scope.md#s1) (MVP only), [S2](../constraints/scope.md#s2) (Markdown and simple PDF, no OCR, no CAD), [U5](../constraints/use-case.md#u5) (no CAD file or PDF viewer).
+**Serves:** [S1](../constraints/scope.md#s1) (MVP only), [S2](../constraints/scope.md#s2) (Markdown and simple PDF, no OCR, no CAD), [U5](../constraints/use-case.md#u5) (no CAD file or PDF viewer). **Exceeds scope:** [S5](../constraints/scope.md#s5) (builds readers that connectors provide).
 
 ## Context
 
@@ -33,3 +34,14 @@ The brief limits the MVP to Markdown and simple PDF ([S2](../constraints/scope.m
 ## Implementation
 
 Done, and extended. The [indexing package](../../engineering_search/indexing/) detects the type from the content ([ADR 0003](0003-versioned-reader-selection.md)) and has readers for Markdown (text and pipe tables) and PDF (text layer, page by page with pypdf, at most 15 lines in each passage). [ADR 0016](0016-structured-facts-and-client-written-sql.md) adds CSV and XLSX readers for structured data. No OCR, no Word, no CAD content: scans and CAD files are listed in the coverage report as gaps. A file that cannot be read is skipped and reported ([ADR 0005](0005-coverage-and-reader-gaps.md)). Uploads accept Markdown only. Tests: `tests/test_indexer.py`, `tests/test_coverage.py`, `tests/test_index.py`, `tests/test_use_case.py`.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 3 | 2026-10-29 | now | Record that the stand-in readers exceed scope [S5](../constraints/scope.md#s5). | sangrail (via Claude Code) |
+| 2 | 2026-10-29 | 2026-10-29 (Displaced by version 3) | Amended by ADR 0020: the readers are stand-ins for connectors. | sangrail |
+| 1 | 2026-10-28 | 2026-10-29 (Displaced by version 2) | Recorded when the decision was made. | sangrail |
+
+- Extended by [ADR 0016](0016-structured-facts-and-client-written-sql.md).
+- Amended by [ADR 0020](0020-assume-the-environment-and-stand-in-for-it.md).

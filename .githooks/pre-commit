@@ -1,0 +1,8 @@
+#!/bin/sh
+# Regenerate the design records' build artefacts from docs/records/design.sqlite, stage them,
+# then refuse the commit if the records are inconsistent. Turn on with:
+#   git config core.hooksPath .githooks
+set -e
+uv run --frozen python -m design_records generate >/dev/null
+git add -A docs/adr docs/constraints docs/records/design.sql docs/records/index.html
+uv run --frozen python -m design_records check

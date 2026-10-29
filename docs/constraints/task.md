@@ -1,14 +1,14 @@
 # Task (T)
 
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 What [the brief](../Starting_document.md) asks to be delivered, with its time boxes.
 
-| ID | Constraint | Standing |
-| --- | --- | --- |
-| [T1](#t1) | Identify and clarify the requirements, gaps and challenges | met |
-| [T2](#t2) | Define the initial phase and a system design diagram | met |
-| [T3](#t3) | A working prototype of an MVP | met |
+| ID | Item | Pillar | Standing | Version |
+| --- | --- | --- | --- | --- |
+| [T1](#t1) | Identify and clarify the requirements, gaps and challenges | scope | met | 1 |
+| [T2](#t2) | Define the initial phase and a system design diagram | scope | met | 1 |
+| [T3](#t3) | A working prototype of an MVP | scope | met | 1 |
 
 <a id="t1"></a>
 
@@ -16,9 +16,9 @@ What [the brief](../Starting_document.md) asks to be delivered, with its time bo
 
 > Identify and clarify the requirements, and any critical gaps or challenges (5 minutes).
 
-**Source:** [The brief](../../docs/Starting_document.md), task.
+**Pillar:** scope. **Source:** [The brief](../../docs/Starting_document.md), task.
 
-**Standing:** *met*. Met by the MVP, on the test data.
+**Standing:** *met*. Met by the MVP, on the test data. For a scope item: the MVP goes this far.
 
 **What it means for the design:** Write the requirements down where decisions can cite them, and keep the gaps visible.
 
@@ -28,7 +28,11 @@ What [the brief](../Starting_document.md) asks to be delivered, with its time bo
 
 **Decisions:**
 
-- [ADR 0021](../adr/0021-design-records-in-one-database.md): Keep the brief, the constraints and the decision records in one SQLite database, and generate their pages from it
+- [ADR 0021](../adr/0021-design-records-in-one-database.md): Keep intent, constraints, scope and decisions in one versioned SQLite database, the source of truth, and generate the documents from it
+
+**History:**
+
+- Version 1, from 2026-10-29, active. Recorded from the task of the brief.
 
 <a id="t2"></a>
 
@@ -36,9 +40,9 @@ What [the brief](../Starting_document.md) asks to be delivered, with its time bo
 
 > Define the initial phase and create a system design diagram (10 minutes).
 
-**Source:** [The brief](../../docs/Starting_document.md), task.
+**Pillar:** scope. **Source:** [The brief](../../docs/Starting_document.md), task.
 
-**Standing:** *met*. Met by the MVP, on the test data.
+**Standing:** *met*. Met by the MVP, on the test data. For a scope item: the MVP goes this far.
 
 **What it means for the design:** Show the parts, the flows and where the MVP stops.
 
@@ -48,15 +52,19 @@ What [the brief](../Starting_document.md) asks to be delivered, with its time bo
 
 **Decisions:** none yet.
 
+**History:**
+
+- Version 1, from 2026-10-29, active. Recorded from the task of the brief.
+
 <a id="t3"></a>
 
 ## T3. A working prototype of an MVP
 
 > Get a working prototype of an MVP (40 minutes).
 
-**Source:** [The brief](../../docs/Starting_document.md), task.
+**Pillar:** scope. **Source:** [The brief](../../docs/Starting_document.md), task.
 
-**Standing:** *met*. Met by the MVP, on the test data.
+**Standing:** *met*. Met by the MVP, on the test data. For a scope item: the MVP goes this far.
 
 **What it means for the design:** Prove the chain from question to cited answer, running, with tests.
 
@@ -65,3 +73,7 @@ What [the brief](../Starting_document.md) asks to be delivered, with its time bo
 **Delivered by:** [`README.md`](../../README.md), [`engineering_search`](../../engineering_search).
 
 **Decisions:** none yet.
+
+**History:**
+
+- Version 1, from 2026-10-29, active. Recorded from the task of the brief.

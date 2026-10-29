@@ -1,12 +1,13 @@
 ---
 status: accepted (MVP; the scaling work is open)
 date: 2026-10-29
+version: 2
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Answer within the time budget or refuse at once, and record what does not scale
 
-**Serves:** [U3](../constraints/use-case.md#u3) (under 10 seconds), [U4](../constraints/use-case.md#u4) (trust), [C5](../constraints/environment.md#c5) (a chat-agent shell calls the service), [S1](../constraints/scope.md#s1) (MVP only). **Not met:** [P1](../constraints/production.md#p1) (any number of users, each answered within 10 seconds).
+**Serves:** [U3](../constraints/use-case.md#u3) (under 10 seconds), [U4](../constraints/use-case.md#u4) (trust), [C5](../constraints/environment.md#c5) (a chat-agent shell calls the service), [S1](../constraints/scope.md#s1) (MVP only), [R5](../constraints/requirements.md#r5) (answer within the budget), [R6](../constraints/requirements.md#r6) (several users, each answered or told to retry), [S6](../constraints/scope.md#s6) (one process, not distributed). **Not met:** [P1](../constraints/production.md#p1) (any number of users, each answered within 10 seconds).
 
 ## Context
 
@@ -66,3 +67,10 @@ In order of value; each is a milestone in [TODO.md](../../TODO.md):
 ## Implementation
 
 Done for admission control. `Admission` and `Busy` in [`adapters.py`](../../engineering_search/adapters.py); `SearchService.admit()` in [`service.py`](../../engineering_search/service.py); `AdmissionMiddleware` in [`app.py`](../../engineering_search/app.py); `service.admit()` around each MCP tool in [`mcp_server.py`](../../engineering_search/mcp_server.py); `SEARCH_BUDGET_SECONDS` in [`runtime.py`](../../engineering_search/runtime.py). Tests: [`tests/test_admission.py`](../../tests/test_admission.py) (the prediction, worked by hand on a fake clock; 503 with Retry-After and no evidence). Load test: `uv run --frozen python -m scripts.load_test`. The scaling work above is not started.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 2 | 2026-10-29 | now | Link [R5](../constraints/requirements.md#r5) (under 10 s), [R6](../constraints/requirements.md#r6) (several users) and [S6](../constraints/scope.md#s6) (not distributed), which this decision serves. | sangrail (via Claude Code) |
+| 1 | 2026-10-29 | 2026-10-29 (Displaced by version 2) | Recorded when the decision was made. | sangrail |

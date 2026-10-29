@@ -1,8 +1,9 @@
 ---
 status: accepted
 date: 2026-10-29
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Bind each answer to its subject, and apply permissions before the retrieval limit
 
@@ -42,3 +43,9 @@ An independent review on 28 October 2026 reproduced four errors in the text path
 ## Implementation
 
 Done. `pick_answer()`, `list_documents()` and `title()` in [`answer.py`](../../engineering_search/answer.py); signed numbers in [`units.py`](../../engineering_search/units.py); `document_matches()` and `candidates(query, files)` in [`store.py`](../../engineering_search/store.py); the order of steps in `SearchService.search` ([`service.py`](../../engineering_search/service.py)). Tests: [`tests/test_binding.py`](../../tests/test_binding.py) (floor load not the roof answer, heading binds, list filter, signed values, forbidden passages past the candidate limit, list page 2), [`tests/test_no_leaks.py`](../../tests/test_no_leaks.py) (first five and last pages).
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-29 | now | Recorded when the decision was made. | sangrail |

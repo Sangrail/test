@@ -1,16 +1,16 @@
 # Constraints from the brief (C)
 
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 The environment that [the brief](../Starting_document.md) says **already exists**. The MVP does not design or build any of it. Where the MVP needs one of these to run end to end, it uses the simplest stand-in that proves the chain from question to cited answer, and names it as a stand-in. For example, connectors already extract metadata, text and properties from supported files ([C3](environment.md#c3)), so the MVP's PDF, Markdown, CSV and XLSX readers are placeholders for them, not a proposal to build extraction ([ADR 0020](../adr/0020-assume-the-environment-and-stand-in-for-it.md)).
 
-| ID | Constraint | Standing |
-| --- | --- | --- |
-| [C1](#c1) | A broader architecture direction already exists | assumed |
-| [C2](#c2) | The files live in an existing repository | assumed |
-| [C3](#c3) | Connectors extract metadata, text and properties | assumed |
-| [C4](#c4) | Structured and/or semantic stores | assumed |
-| [C5](#c5) | A chat-agent shell calls backend APIs or tools | assumed |
+| ID | Item | Pillar | Standing | Version |
+| --- | --- | --- | --- | --- |
+| [C1](#c1) | A broader architecture direction already exists | constraint | assumed | 2 |
+| [C2](#c2) | The files live in an existing repository | constraint | assumed | 2 |
+| [C3](#c3) | Connectors extract metadata, text and properties | constraint | assumed | 2 |
+| [C4](#c4) | Structured and/or semantic stores | constraint | assumed | 2 |
+| [C5](#c5) | A chat-agent shell calls backend APIs or tools | constraint | assumed | 2 |
 
 <a id="c1"></a>
 
@@ -18,7 +18,7 @@ The environment that [the brief](../Starting_document.md) says **already exists*
 
 > A broader architecture direction already exists.
 
-**Source:** [The brief](../../docs/Starting_document.md), constraints.
+**Pillar:** constraint. **Source:** [The brief](../../docs/Starting_document.md), constraints.
 
 **Standing:** *assumed*. The brief says it exists. The MVP does not build it; it uses a stand-in to prove the chain.
 
@@ -33,13 +33,18 @@ The environment that [the brief](../Starting_document.md) says **already exists*
 - [ADR 0011](../adr/0011-one-search-service.md): Put all search logic in one service, used by the web page and the chat agent
 - [ADR 0020](../adr/0020-assume-the-environment-and-stand-in-for-it.md): Assume the environment in the brief exists, and use stand-ins only to prove the chain
 
+**History:**
+
+- Version 2, from 2026-10-29, active. ADR 0020: the environment in the brief is assumed to exist; the MVP's readers, folder, stores and chat clients are stand-ins for it.
+- Version 1, 2026-10-28 to 2026-10-29. First recorded with the use case and the constraints of the brief.
+
 <a id="c2"></a>
 
 ## C2. The files live in an existing repository
 
 > The files live in an existing repository.
 
-**Source:** [The brief](../../docs/Starting_document.md), constraints.
+**Pillar:** constraint. **Source:** [The brief](../../docs/Starting_document.md), constraints.
 
 **Standing:** *assumed*. The brief says it exists. The MVP does not build it; it uses a stand-in to prove the chain.
 
@@ -58,13 +63,18 @@ The environment that [the brief](../Starting_document.md) says **already exists*
 - [ADR 0010](../adr/0010-path-based-access-rules.md): Index the whole repository, and control access with folder and file rules
 - [ADR 0020](../adr/0020-assume-the-environment-and-stand-in-for-it.md): Assume the environment in the brief exists, and use stand-ins only to prove the chain
 
+**History:**
+
+- Version 2, from 2026-10-29, active. ADR 0020: the environment in the brief is assumed to exist; the MVP's readers, folder, stores and chat clients are stand-ins for it.
+- Version 1, 2026-10-28 to 2026-10-29. First recorded with the use case and the constraints of the brief.
+
 <a id="c3"></a>
 
 ## C3. Connectors extract metadata, text and properties
 
 > Connectors and APIs can extract metadata, text and properties from supported files.
 
-**Source:** [The brief](../../docs/Starting_document.md), constraints.
+**Pillar:** constraint. **Source:** [The brief](../../docs/Starting_document.md), constraints.
 
 **Standing:** *assumed*. The brief says it exists. The MVP does not build it; it uses a stand-in to prove the chain.
 
@@ -85,13 +95,18 @@ The environment that [the brief](../Starting_document.md) says **already exists*
 - [ADR 0016](../adr/0016-structured-facts-and-client-written-sql.md): Read tables into typed facts at index time, and let the MCP client write constrained SQL
 - [ADR 0020](../adr/0020-assume-the-environment-and-stand-in-for-it.md): Assume the environment in the brief exists, and use stand-ins only to prove the chain
 
+**History:**
+
+- Version 2, from 2026-10-29, active. ADR 0020: the environment in the brief is assumed to exist; the MVP's readers, folder, stores and chat clients are stand-ins for it.
+- Version 1, 2026-10-28 to 2026-10-29. First recorded with the use case and the constraints of the brief.
+
 <a id="c4"></a>
 
 ## C4. Structured and/or semantic stores
 
 > Extracted information can be stored in structured and/or semantic stores.
 
-**Source:** [The brief](../../docs/Starting_document.md), constraints.
+**Pillar:** constraint. **Source:** [The brief](../../docs/Starting_document.md), constraints.
 
 **Standing:** *assumed*. The brief says it exists. The MVP does not build it; it uses a stand-in to prove the chain.
 
@@ -107,13 +122,18 @@ The environment that [the brief](../Starting_document.md) says **already exists*
 - [ADR 0016](../adr/0016-structured-facts-and-client-written-sql.md): Read tables into typed facts at index time, and let the MCP client write constrained SQL
 - [ADR 0020](../adr/0020-assume-the-environment-and-stand-in-for-it.md): Assume the environment in the brief exists, and use stand-ins only to prove the chain
 
+**History:**
+
+- Version 2, from 2026-10-29, active. ADR 0020: the environment in the brief is assumed to exist; the MVP's readers, folder, stores and chat clients are stand-ins for it.
+- Version 1, 2026-10-28 to 2026-10-29. First recorded with the use case and the constraints of the brief.
+
 <a id="c5"></a>
 
 ## C5. A chat-agent shell calls backend APIs or tools
 
 > A chat-agent shell can call backend APIs or tools to expose a conversational plane for users.
 
-**Source:** [The brief](../../docs/Starting_document.md), constraints.
+**Pillar:** constraint. **Source:** [The brief](../../docs/Starting_document.md), constraints.
 
 **Standing:** *assumed*. The brief says it exists. The MVP does not build it; it uses a stand-in to prove the chain.
 
@@ -132,3 +152,8 @@ The environment that [the brief](../Starting_document.md) says **already exists*
 - [ADR 0016](../adr/0016-structured-facts-and-client-written-sql.md): Read tables into typed facts at index time, and let the MCP client write constrained SQL
 - [ADR 0018](../adr/0018-admission-control-and-the-time-budget.md): Answer within the time budget or refuse at once, and record what does not scale
 - [ADR 0020](../adr/0020-assume-the-environment-and-stand-in-for-it.md): Assume the environment in the brief exists, and use stand-ins only to prove the chain
+
+**History:**
+
+- Version 2, from 2026-10-29, active. ADR 0020: the environment in the brief is assumed to exist; the MVP's readers, folder, stores and chat clients are stand-ins for it.
+- Version 1, 2026-10-28 to 2026-10-29. First recorded with the use case and the constraints of the brief.

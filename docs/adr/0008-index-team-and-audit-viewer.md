@@ -1,8 +1,9 @@
 ---
 status: accepted
 date: 2026-10-28
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Keep search users and the index team separate
 
@@ -31,3 +32,9 @@ The use case is for engineering managers and leads who search ([U1](../constrain
 Done. The `backend_boundary` middleware in [`app.py`](../../engineering_search/app.py) protects `/admin`, `/index`, `/scan`, `/uploads`, `/audit`, `/telemetry`, `/health` and the API pages. A denied request is recorded in the audit log. Pages: `static/admin.html` and `static/audit.html`. The demo users are `USERS` in [`access.py`](../../engineering_search/access.py). Tests: `tests/test_access.py`, `tests/test_audit.py`.
 
 The earlier version of this record described per-file grants for ten demonstration files. [ADR 0010](0010-path-based-access-rules.md) replaced those grants with folder and file rules.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-28 | now | Recorded when the decision was made. | sangrail |

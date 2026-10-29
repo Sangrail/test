@@ -1,12 +1,13 @@
 ---
 status: accepted
 date: 2026-10-28
+version: 2
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Run independent instances with local data
 
-**Serves:** [S1](../constraints/scope.md#s1) (MVP only), [S3](../constraints/scope.md#s3) (published repository), [C2](../constraints/environment.md#c2) (files in an existing repository). **Not met:** [P1](../constraints/production.md#p1) (any number of users, each answered within 10 seconds).
+**Serves:** [S1](../constraints/scope.md#s1) (MVP only), [S3](../constraints/scope.md#s3) (published repository), [C2](../constraints/environment.md#c2) (files in an existing repository), [S6](../constraints/scope.md#s6) (one local instance). **Not met:** [P1](../constraints/production.md#p1) (any number of users, each answered within 10 seconds).
 
 ## Context
 
@@ -30,3 +31,10 @@ The MVP must be easy for other people to download, run and test ([S1](../constra
 ## Implementation
 
 Done. `python -m engineering_search` starts the web service. [`runtime.py`](../../engineering_search/runtime.py) puts the index, queue and audit files in the state folder (default `.runtime/`). The index persists between runs ([ADR 0004](0004-persistent-evidence.md)). Telemetry resets on restart. `scripts/package_source.py` makes the source ZIP. See [RUNNING.md](../../RUNNING.md).
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 2 | 2026-10-29 | now | Link [S6](../constraints/scope.md#s6) (not a distributed system), which this decision serves. | sangrail (via Claude Code) |
+| 1 | 2026-10-28 | 2026-10-29 (Displaced by version 2) | Recorded when the decision was made. | sangrail |

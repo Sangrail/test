@@ -1,106 +1,36 @@
-"""The records database: schema, page rendering and consistency checks.
+"""The records database: rendering the generated files, and the consistency checks.
 
-render() is a pure function of the database: it returns every generated file and its text.
-problems() lists what the database cannot show on its own: files it names that do not
-exist, constraints or code that a decision mentions but does not link, a brief that
-differs from docs/Starting_document.md, broken links in the generated pages, and broken
-foreign keys. check() adds the generated files that differ from the disk.
+docs/records/design.sqlite is the source of truth; schema.sql (next to this file) is its
+schema. render() is a pure function of the database: it returns every generated file and
+its text, built from the active versions, with their history. problems() lists what the
+database cannot show on its own: files it names that do not exist, constraints or code
+that a decision mentions but does not link, a brief that differs from
+docs/Starting_document.md, a schema that differs from schema.sql, broken links and broken
+foreign keys. warnings() lists open drafts, decisions that need review, and scope not met.
 """
 from __future__ import annotations
 
+import json
 import re
 import sqlite3
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DATABASE = ROOT / "design/records/records.sqlite"
-DUMP = ROOT / "design/records/records.sql"
+SCHEMA = Path(__file__).with_name("schema.sql")
+VIEWER_TEMPLATE = Path(__file__).with_name("viewer.html")
+RECORDS = ROOT / "docs/records"
+DATABASE = RECORDS / "design.sqlite"
+DUMP = RECORDS / "design.sql"
+VIEWER = RECORDS / "index.html"
 ADR_DIR = ROOT / "docs/adr"
 CONSTRAINT_DIR = ROOT / "docs/constraints"
 BRIEF = ROOT / "docs/Starting_document.md"
-NOTICE = ("<!-- Generated from design/records/records.sqlite. Edit the database, then run "
-          "`uv run --frozen python -m design_records generate`. -->")
-
-SCHEMA = """
-CREATE TABLE sources (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  path TEXT,                     -- repository path, when the source is a file
-  date TEXT
-);
-CREATE TABLE brief_sections (    -- docs/Starting_document.md, verbatim
-  heading TEXT PRIMARY KEY,
-  position INTEGER NOT NULL,
-  text TEXT NOT NULL
-);
-CREATE TABLE constraint_groups (
-  code TEXT PRIMARY KEY,         -- the ID prefix
-  position INTEGER NOT NULL,
-  name TEXT NOT NULL,
-  page TEXT NOT NULL,            -- file under docs/constraints/
-  summary TEXT NOT NULL,
-  intro TEXT NOT NULL
-);
-CREATE TABLE constraints (
-  id TEXT PRIMARY KEY,           -- for example U3; never renumbered
-  group_code TEXT NOT NULL REFERENCES constraint_groups(code),
-  position INTEGER NOT NULL,
-  title TEXT NOT NULL,
-  statement TEXT NOT NULL,
-  source_id TEXT NOT NULL REFERENCES sources(id),
-  brief_section TEXT REFERENCES brief_sections(heading),
-  source_note TEXT,
-  meaning TEXT NOT NULL,         -- what it means for the design
-  standing TEXT NOT NULL CHECK (standing IN ('context', 'assumed', 'met', 'partly met', 'not met')),
-  mvp TEXT NOT NULL              -- where the MVP stands
-);
-CREATE TABLE decisions (
-  number INTEGER PRIMARY KEY,
-  slug TEXT NOT NULL UNIQUE,
-  title TEXT NOT NULL,
-  summary TEXT NOT NULL,         -- one line for the index
-  status TEXT NOT NULL,
-  date TEXT NOT NULL,
-  notes TEXT NOT NULL DEFAULT '',  -- under the title: supersession and amendment notes
-  implementation_summary TEXT NOT NULL
-);
-CREATE TABLE decision_sections (
-  number INTEGER NOT NULL REFERENCES decisions(number),
-  position INTEGER NOT NULL,
-  heading TEXT NOT NULL,
-  body TEXT NOT NULL,
-  PRIMARY KEY (number, position)
-);
-CREATE TABLE decision_constraints (
-  number INTEGER NOT NULL REFERENCES decisions(number),
-  constraint_id TEXT NOT NULL REFERENCES constraints(id),
-  relation TEXT NOT NULL CHECK (relation IN ('serves', 'not met', 'cites')),
-  position INTEGER NOT NULL,
-  reason TEXT,
-  PRIMARY KEY (number, constraint_id, relation)
-);
-CREATE TABLE decision_relations (
-  number INTEGER NOT NULL REFERENCES decisions(number),
-  other INTEGER NOT NULL REFERENCES decisions(number),
-  kind TEXT NOT NULL CHECK (kind IN ('supersedes in part', 'amends', 'extends')),
-  PRIMARY KEY (number, other, kind)
-);
-CREATE TABLE decision_files (
-  number INTEGER NOT NULL REFERENCES decisions(number),
-  path TEXT NOT NULL,            -- repository path
-  role TEXT NOT NULL CHECK (role IN ('implements', 'tests', 'measures')),
-  PRIMARY KEY (number, path)
-);
-CREATE TABLE constraint_files (
-  constraint_id TEXT NOT NULL REFERENCES constraints(id),
-  path TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('stand-in', 'enforced by', 'measured by', 'delivered by')),
-  PRIMARY KEY (constraint_id, path, role)
-);
-"""
+NOTICE = ("<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run "
+          "`uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->")
 
 SECTION_HEADINGS = ("Context", "Decision", "Consequences", "Implementation")
 CODE_PATH = re.compile(r"^(?:engineering_search|tests|scripts|evaluation|design_records)/[\w/.-]+\.\w+$")
+RELATIONS = (("serves", "Serves"), ("not met", "Not met"), ("exceeds", "Exceeds scope"))
 
 
 def connect(path: Path = DATABASE, readonly: bool = True) -> sqlite3.Connection:
@@ -112,8 +42,12 @@ def connect(path: Path = DATABASE, readonly: bool = True) -> sqlite3.Connection:
 
 def create(path: Path) -> sqlite3.Connection:
     con = connect(path, readonly=False)
-    con.executescript(SCHEMA)
+    con.executescript(SCHEMA.read_text())
     return con
+
+
+def day(stamp: str | None) -> str:
+    return (stamp or "")[:10]
 
 
 # --- Constraint IDs in text -------------------------------------------------------------
@@ -124,20 +58,20 @@ def _id_pattern(con) -> re.Pattern:
 
 
 def _outside_code(text: str):
-    """Yield (index, line, segments) where even segments are outside code spans and fences."""
+    """Yield (line, segments) where even segments are outside code spans; None inside fences."""
     fence = False
-    for index, line in enumerate(text.split("\n")):
+    for line in text.split("\n"):
         if line.startswith("```"):
             fence = not fence
-            yield index, line, None
+            yield line, None
             continue
-        yield index, line, (None if fence else line.split("`"))
+        yield line, (None if fence else line.split("`"))
 
 
 def mentions(con, text: str) -> set[str]:
     known = {row[0] for row in con.execute("SELECT id FROM constraints")}
     pattern, found = _id_pattern(con), set()
-    for _, _, parts in _outside_code(text):
+    for _, parts in _outside_code(text):
         for part in (parts or [])[::2]:
             found |= {m.group(1) for m in pattern.finditer(part)} & known
     return found
@@ -148,7 +82,7 @@ def link_ids(con, text: str, prefix: str) -> str:
     pages = {row[0]: row[1] for row in con.execute(
         "SELECT c.id, g.page FROM constraints c JOIN constraint_groups g ON g.code = c.group_code")}
     pattern, out = _id_pattern(con), []
-    for _, line, parts in _outside_code(text):
+    for line, parts in _outside_code(text):
         if parts is None or line.startswith("#"):
             out.append(line)
             continue
@@ -165,17 +99,11 @@ def link_ids(con, text: str, prefix: str) -> str:
 
 def code_paths(text: str) -> set[str]:
     """Repository code paths that a decision's text links to or names in a code span."""
-    found = set()
-    for target in re.findall(r"\]\(\.\./\.\./([^)#\s]+)", text):
-        if CODE_PATH.match(target):
-            found.add(target)
-    for span in re.findall(r"`([^`\n]+)`", text):
-        if CODE_PATH.match(span):
-            found.add(span)
-    return found
+    found = {t for t in re.findall(r"\]\(\.\./\.\./([^)#\s]+)", text) if CODE_PATH.match(t)}
+    return found | {s for s in re.findall(r"`([^`\n]+)`", text) if CODE_PATH.match(s)}
 
 
-# --- Rendering ---------------------------------------------------------------------------
+# --- Decision pages ----------------------------------------------------------------------
 
 def _id_list(rows) -> str:
     """'U1 (reason), U2–U5, R1 (reason)': runs of unexplained IDs in one group become ranges."""
@@ -198,32 +126,69 @@ def _id_list(rows) -> str:
     return ", ".join(items)
 
 
-def _constraint_rows(con, number: int, relation: str, reasons: bool = True):
-    return [(row["constraint_id"], row["reason"] if reasons else None) for row in con.execute(
-        "SELECT constraint_id, reason FROM decision_constraints WHERE number = ? AND relation = ? "
-        "ORDER BY position", (number, relation))]
+def _links(con, number: int, version: int, relation: str, reasons: bool = True):
+    return [(r["constraint_id"], r["reason"] if reasons else None) for r in con.execute(
+        "SELECT constraint_id, reason FROM decision_constraints WHERE number = ? AND version = ? AND relation = ? "
+        "ORDER BY position", (number, version, relation))]
 
 
-def serves_line(con, number: int) -> str:
-    line = f"**Serves:** {_id_list(_constraint_rows(con, number, 'serves'))}."
-    unmet = _constraint_rows(con, number, "not met")
-    if unmet:
-        line += f" **Not met:** {_id_list(unmet)}."
-    return line
+def serves_line(con, number: int, version: int) -> str:
+    return " ".join(f"**{label}:** {_id_list(rows)}." for relation, label in RELATIONS
+                    if (rows := _links(con, number, version, relation)))
 
 
 def adr_file(row) -> str:
     return f"{row['number']:04d}-{row['slug']}.md"
 
 
+def published_decisions(con):
+    """The version to publish for each decision: the active one, or the last one if withdrawn."""
+    return con.execute("""
+        SELECT d.slug, v.* FROM decisions d JOIN decision_versions v ON v.number = d.number
+         WHERE v.lifecycle = 'active' OR (v.lifecycle = 'withdrawn' AND NOT EXISTS
+               (SELECT 1 FROM decision_versions a WHERE a.number = d.number AND a.lifecycle = 'active'))
+         ORDER BY d.number""").fetchall()
+
+
+def _history_table(rows) -> str:
+    lines = ["| Version | Active from | Until | Change | By |", "| --- | --- | --- | --- | --- |"]
+    for r in rows:
+        until = f"{day(r['valid_to'])} ({r['end_reason']})" if r["valid_to"] else "now"
+        lines.append(f"| {r['version']} | {day(r['valid_from'])} | {until} | {r['change_reason']} | {r['changed_by']} |")
+    return "\n".join(lines)
+
+
+def _review_line(con, number: int) -> str:
+    rows = con.execute("SELECT * FROM needs_review WHERE number = ? ORDER BY constraint_id", (number,)).fetchall()
+    if not rows:
+        return ""
+    return "**Needs review:** " + "; ".join(
+        f"{r['constraint_id']} was {r['change']} after this decision (made under version {r['made_under']}"
+        + (f", now version {r['current_version']})" if r["current_version"] else ")") for r in rows) + "."
+
+
+PASSIVE = {"extends": "Extended", "amends": "Amended", "supersedes in part": "Superseded in part"}
+
+
 def render_decision(con, row) -> str:
-    parts = [f"---\nstatus: {row['status']}\ndate: {row['date']}\n---\n{NOTICE}", f"# {row['title']}"]
+    number, version = row["number"], row["version"]
+    parts = [f"---\nstatus: {row['status']}\ndate: {row['date']}\nversion: {version}\n---\n{NOTICE}", f"# {row['title']}"]
+    if row["lifecycle"] == "withdrawn":
+        parts.append(f"> **Withdrawn** on {day(row['valid_to'])}: {row['end_reason']}. Kept for its history.")
     if row["notes"]:
         parts.append(row["notes"])
-    parts.append(serves_line(con, row["number"]))
-    for section in con.execute("SELECT heading, body FROM decision_sections WHERE number = ? ORDER BY position",
-                               (row["number"],)):
+    parts.append(serves_line(con, number, version))
+    if review := _review_line(con, number):
+        parts.append(review)
+    for section in con.execute("SELECT heading, body FROM decision_sections WHERE number = ? AND version = ? ORDER BY position",
+                               (number, version)):
         parts.append(f"## {section['heading']}\n\n{section['body']}")
+    history = con.execute("SELECT * FROM decision_versions WHERE number = ? AND lifecycle != 'proposed' ORDER BY version DESC",
+                          (number,)).fetchall()
+    later = con.execute("SELECT r.kind, d.number, d.slug FROM decision_relation_current r JOIN decisions d ON d.number = r.number "
+                        "WHERE r.other = ? ORDER BY d.number", (number,)).fetchall()
+    changed = "".join(f"\n- {PASSIVE[r['kind']]} by [ADR {r['number']:04d}]({adr_file(r)})." for r in later)
+    parts.append("## History\n\n" + _history_table(history) + ("\n" + changed if changed else ""))
     return link_ids(con, "\n\n".join(parts), "../constraints/") + "\n"
 
 
@@ -234,63 +199,85 @@ def _range(ids: list[str]) -> str:
 def render_adr_index(con) -> str:
     groups = []
     for group in con.execute("SELECT * FROM constraint_groups ORDER BY position"):
-        rows = con.execute("SELECT id, title FROM constraints WHERE group_code = ? ORDER BY position",
+        rows = con.execute("SELECT id, title FROM constraint_current WHERE group_code = ? ORDER BY position",
                            (group["code"],)).fetchall()
-        titles = "; ".join(r["title"] for r in rows)
-        groups.append(f"| [{group['name']}](../constraints/{group['page']}) | {_range([r['id'] for r in rows])}: {titles} |")
+        if rows:
+            groups.append(f"| [{group['name']}](../constraints/{group['page']}) | {_range([r['id'] for r in rows])}: "
+                          + "; ".join(r["title"] for r in rows) + " |")
     records = []
-    for row in con.execute("SELECT * FROM decisions ORDER BY number"):
-        serves = _id_list(_constraint_rows(con, row["number"], "serves", reasons=False))
-        unmet = _constraint_rows(con, row["number"], "not met", reasons=False)
-        if unmet:
-            serves += f"; not met: {_id_list(unmet)}"
-        status = row["status"][0].upper() + row["status"][1:]
-        records.append(f"| [{row['number']:04d}]({adr_file(row)}) | {row['summary']} | {serves} | {status} | "
-                       f"{row['implementation_summary']} |")
+    for row in published_decisions(con):
+        cell = _id_list(_links(con, row["number"], row["version"], "serves", reasons=False))
+        for relation, label in RELATIONS[1:]:
+            if rows := _links(con, row["number"], row["version"], relation, reasons=False):
+                cell += f"; {label.lower()}: {_id_list(rows)}"
+        status = "Withdrawn" if row["lifecycle"] == "withdrawn" else row["status"][0].upper() + row["status"][1:]
+        records.append(f"| [{row['number']:04d}]({adr_file(row)}) | {row['summary']} | {cell} | {status} | "
+                       f"{row['version']} | {row['implementation_summary']} |")
+    review = con.execute("SELECT * FROM needs_review ORDER BY number, constraint_id").fetchall()
+    review_text = ("None: every decision has been made, or reviewed, under the current wording of the items it links." if not review else
+                   "\n".join(f"- ADR {r['number']:04d}: {r['constraint_id']} {r['change']} since version {r['made_under']}"
+                             for r in review))
+    changes = con.execute("SELECT * FROM history WHERE lifecycle != 'proposed' AND valid_from IS NOT NULL "
+                          "ORDER BY valid_from DESC, kind, id, version DESC LIMIT 15").fetchall()
+    change_rows = "\n".join(
+        f"| {day(r['valid_from'])} | {'ADR ' + r['id'] if r['kind'] == 'decision' else r['id']} | {r['version']} | "
+        f"{r['change_reason']} |" for r in changes)
     text = f"""# Architecture decision records
 
 {NOTICE}
 
-These records explain the decisions of the MVP, and why each one serves the use case. **Accepted** means that the direction is agreed. It does not mean that every part is implemented: each record has an "Implementation" section that says what the code does now.
+These records explain the decisions of the MVP, and how each one serves the intent, the constraints and the scope. They are generated from the design records database, [docs/records/design.sqlite](../records/README.md), which is the source of truth and keeps every version of every record ([ADR 0021](0021-design-records-in-one-database.md)). **Accepted** means that the direction is agreed. It does not mean that every part is implemented: each record has an "Implementation" section that says what the code does now.
 
-The records, the constraints and the links between them are kept in one SQLite database, [design/records/records.sqlite](../../design/records/README.md), and these pages are generated from it ([ADR 0021](0021-design-records-in-one-database.md)).
+## Intent, constraints and scope
 
-## The constraints
+Each record links the items it serves, those it knowingly leaves unmet, and the scope items it goes beyond. The items are in [docs/constraints](../constraints/README.md), each with its pillar (intent, constraint or scope), its source, where the MVP stands and its history.
 
-Each record cites the constraints it serves, linked to [docs/constraints](../constraints/README.md), where each one is stated with its source, what it means for the design and where the MVP stands. **Not met** names a production requirement that the record knowingly leaves open.
-
-| Group | IDs |
+| Group | Items |
 | --- | --- |
 {chr(10).join(groups)}
 
 ## Records
 
-**Status** is the state of the decision: *accepted*, *amended* (still in force, with changes recorded in a later record) or *superseded in part* (the named part is replaced by a later record; the rest stands). No record is fully superseded.
+**Status** is the state of the decision: *accepted*, *amended* (still in force, with changes recorded in a later record) or *superseded in part* (the named part is replaced by a later record; the rest stands). **Version** counts the changes to the record; each page ends with its history.
 
-| Record | Decision | Serves | Status | Implementation |
-| --- | --- | --- | --- | --- |
+| Record | Decision | Links | Status | Version | Implementation |
+| --- | --- | --- | --- | --- | --- |
 {chr(10).join(records)}
+
+## Needs review
+
+{review_text}
+
+## Recent changes
+
+| Date | Record | Version | Change |
+| --- | --- | --- | --- |
+{change_rows}
 
 ## Related documents
 
-[docs/README.md](../README.md) says what the MVP is and is not. [TODO](../../TODO.md) tracks delivery and gaps. [ARCHITECTURE](../../ARCHITECTURE.md) describes the code as it runs. [GLOSSARY](../../GLOSSARY.md) defines the terms. The [system design](../../design/SYSTEM-DESIGN.md) holds proposals, not shipped features.
+[docs/README.md](../README.md) says what the MVP is and is not. [docs/records/index.html](../records/index.html) shows the records and their history in a browser. [TODO](../../TODO.md) tracks delivery and gaps. [ARCHITECTURE](../../ARCHITECTURE.md) describes the code as it runs.
 
 ## Changing a decision
 
-Edit the database, not these pages, then run `uv run --frozen python -m design_records generate`; [design/records/README.md](../../design/records/README.md) shows how. When a decision changes, add the next numbered record, link it to the record it supersedes or amends, and update the older record's status and notes. Keep the reasons and the implementation status separate. Do not erase earlier trade-offs. An accepted future extension does not bring CAD into the MVP scope.
+Change the database, never these pages: [docs/records/README.md](../records/README.md) shows how, with plain SQL in the `sqlite3` shell. The pre-commit hook regenerates the pages. Each change adds a version with its reason; earlier versions are kept. When a later decision replaces part of an earlier one, link the two and give the earlier one a new version with its new status.
 """
     return link_ids(con, text, "../constraints/")
 
 
+# --- Constraint pages --------------------------------------------------------------------
+
 STANDING = {
     "context": "A fact about the problem, not a requirement to meet.",
     "assumed": "The brief says it exists. The MVP does not build it; it uses a stand-in to prove the chain.",
-    "met": "Met by the MVP, on the test data.",
+    "met": "Met by the MVP, on the test data. For a scope item: the MVP goes this far.",
     "partly met": "Met in part. Where the MVP stands says what is missing.",
-    "not met": "Not met by the MVP.",
+    "not met": "Not met by the MVP. For a scope item, this is the failure to flag.",
+    "exceeded": "The MVP goes beyond this scope item, knowingly. Acceptable, and recorded.",
 }
 FILE_ROLES = {"stand-in": "Stand-in in the MVP", "enforced by": "Enforced by", "measured by": "Measured by",
               "delivered by": "Delivered by"}
+HOW = {"serves": "", "cites": " (cited)", "not met": " (not met)", "exceeds": " (goes beyond it)"}
 
 
 def _source(con, row) -> str:
@@ -307,81 +294,145 @@ def _repo_link(path: str) -> str:
     return f"[`{path}`](../../{path})"
 
 
-def render_group(con, group) -> str:
-    rows = con.execute("SELECT * FROM constraints WHERE group_code = ? ORDER BY position", (group["code"],)).fetchall()
-    lines = [f"# {group['name']} ({group['code']})", "", NOTICE, "", group["intro"], "",
-             "| ID | Constraint | Standing |", "| --- | --- | --- |"]
-    lines += [f"| [{r['id']}](#{r['id'].lower()}) | {r['title']} | {r['standing']} |" for r in rows]
-    for r in rows:
-        lines += ["", f'<a id="{r["id"].lower()}"></a>', "", f"## {r['id']}. {r['title']}", "",
-                  f"> {r['statement']}", "", f"**Source:** {_source(con, r)}.", "",
-                  f"**Standing:** *{r['standing']}*. {STANDING[r['standing']]}", "",
-                  f"**What it means for the design:** {r['meaning']}", "",
-                  f"**Where the MVP stands:** {r['mvp']}", ""]
+def _item(con, r, cid: str, current: bool) -> list[str]:
+    lines = ["", f'<a id="{cid.lower()}"></a>', "", f"## {cid}. {r['title']}", "", f"> {r['statement']}", "",
+             f"**Pillar:** {r['pillar']}. **Source:** {_source(con, r)}.", "",
+             f"**Standing:** *{r['standing']}*. {STANDING[r['standing']]}", "",
+             f"**What it means for the design:** {r['meaning']}", "",
+             f"**Where the MVP stands:** {r['mvp']}", ""]
+    if current:
         for role, label in FILE_ROLES.items():
             paths = [f[0] for f in con.execute(
-                "SELECT path FROM constraint_files WHERE constraint_id = ? AND role = ? ORDER BY path", (r["id"], role))]
+                "SELECT path FROM constraint_file_current WHERE constraint_id = ? AND role = ? ORDER BY path", (cid, role))]
             if paths:
                 lines += [f"**{label}:** " + ", ".join(_repo_link(p) for p in paths) + ".", ""]
         decisions = con.execute(
-            "SELECT d.number, d.slug, d.title, dc.relation FROM decision_constraints dc "
-            "JOIN decisions d ON d.number = dc.number WHERE dc.constraint_id = ? ORDER BY d.number, dc.relation DESC",
-            (r["id"],)).fetchall()
-        if decisions:
-            lines += ["**Decisions:**", ""]
-            seen = set()
-            for d in decisions:
-                if d["number"] in seen:
-                    continue
+            "SELECT d.number, d.slug, d.title, l.relation FROM decision_constraint_current l "
+            "JOIN decision_current d ON d.number = l.number WHERE l.constraint_id = ? "
+            "ORDER BY d.number, CASE l.relation WHEN 'serves' THEN 0 WHEN 'not met' THEN 1 WHEN 'exceeds' THEN 2 ELSE 3 END",
+            (cid,)).fetchall()
+        seen, entries = set(), []
+        for d in decisions:
+            if d["number"] not in seen:
                 seen.add(d["number"])
-                how = {"serves": "", "cites": " (cited)", "not met": " (not met)"}[d["relation"]]
-                lines.append(f"- [ADR {d['number']:04d}](../adr/{adr_file(d)}): {d['title']}{how}")
-        else:
-            lines.append("**Decisions:** none yet.")
+                entries.append(f"- [ADR {d['number']:04d}](../adr/{adr_file(d)}): {d['title']}{HOW[d['relation']]}")
+        lines += ["**Decisions:**", "", *entries, ""] if entries else ["**Decisions:** none yet.", ""]
+    lines += ["**History:**", ""]
+    for v in con.execute("SELECT * FROM constraint_versions WHERE constraint_id = ? AND lifecycle != 'proposed' "
+                         "ORDER BY version DESC", (cid,)):
+        span = f"{day(v['valid_from'])} to {day(v['valid_to'])}" if v["valid_to"] else f"from {day(v['valid_from'])}, active"
+        earlier = "" if v["statement"] == r["statement"] else f" It read: “{v['statement']}”"
+        ended = f" Withdrawn: {v['end_reason']}." if v["lifecycle"] == "withdrawn" else ""
+        lines.append(f"- Version {v['version']}, {span}. {v['change_reason']}{earlier}{ended}")
+    return lines
+
+
+def render_group(con, group) -> str:
+    rows = con.execute("SELECT * FROM constraint_current WHERE group_code = ? ORDER BY position", (group["code"],)).fetchall()
+    withdrawn = con.execute("""
+        SELECT v.* FROM constraints c JOIN constraint_versions v ON v.constraint_id = c.id AND v.lifecycle = 'withdrawn'
+         WHERE c.group_code = ? AND NOT EXISTS
+               (SELECT 1 FROM constraint_versions a WHERE a.constraint_id = c.id AND a.lifecycle = 'active')
+         ORDER BY c.position""", (group["code"],)).fetchall()
+    lines = [f"# {group['name']} ({group['code']})", "", NOTICE, "", group["intro"], "",
+             "| ID | Item | Pillar | Standing | Version |", "| --- | --- | --- | --- | --- |"]
+    lines += [f"| [{r['id']}](#{r['id'].lower()}) | {r['title']} | {r['pillar']} | {r['standing']} | {r['version']} |" for r in rows]
+    for r in rows:
+        lines += _item(con, r, r["id"], current=True)
+    if withdrawn:
+        lines += ["", "## Withdrawn", "", "These items no longer apply. They are kept, with their history, so that older records still resolve."]
+        for r in withdrawn:
+            lines += _item(con, r, r["constraint_id"], current=False)
     return link_ids(con, "\n".join(lines) + "\n", "")
 
 
+PILLARS = (("intent", "What the system is for: the direction that every decision flows from."),
+           ("constraint", "What the system must work within: the environment, the data, the rules it must keep."),
+           ("scope", "How far this work goes down the road. The arbiter."))
+
+
 def render_constraint_index(con) -> str:
-    rows = []
+    groups = []
     for g in con.execute("SELECT * FROM constraint_groups ORDER BY position"):
-        ids = [r[0] for r in con.execute("SELECT id FROM constraints WHERE group_code = ? ORDER BY position", (g["code"],))]
-        rows.append(f"| [{g['name']}]({g['page']}) | {_range(ids)} | {g['summary']} |")
+        ids = [r[0] for r in con.execute("SELECT id FROM constraint_current WHERE group_code = ? ORDER BY position", (g["code"],))]
+        if ids:
+            groups.append(f"| [{g['name']}]({g['page']}) | {_range(ids)} | {g['summary']} |")
+    pillars = []
+    for pillar, words in PILLARS:
+        ids = [r[0] for r in con.execute("SELECT id FROM constraint_current WHERE pillar = ? ORDER BY group_code, position", (pillar,))]
+        pillars.append(f"| **{pillar.capitalize()}** | {words} | {', '.join(ids)} |")
     legend = "\n".join(f"- *{k}*: {v}" for k, v in STANDING.items())
-    return f"""# Constraints
+    return f"""# Intent, constraints and scope
 
 {NOTICE}
 
-The background, constraints, use case, task and scope from [the brief](../Starting_document.md), the requirements added while the MVP was built, and the production requirements it does not meet. Each has a stable ID and anchor, so a decision record can link to it, and each page lists the decision records and the files linked to it. They are kept in the [design records database](../../design/records/README.md) with the decision records.
+The background, constraints, use case, task and scope from [the brief](../Starting_document.md), what the product owner added while the MVP was built, and the production requirements that it does not meet. They are kept, with every earlier version, in the design records database ([docs/records](../records/README.md)), with the [decision records](../adr/README.md), the fourth pillar.
+
+| Pillar | What it is | Items |
+| --- | --- | --- |
+{chr(10).join(pillars)}
+
+Decisions flow from the intent and the constraints. Scope is the arbiter of how far this work goes: going beyond a scope item is acceptable, and is recorded with an *exceeds* link; falling short of one is the failure to flag. The group in an ID (B, C, U, …) says where the item came from; the pillar says what kind of item it is.
 
 | Group | IDs | What it holds |
 | --- | --- | --- |
-{chr(10).join(rows)}
+{chr(10).join(groups)}
 
 ## Each entry gives
 
-- the statement, quoted or closely paraphrased from its source;
-- its source and its standing;
-- what it means for the design, and where the MVP stands;
-- the files that stand in for it, enforce it or measure it;
-- the decision records that serve it, leave it unmet, or cite it.
+- the statement, its pillar and its source;
+- its standing, what it means for the design, and where the MVP stands;
+- the files that stand in for it, enforce it, measure it or deliver it;
+- the decision records that serve it, leave it unmet, go beyond it, or cite it;
+- its history: each version, when it was active, and why it changed.
 
 **Standing:**
 
 {legend}
 
-## How to cite a constraint
+## Changing an item
 
-Add a row to `decision_constraints` in the database (`serves`, `not met` or `cites`) and name the ID in the record's text. The generated pages link every ID to its anchor: the ID in lower case. Do not renumber an ID. If a constraint changes, edit its row and say what changed; if it no longer applies, keep the row and say so.
+Change the database, never these pages: [docs/records/README.md](../records/README.md) shows how, with plain SQL in the `sqlite3` shell. IDs are never renumbered or reused; a withdrawn item keeps its anchor and its history.
 """
 
 
+# --- The viewer and the dump -------------------------------------------------------------
+
+def viewer_data(con) -> dict:
+    def rows(sql):
+        return [dict(r) for r in con.execute(sql)]
+    published = "JOIN decision_versions v USING (number, version) WHERE v.lifecycle != 'proposed'"
+    return {
+        "brief": rows("SELECT heading, text FROM brief_sections ORDER BY position"),
+        "sources": rows("SELECT * FROM sources ORDER BY id"),
+        "groups": rows("SELECT * FROM constraint_groups ORDER BY position"),
+        "items": rows("SELECT * FROM constraints ORDER BY group_code, position"),
+        "item_versions": rows("SELECT * FROM constraint_versions WHERE lifecycle != 'proposed' ORDER BY constraint_id, version"),
+        "item_files": rows("SELECT f.* FROM constraint_files f JOIN constraint_versions v USING (constraint_id, version) "
+                           "WHERE v.lifecycle != 'proposed' ORDER BY constraint_id, version, path"),
+        "decisions": rows("SELECT * FROM decisions ORDER BY number"),
+        "decision_versions": rows("SELECT * FROM decision_versions WHERE lifecycle != 'proposed' ORDER BY number, version"),
+        "sections": rows(f"SELECT s.* FROM decision_sections s {published} ORDER BY number, version, position"),
+        "links": rows(f"SELECT l.* FROM decision_constraints l {published} ORDER BY number, version, position"),
+        "relations": rows(f"SELECT r.* FROM decision_relations r {published} ORDER BY number, version, other"),
+        "files": rows(f"SELECT f.* FROM decision_files f {published} ORDER BY number, version, path"),
+        "reviews": rows("SELECT * FROM decision_reviews ORDER BY reviewed_at, number, constraint_id"),
+        "needs_review": rows("SELECT * FROM needs_review ORDER BY number, constraint_id"),
+    }
+
+
+def render_viewer(con) -> str:
+    data = json.dumps(viewer_data(con), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return VIEWER_TEMPLATE.read_text().replace("/*DATA*/null", data.replace("</", "<\\/"))
+
+
 def render(con) -> dict[Path, str]:
-    files = {ADR_DIR / adr_file(row): render_decision(con, row)
-             for row in con.execute("SELECT * FROM decisions ORDER BY number")}
+    files = {ADR_DIR / adr_file(row): render_decision(con, row) for row in published_decisions(con)}
     files[ADR_DIR / "README.md"] = render_adr_index(con)
     files[CONSTRAINT_DIR / "README.md"] = render_constraint_index(con)
     for group in con.execute("SELECT * FROM constraint_groups ORDER BY position"):
         files[CONSTRAINT_DIR / group["page"]] = render_group(con, group)
+    files[VIEWER] = render_viewer(con)
     files[DUMP] = "\n".join(con.iterdump()) + "\n"
     return files
 
@@ -419,31 +470,50 @@ def broken_links(files: dict[Path, str]) -> list[str]:
     return found
 
 
+def _schema(con) -> list[tuple]:
+    return [tuple(r) for r in con.execute(
+        "SELECT type, name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name")]
+
+
 def problems(con, root: Path = ROOT) -> list[str]:
     found = [f"broken foreign key in {row[0]} (row {row[1]})" for row in con.execute("PRAGMA foreign_key_check")]
-    for d in con.execute("SELECT number, notes FROM decisions ORDER BY number").fetchall():
-        number = d["number"]
-        text = "\n".join([d["notes"]] + [s[0] for s in con.execute(
-            "SELECT body FROM decision_sections WHERE number = ?", (number,))])
-        linked = {r[0] for r in con.execute("SELECT constraint_id FROM decision_constraints WHERE number = ?", (number,))}
+    expected = sqlite3.connect(":memory:")
+    expected.executescript(SCHEMA.read_text())
+    if _schema(con) != _schema(expected):
+        found.append("the database schema differs from design_records/schema.sql")
+    for d in con.execute("SELECT number, version, notes FROM decision_current ORDER BY number").fetchall():
+        number, version = d["number"], d["version"]
+        sections = con.execute("SELECT heading, body FROM decision_sections WHERE number = ? AND version = ? ORDER BY position",
+                               (number, version)).fetchall()
+        text = "\n".join([d["notes"] or ""] + [s["body"] for s in sections])
+        linked = {r[0] for r in con.execute("SELECT constraint_id FROM decision_constraint_current WHERE number = ?", (number,))}
         cited = {r[0] for r in con.execute(
-            "SELECT constraint_id FROM decision_constraints WHERE number = ? AND relation = 'cites'", (number,))}
+            "SELECT constraint_id FROM decision_constraint_current WHERE number = ? AND relation = 'cites'", (number,))}
         named = mentions(con, text)
         found += [f"ADR {number:04d} mentions {c} but has no decision_constraints row for it" for c in sorted(named - linked)]
         found += [f"ADR {number:04d} cites {c} but its text does not mention it" for c in sorted(cited - named)]
-        files = {r[0] for r in con.execute("SELECT path FROM decision_files WHERE number = ?", (number,))}
+        files = {r[0] for r in con.execute("SELECT path FROM decision_file_current WHERE number = ?", (number,))}
         found += [f"ADR {number:04d} names {p} but has no decision_files row for it" for p in sorted(code_paths(text) - files)]
-        headings = tuple(r[0] for r in con.execute(
-            "SELECT heading FROM decision_sections WHERE number = ? ORDER BY position", (number,)))
-        if headings != SECTION_HEADINGS:
-            found.append(f"ADR {number:04d} has sections {headings}, expected {SECTION_HEADINGS}")
-    for table in ("decision_files", "constraint_files"):
-        for (path,) in con.execute(f"SELECT DISTINCT path FROM {table} ORDER BY path"):
+        if tuple(s["heading"] for s in sections) != SECTION_HEADINGS:
+            found.append(f"ADR {number:04d} does not have the sections {', '.join(SECTION_HEADINGS)}")
+    for view in ("decision_file_current", "constraint_file_current"):
+        for (path,) in con.execute(f"SELECT DISTINCT path FROM {view} ORDER BY path"):
             if not (root / path).exists():
-                found.append(f"{table} names {path}, which does not exist")
+                found.append(f"{view} names {path}, which does not exist")
     stored = [(r[0], r[1]) for r in con.execute("SELECT heading, text FROM brief_sections ORDER BY position")]
     if stored != brief_sections((root / BRIEF.relative_to(ROOT)).read_text()):
         found.append("brief_sections differ from docs/Starting_document.md")
+    return found
+
+
+def warnings(con) -> list[str]:
+    """What the records say is open: not a failure, but not to be left on main."""
+    found = [f"draft: {r['kind']} {r['id']} version {r['version']} ({r['change_reason']})"
+             for r in con.execute("SELECT * FROM drafts ORDER BY kind, id")]
+    found += [f"needs review: ADR {r['number']:04d} links {r['constraint_id']}, {r['change']} since version {r['made_under']}"
+              for r in con.execute("SELECT * FROM needs_review ORDER BY number, constraint_id")]
+    found += [f"scope not met: {r['id']} {r['title']}"
+              for r in con.execute("SELECT id, title FROM constraint_current WHERE pillar = 'scope' AND standing = 'not met'")]
     return found
 
 
@@ -476,16 +546,18 @@ def main(argv: list[str]) -> int:
         from .mcp_server import main as serve
         serve()
         return 0
+    if command not in ("generate", "check"):
+        print("usage: python -m design_records [generate | check | mcp]")
+        return 2
     con = connect()
     if command == "generate":
         for path in generate(con):
             print("wrote", path.relative_to(ROOT))
         found = problems(con) + broken_links(render(con))
-    elif command == "check":
-        found = check(con)
     else:
-        print("usage: python -m design_records [generate | check | mcp]")
-        return 2
+        found = check(con)
+    for warning in warnings(con):
+        print("warning:", warning)
     for problem in found:
         print("problem:", problem)
     return 1 if found else 0

@@ -1,8 +1,9 @@
 ---
 status: accepted (partly implemented)
 date: 2026-10-29
+version: 1
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Evaluate retrieval, natural-language-to-SQL and the agent's reply, and gate releases on the results
 
@@ -78,3 +79,9 @@ Partial.
 - Done: the retrieval evaluation ([`scripts/evaluate.py`](../../scripts/evaluate.py), 16 scored questions); the NL-to-SQL gold set with its validation test; the load test for the time budget ([ADR 0018](0018-admission-control-and-the-time-budget.md)).
 - Gates: only the gold-set check runs in the test suite, and `tests/test_no_leaks.py` asks every evaluation question for each user. The retrieval evaluation is run by hand. There is no CI.
 - Not done: the MCP trace, the live-client harness and its first baseline for Claude Code, Codex and Pi; not-found, list and paraphrase questions in the retrieval set; the fidelity and routing checks; real held-back questions. Each is a milestone in [TODO.md](../../TODO.md).
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 1 | 2026-10-29 | now | Recorded when the decision was made. | sangrail |

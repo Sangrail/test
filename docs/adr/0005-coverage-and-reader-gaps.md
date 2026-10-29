@@ -1,8 +1,9 @@
 ---
 status: accepted, amended by 0020 (the readers are stand-ins for connectors)
 date: 2026-10-28
+version: 2
 ---
-<!-- Generated from design/records/records.sqlite. Edit the database, then run `uv run --frozen python -m design_records generate`. -->
+<!-- Generated from docs/records/design.sqlite. Do not edit: change the database, then run `uv run --frozen python -m design_records generate` (the pre-commit hook runs it). -->
 
 # Report the files that cannot be read
 
@@ -30,3 +31,12 @@ If a search finds nothing, the user must not think that no document states the v
 ## Implementation
 
 Done. [`indexing/status.py`](../../engineering_search/indexing/status.py) names one status for each file: classification (`CLASSIFIED`, `UNSUPPORTED_FORMAT`, `NO_READER`, `UNSUPPORTED_VERSION`, `DEPENDENCY_MISSING`, `FORMAT_MISMATCH`, `INVALID_HEADER`, `READ_ERROR`) and reading (`INDEXED_FULL`, `INDEXED_PARTIAL`, `NO_TEXT_LAYER`, `NO_EXTRACTABLE_CONTENT`, `MALFORMED`, `ENCRYPTED`, `READER_CRASH`), each with a hint. A PDF without a text layer is `NO_TEXT_LAYER`, not indexed. The inventory is stored in the index (`files` table) with the format version, the reader and the warnings, and survives a restart. [`indexing/coverage.py`](../../engineering_search/indexing/coverage.py) builds the report by type, format version, status, folder and capability. The index team gets it at `GET /index/coverage` and through the MCP tool `get_index_coverage`. Other users do not, because the report names files. Tests: `tests/test_coverage.py`, `tests/test_indexer.py`, `tests/test_startup.py`.
+
+## History
+
+| Version | Active from | Until | Change | By |
+| --- | --- | --- | --- | --- |
+| 2 | 2026-10-29 | now | Amended by ADR 0020: the readers are stand-ins for connectors. | sangrail |
+| 1 | 2026-10-28 | 2026-10-29 (Displaced by version 2) | Recorded when the decision was made. | sangrail |
+
+- Amended by [ADR 0020](0020-assume-the-environment-and-stand-in-for-it.md).
