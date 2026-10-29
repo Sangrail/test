@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Search One-Pager</title>
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #14181f; --muted: #556070; --line: #d8dde4; --soft: #eef1f4;
+  --accent: #1f4fd1; --u: #6d28d9; --u-bg: #f3efff; --s: #0f766e; --s-bg: #e9f8f5;
+  --amber: #b45309; --amber-bg: #fff6e0; --grey-bg: #eceff3; --ok: #15803d; --no: #b91c1c; --no-bg: #fdecec;
+  --dark: #1e293b; --dim: .32;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1218; --panel: #171b23; --ink: #e8ebf0; --muted: #9aa5b5; --line: #2b323e; --soft: #1e242e;
+    --accent: #7aa2ff; --u: #b69cff; --u-bg: #231c38; --s: #4fd1bd; --s-bg: #12302c;
+    --amber: #f2b45a; --amber-bg: #2e2412; --grey-bg: #222833; --ok: #4ade80; --no: #f87171; --no-bg: #3a1a1a;
+    --dark: #0b0e13; --dim: .28;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1218; --panel: #171b23; --ink: #e8ebf0; --muted: #9aa5b5; --line: #2b323e; --soft: #1e242e;
+  --accent: #7aa2ff; --u: #b69cff; --u-bg: #231c38; --s: #4fd1bd; --s-bg: #12302c;
+  --amber: #f2b45a; --amber-bg: #2e2412; --grey-bg: #222833; --ok: #4ade80; --no: #f87171; --no-bg: #3a1a1a;
+  --dark: #0b0e13; --dim: .28;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .86em; }
+header.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; margin-bottom: 18px; }
+h1 { font-size: clamp(24px, 3.2vw, 34px); line-height: 1.15; margin: 6px 0 4px; letter-spacing: -.01em; }
+.lede { color: var(--muted); max-width: 760px; margin: 0; }
+.badge { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--amber); background: var(--amber-bg); border: 1px solid var(--amber); border-radius: 999px; padding: 2px 10px; }
+.chip { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 0 6px; border-radius: 5px; background: var(--soft); color: var(--muted); border: 1px solid var(--line); margin: 0 2px; white-space: nowrap; }
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 8px 0 22px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; }
+.card p, .card li { font-size: 13.5px; margin: 0 0 6px; }
+.card ul { margin: 0; padding-left: 18px; }
+.card .small { color: var(--muted); font-size: 12.5px; }
+@media (max-width: 1000px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .cards { grid-template-columns: 1fr; } }
+
+section.journey { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.jhead { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.jhead h2 { margin: 0; font-size: 18px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button { font: inherit; font-size: 13.5px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; min-width: 96px; }
+:root[data-theme="dark"] button.primary, :root:not([data-theme="light"]) button.primary { color: #0b0e13; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) button.primary { color: #fff; } }
+:root[data-theme="light"] button.primary { color: #fff; }
+select { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 5px 8px; }
+.progress { height: 4px; background: var(--soft); }
+.progress > div { height: 100%; width: 0; background: var(--accent); }
+
+.mapbox { overflow-x: auto; border-bottom: 1px solid var(--line); background: var(--bg); }
+.mapbox svg { display: block; width: 100%; min-width: 920px; height: auto; }
+svg text { fill: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+svg .muted { fill: var(--muted); }
+svg .lbl { font-size: 12px; } svg .ttl { font-size: 13.5px; font-weight: 700; } svg .tag { font-size: 10px; font-weight: 700; letter-spacing: .07em; fill: var(--muted); }
+svg .zone { fill: none; stroke: var(--line); stroke-dasharray: 4 4; }
+svg .ztxt { font-size: 11px; font-weight: 700; letter-spacing: .08em; fill: var(--muted); }
+.node rect.box { stroke-width: 1.4; transition: stroke-width .4s, opacity .5s, filter .4s; }
+.node { transition: opacity .6s; }
+.n-exist rect.box { fill: var(--grey-bg); stroke: var(--muted); }
+.n-built rect.box { fill: var(--panel); stroke: var(--ink); }
+.n-stand rect.box { fill: var(--amber-bg); stroke: var(--amber); }
+.n-u rect.box { fill: var(--u-bg); stroke: var(--u); }
+.n-s rect.box { fill: var(--s-bg); stroke: var(--s); }
+.n-user rect.box { fill: var(--panel); stroke: var(--accent); }
+svg.focus .node { opacity: var(--dim); }
+svg.focus .node.on { opacity: 1; }
+svg.focus .node.on rect.box { stroke-width: 3; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 45%, transparent)); }
+.edge { stroke: var(--muted); stroke-width: 1.4; fill: none; transition: opacity .6s, stroke .4s; }
+svg.focus .edge { opacity: .25; }
+svg.focus .edge.on { opacity: 1; stroke: var(--accent); stroke-width: 2.2; }
+.edge.deny { stroke: var(--no); stroke-dasharray: 5 4; }
+#token, #qtoken { transition: transform 1.6s cubic-bezier(.45,.05,.25,1), opacity .6s; }
+#token rect { fill: var(--panel); stroke: var(--accent); stroke-width: 2; }
+#qtoken rect { fill: var(--accent); }
+#qtoken text { fill: #fff; font-weight: 700; }
+:root[data-theme="dark"] #qtoken text { fill: #0b0e13; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #qtoken text { fill: #0b0e13; } }
+.stamp { opacity: 0; transition: opacity .6s; }
+.stamp.on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { #token, #qtoken, .node, .edge, .stamp { transition: none !important; } }
+
+.stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 0; }
+@media (max-width: 900px) { .stage { grid-template-columns: 1fr; } }
+.narr { padding: 18px 20px 22px; border-right: 1px solid var(--line); }
+@media (max-width: 900px) { .narr { border-right: 0; border-bottom: 1px solid var(--line); } }
+.stepno { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.narr h3 { font-size: 21px; line-height: 1.25; margin: 4px 0 10px; }
+.narr p { margin: 0 0 10px; }
+.narr .ids { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.exhibit { padding: 18px 20px 22px; background: var(--bg); min-width: 0; }
+.ex-title { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.ex-title:not(:first-child) { margin-top: 14px; }
+.file { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+.file .fh { padding: 6px 10px; background: var(--soft); border-bottom: 1px solid var(--line); color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.file .ln { display: grid; grid-template-columns: 34px 1fr; }
+.file .ln > span:first-child { text-align: right; padding-right: 8px; color: var(--muted); user-select: none; }
+.file .ln > span:last-child { white-space: pre-wrap; word-break: break-word; padding-right: 8px; }
+.ln.u { background: var(--u-bg); box-shadow: inset 3px 0 var(--u); }
+.ln.s { background: var(--s-bg); box-shadow: inset 3px 0 var(--s); }
+.ln.us { background: linear-gradient(90deg, var(--s-bg), var(--u-bg)); box-shadow: inset 3px 0 var(--s); }
+.ln.del { background: var(--no-bg); text-decoration: line-through; }
+.ln.add { background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.kv { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 12.5px; }
+.kv th, .kv td { text-align: left; padding: 5px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.kv th { background: var(--soft); color: var(--muted); font-weight: 600; white-space: nowrap; }
+.kv tr:last-child td { border-bottom: 0; }
+.tablewrap { overflow-x: auto; border-radius: 10px; }
+.pill { display: inline-block; font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; }
+.pill.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.pill.no { color: var(--no); background: var(--no-bg); }
+.pill.u { color: var(--u); background: var(--u-bg); }
+.pill.s { color: var(--s); background: var(--s-bg); }
+.pill.am { color: var(--amber); background: var(--amber-bg); }
+.answer { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 10px; padding: 10px 12px; }
+.answer.alt { border-left-color: var(--muted); }
+.answer.stop { border-left-color: var(--no); }
+.answer q { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; margin: 6px 0; quotes: none; }
+.answer .cite { font-size: 12.5px; color: var(--muted); }
+.flow { display: grid; gap: 6px; }
+.flow > div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+.flow b { color: var(--accent); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+.box.u { border-color: var(--u); background: var(--u-bg); }
+.box.s { border-color: var(--s); background: var(--s-bg); }
+.box h4 { margin: 0 0 6px; font-size: 13px; }
+.box ul { margin: 0; padding-left: 16px; }
+
+.chapters { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px; border-top: 1px solid var(--line); }
+.chapters button { font-size: 12px; padding: 3px 9px; border-radius: 999px; color: var(--muted); }
+.chapters button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+:root[data-theme="dark"] .chapters button.on { color: #0b0e13; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chapters button.on { color: #0b0e13; } }
+
+.below { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+@media (max-width: 900px) { .below { grid-template-columns: 1fr; } }
+.matrix { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.matrix th, .matrix td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.matrix th { color: var(--muted); font-weight: 600; }
+footer { margin-top: 22px; color: var(--muted); font-size: 12.5px; }
+footer a { color: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); padding: 8px 16px; border-bottom: 1px solid var(--line); }
+.legend span::before { content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 1.5px solid; }
+.lg-exist::before { background: var(--grey-bg); border-color: var(--muted) !important; }
+.lg-stand::before { background: var(--amber-bg); border-color: var(--amber) !important; }
+.lg-built::before { background: var(--panel); border-color: var(--ink) !important; }
+.lg-u::before { background: var(--u-bg); border-color: var(--u) !important; }
+.lg-s::before { background: var(--s-bg); border-color: var(--s) !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div>
+    <span class="badge">MVP · proof of concept</span>
+    <h1>Engineering knowledge search, on one page</h1>
+    <p class="lede">An engineering lead asks for a load limit, a material grade or an approval status, and gets the exact words from the file, with the file, the line and a fingerprint of the bytes. Below: the brief, the system, and the journey of one file through it.</p>
+  </div>
+  <button id="theme" type="button" aria-label="Switch light or dark">◐ Theme</button>
+</header>
+
+<div class="cards">
+  <div class="card">
+    <h2>Background</h2>
+    <ul>
+      <li>Years of design information sit in design files and project documents <span class="chip">B1</span></li>
+      <li>Users do not know which file holds what they need <span class="chip">B2</span></li>
+      <li>They will not learn file formats or schemas <span class="chip">B3</span>, query languages or jargon <span class="chip">B4</span></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>Use case</h2>
+    <p>A selected engineering manager or lead <span class="chip">U1</span> finds a load limit, a material specification or an approval status <span class="chip">U2</span> across 100+ project documents <span class="chip">U3</span>, in under 10 seconds <span class="chip">U4</span>, with 100% confidence in the source <span class="chip">U5</span>, without opening a CAD file or a PDF viewer <span class="chip">U6</span>.</p>
+  </div>
+  <div class="card">
+    <h2>Constraints (they already exist)</h2>
+    <ul>
+      <li>An architecture direction <span class="chip">C1</span></li>
+      <li>A repository that holds the files <span class="chip">C2</span></li>
+      <li>Connectors that extract metadata, text and properties <span class="chip">C3</span></li>
+      <li>Structured and/or semantic stores <span class="chip">C4</span></li>
+      <li>A chat-agent shell that calls tools <span class="chip">C5</span></li>
+    </ul>
+    <p class="small">The MVP does not build these. It stands in for each only as far as the flow needs (amber below).</p>
+  </div>
+  <div class="card">
+    <h2>Scope</h2>
+    <p>An MVP <span class="chip">S1</span>, not the final platform <span class="chip">S2</span>. Built: one search service behind an MCP server and a web test page; permissions before ranking; cited answers; constrained SQL; audit; an 8 s time budget.</p>
+    <p class="small">Out of scope or open: semantic search <span class="chip">O1</span>, real identity <span class="chip">G1</span>, durable audit <span class="chip">G2</span>, many users and automatic refresh <span class="chip">G5</span>, an ontology <span class="chip">G6</span>, formats the stand-ins cannot read <span class="chip">G8</span>.</p>
+  </div>
+</div>
+
+<section class="journey" aria-label="The journey of one file">
+  <div class="jhead">
+    <h2>The journey of one file: <code>specifications/roof-load.md</code></h2>
+    <div class="controls">
+      <button id="prev" type="button" aria-label="Previous step">◀ Back</button>
+      <button id="play" class="primary" type="button">▶ Play</button>
+      <button id="next" type="button" aria-label="Next step">Next ▶</button>
+      <label class="mono" style="font-size:12px;color:var(--muted)">Pace
+        <select id="pace" aria-label="Pace">
+          <option value="1.6">Slow</option>
+          <option value="1" selected>Normal</option>
+          <option value="0.7">Brisk</option>
+        </select>
+      </label>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="bar"></div></div>
+  <div class="legend">
+    <span class="lg-exist">exists in the company</span>
+    <span class="lg-stand">MVP stand-in for it</span>
+    <span class="lg-built">built by the MVP</span>
+    <span class="lg-u">unstructured: passages</span>
+    <span class="lg-s">structured: tables and facts</span>
+  </div>
+
+  <div class="mapbox">
+  <svg id="map" viewBox="0 0 1200 500" role="img" aria-label="System map: repository, indexing line, stores, search service, front ends and users">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    </defs>
+    <!-- zones -->
+    <rect class="zone" x="8" y="20" width="168" height="470" rx="10"/><text class="ztxt" x="20" y="38">REPOSITORY</text>
+    <rect class="zone" x="186" y="20" width="392" height="470" rx="10"/><text class="ztxt" x="198" y="38">INDEXING LINE</text>
+    <rect class="zone" x="588" y="20" width="200" height="470" rx="10"/><text class="ztxt" x="600" y="38">ONE SQLITE INDEX</text>
+    <rect class="zone" x="798" y="20" width="224" height="470" rx="10"/><text class="ztxt" x="810" y="38">SEARCH SERVICE</text>
+    <rect class="zone" x="1032" y="20" width="160" height="470" rx="10"/><text class="ztxt" x="1044" y="38">FRONT ENDS · USERS</text>
+
+    <!-- edges -->
+    <g style="color:var(--muted)">
+      <path id="e-repo-det" class="edge" d="M164,110 H198" marker-end="url(#ah)"/>
+      <path id="e-det-reg" class="edge" d="M366,92 H378" marker-end="url(#ah)"/>
+      <path id="e-reg-read" class="edge" d="M490,128 V150" marker-end="url(#ah)"/>
+      <path id="e-read-pass" class="edge" d="M566,196 C580,196 584,150 600,150" marker-end="url(#ah)"/>
+      <path id="e-read-tab" class="edge" d="M490,246 V270" marker-end="url(#ah)"/>
+      <path id="e-tab-facts" class="edge" d="M566,300 C582,300 584,270 600,270" marker-end="url(#ah)"/>
+      <path id="e-fact-store" class="edge" d="M566,370 C582,370 584,300 600,300" marker-end="url(#ah)"/>
+      <path id="e-pass-svc" class="edge" d="M776,150 H810" marker-end="url(#ah)"/>
+      <path id="e-tab-svc" class="edge" d="M776,285 C792,285 796,250 810,250" marker-end="url(#ah)"/>
+      <path id="e-acc-svc" class="edge" d="M916,388 V352" marker-end="url(#ah)"/>
+      <path id="e-svc-fe" class="edge" d="M1010,180 H1044" marker-end="url(#ah)"/>
+      <path id="e-fe-jp" class="edge" d="M1112,232 V262" marker-end="url(#ah)"/>
+      <path id="e-fe-kamal" class="edge" d="M1112,232 C1112,300 1112,320 1112,334" marker-end="url(#ah)"/>
+      <path id="e-svc-repo" class="edge" d="M916,64 V54 H86 V70" marker-end="url(#ah)"/>
+      <path id="e-maya-svc" class="edge" d="M1060,424 H1010" marker-end="url(#ah)"/>
+    </g>
+    <text id="t-hash-check" class="tag stamp" x="300" y="50">FINGERPRINT CHECK: HASH CITED FILES AGAIN</text>
+
+    <!-- nodes -->
+    <g id="n-repo" class="node n-exist">
+      <rect class="box" x="20" y="70" width="144" height="200" rx="9"/>
+      <text class="ttl" x="32" y="92">Repository</text><text class="tag" x="32" y="107">EXISTS · C2</text>
+      <text class="lbl muted" x="32" y="130">project-cedar/</text>
+      <text class="lbl muted" x="32" y="148">project-harbour/</text>
+      <text class="lbl muted" x="32" y="166">project-northgate/</text>
+      <text class="lbl" x="32" y="184" font-weight="700">specifications/</text>
+      <text class="lbl muted" x="32" y="202">registers/ …</text>
+      <text class="lbl muted" x="32" y="226">149 files, read in place</text>
+    </g>
+    <g id="n-perm" class="node n-stand">
+      <rect class="box" x="20" y="300" width="144" height="120" rx="9"/>
+      <text class="ttl" x="32" y="322">Folder permissions</text><text class="tag" x="32" y="337">STAND-IN · G1</text>
+      <text class="lbl muted" x="32" y="358">specifications/ →</text>
+      <text class="lbl muted" x="32" y="374">JP, Maya</text>
+      <text class="lbl muted" x="32" y="396">The repository's own</text>
+      <text class="lbl muted" x="32" y="412">rules, per user</text>
+    </g>
+
+    <g id="n-detect" class="node n-built">
+      <rect class="box" x="198" y="56" width="168" height="72" rx="9"/>
+      <text class="ttl" x="210" y="78">① Detect</text><text class="tag" x="210" y="93">FILE METADATA</text>
+      <text class="lbl muted" x="210" y="114">type, version, size</text>
+    </g>
+    <g id="n-reg" class="node n-built">
+      <rect class="box" x="380" y="56" width="186" height="72" rx="9"/>
+      <text class="ttl" x="392" y="78">② Registry + ③ hash</text><text class="tag" x="392" y="93">CHOOSE READER · SHA-256</text>
+      <text class="lbl muted" x="392" y="114">fingerprint of the bytes</text>
+    </g>
+    <g id="n-read" class="node n-stand">
+      <rect class="box" x="198" y="150" width="368" height="96" rx="9"/>
+      <text class="ttl" x="210" y="172">④ Readers: file-specific extractors</text><text class="tag" x="210" y="187">STAND-INS FOR THE CONNECTORS · C3</text>
+      <text class="lbl muted" x="210" y="210">Markdown · PDF text · CSV · XLSX · DXF notes and title block</text>
+      <text class="lbl muted" x="210" y="230">One Extraction: passages (prose) + tables (rows) — or both</text>
+    </g>
+    <g id="n-tab" class="node n-s">
+      <rect class="box" x="198" y="270" width="368" height="62" rx="9"/>
+      <text class="ttl" x="210" y="292">Tables: header + rows, each row with its line</text>
+      <text class="lbl muted" x="210" y="314">Every row is also kept as a passage</text>
+    </g>
+    <g id="n-facts" class="node n-stand">
+      <rect class="box" x="198" y="346" width="368" height="72" rx="9"/>
+      <text class="ttl" x="210" y="368">⑤ Fact rules (index time)</text><text class="tag" x="210" y="383">STAND-IN · FIXED RULES ON TABLE CELLS</text>
+      <text class="lbl muted" x="210" y="404">parameter · role · value · unit · SI value · subject</text>
+    </g>
+
+    <g id="n-pass" class="node n-u">
+      <rect class="box" x="600" y="110" width="176" height="96" rx="9"/>
+      <text class="ttl" x="612" y="132">Passages + FTS5</text><text class="tag" x="612" y="147">UNSTRUCTURED</text>
+      <text class="lbl muted" x="612" y="168">exact text, heading,</text>
+      <text class="lbl muted" x="612" y="184">lines, page; word index</text>
+    </g>
+    <g id="n-store" class="node n-s">
+      <rect class="box" x="600" y="230" width="176" height="96" rx="9"/>
+      <text class="ttl" x="612" y="252">Tables · rows · facts</text><text class="tag" x="612" y="267">STRUCTURED</text>
+      <text class="lbl muted" x="612" y="288">source_tables, table_rows,</text>
+      <text class="lbl muted" x="612" y="304">facts</text>
+    </g>
+    <g id="n-docs" class="node n-built">
+      <rect class="box" x="600" y="350" width="176" height="80" rx="9"/>
+      <text class="ttl" x="612" y="372">Documents + inventory</text>
+      <text class="lbl muted" x="612" y="392">file ID, fingerprint,</text>
+      <text class="lbl muted" x="612" y="408">type, reader, status</text>
+      <text class="tag" x="612" y="424">ONE TRANSACTION</text>
+    </g>
+
+    <g id="n-svc" class="node n-built">
+      <rect class="box" x="810" y="70" width="200" height="282" rx="9"/>
+      <text class="ttl" x="822" y="92">One search service</text><text class="tag" x="822" y="107">BUILT BY THE MVP</text>
+      <text class="lbl" x="822" y="132">1 Plan the question</text>
+      <text class="lbl" x="822" y="154">2 Find files with its words</text>
+      <text class="lbl" x="822" y="176" font-weight="700">3 Apply permissions</text>
+      <text class="lbl muted" x="836" y="192">before ranking, limits, counts</text>
+      <text class="lbl" x="822" y="214">4 Rank permitted passages</text>
+      <text class="lbl" x="822" y="236">5 Pick the sentence or row</text>
+      <text class="lbl" x="822" y="258">6 Re-hash the cited file</text>
+      <text class="lbl" x="822" y="280">7 Audit, then answer</text>
+      <text class="lbl muted" x="822" y="306">or: run the agent's SQL</text>
+      <text class="lbl muted" x="822" y="322">over permitted rows only</text>
+      <text class="tag" x="822" y="342">8 s TIME BUDGET</text>
+    </g>
+    <g id="n-acc" class="node n-stand">
+      <rect class="box" x="810" y="388" width="200" height="62" rx="9"/>
+      <text class="ttl" x="822" y="410">Identity + permissions</text><text class="tag" x="822" y="425">STAND-IN · G1</text>
+      <text class="lbl muted" x="822" y="442">demo sign-in, path rules</text>
+    </g>
+
+    <g id="n-fe" class="node n-exist">
+      <rect class="box" x="1044" y="128" width="136" height="104" rx="9"/>
+      <text class="ttl" x="1056" y="150">Chat agent</text><text class="tag" x="1056" y="165">EXISTS · C5</text>
+      <text class="lbl muted" x="1056" y="186">calls the MCP</text>
+      <text class="lbl muted" x="1056" y="202">server's tools;</text>
+      <text class="lbl muted" x="1056" y="218">web page for tests</text>
+    </g>
+    <g id="n-jp" class="node n-user">
+      <rect class="box" x="1044" y="262" width="136" height="60" rx="9"/>
+      <text class="ttl" x="1056" y="284">JP</text>
+      <text class="lbl muted" x="1056" y="304">may read the file</text>
+    </g>
+    <g id="n-kamal" class="node n-user">
+      <rect class="box" x="1044" y="334" width="136" height="60" rx="9"/>
+      <text class="ttl" x="1056" y="356">Kamal</text>
+      <text class="lbl muted" x="1056" y="376">may not read it</text>
+    </g>
+    <g id="n-maya" class="node n-user">
+      <rect class="box" x="1060" y="404" width="120" height="44" rx="9"/>
+      <text class="ttl" x="1072" y="424">Maya</text>
+      <text class="lbl muted" x="1072" y="440">index team</text>
+    </g>
+
+    <!-- tokens -->
+    <g id="token" transform="translate(30,273)">
+      <rect x="0" y="0" width="124" height="22" rx="11"/>
+      <text x="62" y="15" text-anchor="middle" class="lbl" font-weight="700">📄 roof-load.md</text>
+    </g>
+    <g id="qtoken" transform="translate(1050,236)" opacity="0">
+      <rect x="0" y="0" width="124" height="22" rx="11"/>
+      <text id="qlabel" x="62" y="15" text-anchor="middle" class="lbl">🔎 question</text>
+    </g>
+    <g id="denied" class="stamp">
+      <rect x="826" y="160" width="172" height="40" rx="6" fill="var(--no-bg)" stroke="var(--no)"/>
+      <text x="912" y="177" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">DENIED: specifications/</text>
+      <text x="912" y="193" text-anchor="middle" class="lbl" style="fill:var(--no)">file dropped before ranking</text>
+    </g>
+    <g id="stale" class="stamp">
+      <rect x="826" y="244" width="172" height="40" rx="6" fill="var(--no-bg)" stroke="var(--no)"/>
+      <text x="912" y="261" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">CHANGED ON DISC</text>
+      <text x="912" y="277" text-anchor="middle" class="lbl" style="fill:var(--no)">left out until refresh</text>
+    </g>
+    <g id="edited" class="stamp">
+      <rect x="28" y="238" width="128" height="22" rx="6" fill="var(--no-bg)" stroke="var(--no)"/>
+      <text x="92" y="253" text-anchor="middle" class="lbl" font-weight="700" style="fill:var(--no)">edited: 5 → 6 kN/m²</text>
+    </g>
+  </svg>
+  </div>
+
+  <div class="stage">
+    <div class="narr" aria-live="polite">
+      <div class="stepno" id="stepno"></div>
+      <h3 id="title"></h3>
+      <div id="body"></div>
+      <div class="ids" id="ids"></div>
+    </div>
+    <div class="exhibit" id="exhibit"></div>
+  </div>
+  <nav class="chapters" id="chapters" aria-label="Steps"></nav>
+</section>
+
+<div class="below">
+  <div class="card">
+    <h2>What each reader returns</h2>
+    <div class="tablewrap">
+    <table class="matrix">
+      <tr><th>Format</th><th><span class="pill u">passages</span></th><th><span class="pill s">tables</span></th></tr>
+      <tr><td><b>Markdown</b> (mixed)</td><td>each section</td><td>each pipe table; its lines also stay in the text</td></tr>
+      <tr><td><b>DXF</b> (mixed)</td><td>each note; each attribute</td><td>the title block (Property / Value)</td></tr>
+      <tr><td><b>CSV</b></td><td>each row</td><td>the file</td></tr>
+      <tr><td><b>XLSX</b></td><td>each row</td><td>each sheet (cached values)</td></tr>
+      <tr><td><b>PDF</b> (text layer)</td><td>each page, by heading</td><td>none: a PDF table is read as text</td></tr>
+      <tr><td><b>JT, DWG, TXT</b></td><td colspan="2">detected, listed as <code>NO_READER</code>, not indexed</td></tr>
+    </table>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Where metadata comes from</h2>
+    <ul>
+      <li><b>Detector</b> (file level): type, format version, size, from the extension and the first 512 bytes.</li>
+      <li><b>Indexer</b>: the SHA-256 content fingerprint; the reader and its version.</li>
+      <li><b>Readers</b> (file specific): headings, lines, pages and sheets; a DXF title block (drawing number, revision, approval) as a table.</li>
+      <li><b>Path</b>: the file ID; the project from a <code>project-&lt;name&gt;</code> folder.</li>
+      <li><b>Not extracted</b>: author, dates, repository revision. A real connector supplies them <span class="chip">C3</span>.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>What the journey shows, and what it does not</h2>
+    <ul>
+      <li>The value, quoted, with file, line and fingerprint <span class="chip">U2</span> <span class="chip">U5</span> <span class="chip">U6</span></li>
+      <li>Answered in tens of milliseconds over 145 indexed files <span class="chip">U3</span> <span class="chip">U4</span></li>
+      <li>No name, text or count from a file a user may not read <span class="chip">K13</span></li>
+      <li>A changed file is never quoted stale <span class="chip">K3</span></li>
+    </ul>
+    <p class="small">Not shown, because not built: real connectors and identity, a repository watcher, a semantic store, many users at once.</p>
+  </div>
+</div>
+
+<footer>
+  Every value in the journey is what the code returned on the test repository (29 October 2026). The edit was made on a copy. Read more: <a href="design/INDEXING.md">design/INDEXING.md</a> (indexing, explicitly) · <a href="ARCHITECTURE.md">ARCHITECTURE.md</a> (the code) · <a href="design/SYSTEM-DESIGN.md">design/SYSTEM-DESIGN.md</a> (the initial phase) · <a href="docs/constraints/README.md">the brief, item by item</a> · <a href="docs/adr/README.md">decision records</a>.
+</footer>
+</div>
+
+<script>
+(() => {
+  const FILE = [
+    "# Demonstration roof specification", "",
+    "SYNTHETIC EXAMPLE — not approved for engineering use.", "",
+    "## Roof load", "",
+    "| Parameter | Value | Conditions | Approval status |",
+    "| --- | --- | --- | --- |",
+    "| Maximum uniformly distributed roof load | 5 kN/m² | Static load, dry conditions | Approved in this synthetic example |",
+    "", "## Material specification", "",
+    "Roof support beams: S355 structural steel. This material specification applies to the example roof only."
+  ];
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  function file(marks = {}, head = "specifications/roof-load.md", edit = false) {
+    let rows = FILE.map((t, i) => {
+      const n = i + 1; const cls = marks[n] || "";
+      if (edit && n === 9) {
+        return `<div class="ln del"><span>9</span><span>${esc(t)}</span></div>` +
+               `<div class="ln add"><span>9</span><span>${esc(t.replace("| 5 kN/m² |", "| 6 kN/m² |"))}</span></div>`;
+      }
+      return `<div class="ln ${cls}"><span>${n}</span><span>${esc(t) || " "}</span></div>`;
+    }).join("");
+    return `<div class="file"><div class="fh"><span>${head}</span><span>${edit ? "sha256 09f6a3fd…946c0a" : "sha256 d3c37521…e706789"}</span></div>${rows}</div>`;
+  }
+  const kv = (rows, head) => `<div class="tablewrap"><table class="kv">${head ? `<tr>${head.map(h => `<th>${h}</th>`).join("")}</tr>` : ""}${rows.map(r => `<tr>${r.map((c, i) => (head ? `<td>${c}</td>` : (i === 0 ? `<th>${c}</th>` : `<td>${c}</td>`))).join("")}</tr>`).join("")}</table></div>`;
+  const T = s => `<div class="ex-title">${s}</div>`;
+
+  // Token positions on the map (x, y of the token's top-left corner).
+  const P = {
+    repo: [30, 273], detect: [222, 128], reg: [420, 128], read: [330, 247],
+    facts: [330, 425], store: [626, 327], hidden: [626, 327],
+    jp: [1050, 236], kamal: [1050, 236], maya: [1056, 454]
+  };
+
+  const STEPS = [
+    {
+      title: "The system at a glance",
+      on: [], edges: [], token: "repo", q: null,
+      body: `<p>Files stay where they are, in the company's repository. An <b>indexing line</b> reads each file once and keeps two kinds of data in one index: <b>passages</b> of prose, found by their words, and <b>tables</b>, whose cells become typed <b>facts</b> that SQL can filter.</p>
+             <p>A <b>search service</b> answers every question from that index. It applies the user's permissions first, quotes the source, and checks that the file on disc has not changed since it was indexed.</p>
+             <p>Press <b>Play</b> to follow one file from the repository to two users' answers, through an edit and a refresh. Each step waits long enough to read; use Back and Next to go at your own pace.</p>`,
+      ids: "Brief: B1–B4, U1–U6, C1–C5, S1–S2",
+      ex: `${T("The file we follow")}${file()}
+           ${T("Why this file")}<div class="box">A Markdown specification that holds <b>both</b> kinds of data: prose (lines 3 and 13) and a table (lines 7–9). One user may read it and another may not.</div>`
+    },
+    {
+      title: "A file lives in the repository",
+      on: ["n-repo", "n-perm"], edges: [], token: "repo", q: null,
+      body: `<p><code>specifications/roof-load.md</code> is one of 149 files in the test repository, which stands in for the company's own <span class="chip">C2</span>. The system reads files in place; nothing is uploaded <span class="chip">K12</span>.</p>
+             <p>Who may read it belongs to the repository, not to the search: here, the folder rule for <code>specifications/</code> names JP and Maya. Kamal is not on it.</p>
+             <p>In the MVP, those rules are a short list in <code>access.py</code>, a labelled stand-in for the repository's real permissions <span class="chip">G1</span>.</p>`,
+      ids: "C2 · K12 · K13 · G1",
+      ex: `${T("The file on disc")}${file()}
+           ${T("The access rule that governs it")}${kv([["Rule", "<code>specifications/</code>"], ["May read", "JP, Maya"], ["May not read", "Kamal"]])}`
+    },
+    {
+      title: "① Detect: file-level metadata",
+      on: ["n-repo", "n-detect"], edges: ["e-repo-det"], token: "detect", q: null,
+      body: `<p>The scan lists every regular file and makes its path the <b>file ID</b>. The <b>detector</b> is the file-level metadata extractor: it reads the extension and at most the first 512 bytes.</p>
+             <p>For formats with a signature (<code>%PDF-1.7</code>, a ZIP with <code>xl/workbook.xml</code>, a JT header, a DXF <code>$ACADVER</code>) the content decides the type and version. Markdown has no signature, so the extension decides.</p>
+             <p>The detector does not decide whether the file can be read. That is the registry's job, next.</p>`,
+      ids: "C3 (stand-in) · ADR 0001",
+      ex: `${T("What the detector records")}${kv([["file_id", "<code>specifications/roof-load.md</code>"], ["file_type", "markdown"], ["format_version", "— (Markdown has none)"], ["decided by", "the extension (no signature to check)"]])}
+           ${T("For comparison")}${kv([["<code>…/northgate-…calculations.pdf</code>", "pdf, version from <code>%PDF-1.x</code>"], ["<code>…/hangar-frame.jt</code>", "jt, version from the header → no reader"]])}`
+    },
+    {
+      title: "② Choose a reader, ③ fingerprint the bytes",
+      on: ["n-detect", "n-reg"], edges: ["e-det-reg"], token: "reg", q: null,
+      body: `<p>The <b>reader registry</b> picks the first reader whose manifest reads this type and version and whose packages are installed: <code>markdown-text@2</code>. If none fitted, the file would be listed as <code>NO_READER</code> or <code>UNSUPPORTED_VERSION</code> and not indexed.</p>
+             <p>Then the whole file is read and hashed. The <b>SHA-256 of its bytes</b> is its content fingerprint. It is stored with the document and on every passage, and every citation carries it.</p>
+             <p>On the next refresh, a file with the same fingerprint and the same reader version is not read again.</p>`,
+      ids: "K3 · ADR 0007",
+      ex: `${T("Registry decision")}${kv([["Reader", "<code>markdown-text@2</code> (stand-in for a connector)"], ["Capabilities", "text, tables"], ["Status", "CLASSIFIED → read"]])}
+           ${T("Content fingerprint")}<div class="box mono" style="word-break:break-all">d3c375218eb55b65b56a9181097d86ec7356da24367e0d2188b552147e706789</div>`
+    },
+    {
+      title: "④ Read: one file, two kinds of data",
+      on: ["n-reg", "n-read", "n-tab", "n-pass"], edges: ["e-reg-read", "e-read-tab", "e-read-pass"], token: "read", q: null,
+      body: `<p>The reader is the <b>file-specific extractor</b>. It returns one Extraction, and this file is <b>mixed</b>, so it has both parts:</p>
+             <p><span class="pill u">unstructured</span> <b>3 passages</b>, split at headings and blank lines, each with its heading and line range.</p>
+             <p><span class="pill s">structured</span> <b>1 table</b> named after the heading above it, "Roof load", with 4 columns and 1 row that cites line 9.</p>
+             <p>The table's lines also stay in the "Roof load" passage, so the row can be found by its words <i>and</i> by SQL.</p>`,
+      ids: "C3 (stand-in) · ADR 0011",
+      ex: `${T("What the reader saw")}${file({3: "u", 7: "us", 8: "us", 9: "us", 13: "u"})}
+           <div class="two" style="margin-top:10px">
+             <div class="box u"><h4>3 passages</h4><ul><li>line 3 · "Demonstration roof specification"</li><li>lines 7–9 · "Roof load"</li><li>line 13 · "Material specification"</li></ul></div>
+             <div class="box s"><h4>1 table · "Roof load"</h4><ul><li>Parameter · Value · Conditions · Approval status</li><li>row 1, line 9: Maximum uniformly distributed roof load · 5 kN/m² · …</li></ul></div>
+           </div>`
+    },
+    {
+      title: "⑤ Facts: the table's cells become typed values",
+      on: ["n-tab", "n-facts"], edges: ["e-tab-facts"], token: "facts", q: null,
+      body: `<p>At index time, fixed <b>fact rules</b> read each cell with its column header and table name. This is a key-value table (<code>Parameter | Value | …</code>), so the row label names the parameter and the table name is the subject.</p>
+             <p>"5 kN/m²" under "Maximum … roof load" becomes an <b>allowable distributed load</b>, a capacity, 5,000 N/m² in SI units. The approval cell becomes a <b>compliance status</b>, kept as written.</p>
+             <p>Line 13, "Roof support beams: S355 structural steel.", is prose. It makes <b>no fact</b>: it is found by words, not by SQL.</p>`,
+      ids: "U2 · ADR 0011 · G6",
+      ex: `${T("Facts from row 1 (line 9)")}${kv([
+              ["Roof load", "allowable_distributed_load", "capacity", "5 kN/m²", "5000 N/m²"],
+              ["Roof load", "compliance_status", "status", "Approved in this synthetic example", "—"]
+            ], ["subject", "parameter", "role", "value", "SI"])}
+           ${T("Not a fact")}<div class="box u">line 13 · "Roof support beams: S355 structural steel." · a passage only</div>`
+    },
+    {
+      title: "Publish: one transaction, all or nothing",
+      on: ["n-pass", "n-store", "n-docs"], edges: ["e-read-pass", "e-fact-store"], token: "store", q: null,
+      body: `<p>The service writes everything for the file in <b>one transaction</b>: the document row with its fingerprint, the passages and their full-text entries, the table, its row and its facts, and the inventory record. If anything fails, the old index stays.</p>
+             <p>The passages go into an <b>FTS5 inverted index</b> over the heading, the text and the words of the path. The table goes into the same three fixed tables as every other table; no file ever creates a database table.</p>
+             <p>Across the test repository, this run indexed 145 files and 2,550 passages. The other four files were listed, not read.</p>`,
+      ids: "C4 (stand-in) · ADR 0002 · ADR 0011",
+      ex: `${T("What the index now holds for this file")}${kv([
+              ["documents", "1 row · fingerprint d3c37521… · 3 passages"],
+              ["passages + passages_fts", "3 rows · path words: specifications roof load"],
+              ["source_tables", "table 1 · Roof load · 4 columns"],
+              ["table_rows", "row 1 · line 9"],
+              ["facts", "2 rows · cite table 1, row 1, line 9"],
+              ["files (inventory)", "markdown · markdown-text@2 · INDEXED_FULL"]
+            ])}
+           ${T("Not stored in the index")}<div class="box">Permissions. Every file is indexed; each request applies the user's permissions.</div>`
+    },
+    {
+      title: "JP signs in and asks a question",
+      on: ["n-jp", "n-fe", "n-svc", "n-acc", "n-pass"], edges: ["e-fe-jp", "e-svc-fe", "e-acc-svc", "e-pass-svc"], token: "hidden", q: ["jp", "🔎 JP asks"],
+      body: `<p>JP is an engineering lead. Through the chat agent (or the web test page) JP asks: <b>"distributed roof load conditions"</b>.</p>
+             <p>The service plans the words, finds <b>every file that contains one of them</b>, and asks the permission rules about those files. JP may read <code>specifications/</code>, so the file stays in.</p>
+             <p>Only then does it rank, and only over permitted passages: BM25 statistics never see a file JP cannot read.</p>`,
+      ids: "U1 · B4 · ADR 0004 · ADR 0005",
+      ex: `${T("Inside the search service")}<div class="flow">
+              <div><b>1 Plan</b> · words: distributed, roof, load, conditions</div>
+              <div><b>2 Find</b> · every file that holds one of the words</div>
+              <div><b>3 Permissions</b> · <code>specifications/roof-load.md</code>: <span class="pill ok">allowed by rule 'specifications/'</span></div>
+              <div><b>4 Rank</b> · permitted passages only: most question words first, then BM25</div>
+              <div><b>5 Pick</b> · the sentence or table row that states a value</div>
+            </div>`
+    },
+    {
+      title: "JP gets the file, quoted and cited",
+      on: ["n-jp", "n-fe", "n-svc", "n-pass", "n-store", "n-repo"], edges: ["e-fe-jp", "e-svc-fe", "e-pass-svc", "e-tab-svc", "e-svc-repo"], token: "hidden", q: ["jp", "✅ 5 kN/m²"], stamps: ["t-hash-check"],
+      body: `<p>The best permitted passage is the table row on line 9. Before quoting it, the service <b>hashes the file on disc again</b>. It matches the fingerprint in the index, so the row is quoted exactly, with the file, the line and the fingerprint.</p>
+             <p>The same value is reachable as a <b>fact</b>: the chat agent's SQL over the facts of JP's permitted files returns 5 kN/m² (5,000 N/m²), citing the same line.</p>
+             <p>The search took about 50 ms. The audit log records the permission decision for every matched file, but no document text.</p>`,
+      ids: "U2 · U4 · U5 · U6 · K3",
+      ex: `${T("search_evidence · JP")}<div class="answer"><span class="pill ok">found</span> <b>5 kN/m²</b>
+              <q>| Maximum uniformly distributed roof load | 5 kN/m² | Static load, dry conditions | Approved in this synthetic example |</q>
+              <div class="cite">specifications/roof-load.md · line 9 · heading "Roof load" · sha256 d3c37521…</div></div>
+           ${T("query_sql · JP · facts of this file")}${kv([
+              ["Roof load", "allowable_distributed_load", "5 kN/m²", "5000.0", "9"],
+              ["Roof load", "compliance_status", "Approved in this synthetic example", "—", "9"]
+            ], ["subject", "parameter", "value", "si_value", "line"])}`
+    },
+    {
+      title: "Kamal asks the same question, and never sees the file",
+      on: ["n-kamal", "n-fe", "n-svc", "n-acc", "n-perm"], edges: ["e-fe-kamal", "e-svc-fe", "e-acc-svc"], token: "hidden", q: ["kamal", "🔎 Kamal asks"], stamps: ["denied"],
+      body: `<p>Kamal, a structural engineer, asks exactly the same words. The file contains them, but the rule for <code>specifications/</code> does not name Kamal, so it is <b>dropped before ranking, limits, counts and pages</b>.</p>
+             <p>Kamal's answer comes from a file Kamal may read: a Project Cedar load review that states the same limit in a sentence.</p>
+             <p>Nothing in the response names the specification, quotes it, or counts it. Kamal's SQL over the same facts returns no rows. Only the index team can see the denial, in the audit log.</p>`,
+      ids: "K13 · ADR 0004 · G1",
+      ex: `${T("Permission decision")}<div class="flow"><div><code>specifications/roof-load.md</code>: <span class="pill no">denied by rule 'specifications/'</span></div></div>
+           ${T("search_evidence · Kamal")}<div class="answer alt"><span class="pill ok">found</span> <b>5 kN/m²</b>
+              <q>Maximum uniformly distributed roof load: 5 kN/m². Conditions: static loading, dry roof and intact support beams.</q>
+              <div class="cite">project-cedar/03-roof-load.md · line 3 · a file Kamal may read</div></div>
+           ${T("query_sql · Kamal · facts of the specification")}<div class="box">0 rows. The rows are not in Kamal's projection at all, so no WHERE, JOIN or COUNT can reach them.</div>`
+    },
+    {
+      title: "Someone edits the file on disc",
+      on: ["n-repo"], edges: [], token: "repo", q: null, stamps: ["edited"],
+      body: `<p>Someone changes the limit in the specification from <b>5 kN/m² to 6 kN/m²</b> and saves it. The bytes change, so the SHA-256 changes: <code>09f6a3fd…</code> instead of <code>d3c37521…</code>.</p>
+             <p>The index still holds the old passage, row and facts. The source is the file on disc as it is now <span class="chip">K3</span>, so the old text must not be quoted as if the file still said it.</p>
+             <p>In the MVP nothing watches the repository: the change is caught at the next question, by the fingerprint check.</p>`,
+      ids: "K3 · ADR 0007 · G5",
+      ex: `${T("The edit")}${file({}, "specifications/roof-load.md (edited)", true)}
+           ${T("Fingerprints")}${kv([["In the index", "<span class='mono'>d3c37521…e706789</span>"], ["On disc now", "<span class='mono'>09f6a3fd…946c0a</span>"]])}`
+    },
+    {
+      title: "Before the refresh: the changed file is withheld",
+      on: ["n-jp", "n-fe", "n-svc", "n-repo"], edges: ["e-fe-jp", "e-svc-fe", "e-svc-repo"], token: "repo", q: ["jp", "🔎 JP asks again"], stamps: ["stale", "t-hash-check", "edited"],
+      body: `<p>JP asks again. The service picks the specification's row, hashes the file on disc, and finds that the bytes no longer match. It <b>leaves the file out</b>, names it in <code>changed_files</code>, and picks again from the remaining permitted files.</p>
+             <p>JP gets the Cedar sentence instead, plus a notice that one file changed since indexing. A direct read of the specification is refused (409), and SQL leaves its rows out.</p>
+             <p>JP is never shown the old 5 kN/m² from a file that now says 6.</p>`,
+      ids: "U5 · K3 · ADR 0003 · ADR 0007",
+      ex: `${T("search_evidence · JP")}<div class="answer alt"><span class="pill ok">found</span> <b>5 kN/m²</b> from another file
+              <q>Maximum uniformly distributed roof load: 5 kN/m². …</q>
+              <div class="cite">project-cedar/03-roof-load.md · line 3</div></div>
+           ${T("Also in the response")}${kv([["changed_files", "<code>[\"specifications/roof-load.md\"]</code>"], ["read_evidence", "<span class='pill no'>409</span> The file has changed since it was indexed, so its evidence is not quoted."], ["query_sql", "the file's rows left out; named in changed_files"]])}`
+    },
+    {
+      title: "The refresh: only the changed file is read again",
+      on: ["n-maya", "n-svc", "n-detect", "n-reg", "n-read", "n-facts", "n-pass", "n-store", "n-docs"], edges: ["e-maya-svc", "e-det-reg", "e-reg-read", "e-read-tab", "e-tab-facts", "e-read-pass", "e-fact-store"], token: "store", q: ["maya", "↻ Reindex"],
+      body: `<p>A refresh runs when a process starts, or when the index team asks for one: Maya selects <b>Reindex</b> (<code>POST /index</code>). In production, the repository connector's change events would start it; that watcher is not built <span class="chip">G5</span>.</p>
+             <p>The refresh hashes every file that has a reader. 144 fingerprints match and are skipped. One differs, so <b>only that file is read again</b>: same reader, new passages, new table row, new facts.</p>
+             <p>One transaction deletes the old rows and writes the new ones. It took about 20 ms.</p>`,
+      ids: "K16 · ADR 0007 · G5",
+      ex: `${T("Index run")}${kv([["files in the index", "145"], ["read again", "1"], ["edited", "1"], ["added / deleted", "0 / 0"], ["time", "≈ 0.02 s"]])}
+           ${T("Facts after the refresh")}${kv([["Roof load", "allowable_distributed_load", "6 kN/m²", "6000 N/m²", "9"]], ["subject", "parameter", "value", "SI", "line"])}`
+    },
+    {
+      title: "After the refresh: the new value, for those allowed",
+      on: ["n-jp", "n-kamal", "n-fe", "n-svc", "n-pass", "n-store"], edges: ["e-fe-jp", "e-svc-fe", "e-pass-svc", "e-tab-svc"], token: "hidden", q: ["jp", "✅ 6 kN/m²"],
+      body: `<p>JP asks again. The fingerprint on disc matches the index, so the specification is back: the row on line 9 now says <b>6 kN/m²</b>, cited with the new fingerprint. SQL returns 6,000 N/m².</p>
+             <p>Kamal asks again and still gets nothing from the specification: the permission rule has not changed, and it applies on every request.</p>
+             <p>That is the whole loop: read once, keep prose and tables apart but linked, filter by permission before anything is ranked or counted, quote only what the file says now.</p>`,
+      ids: "U2 · U5 · K3 · K13",
+      ex: `${T("search_evidence · JP")}<div class="answer"><span class="pill ok">found</span> <b>6 kN/m²</b>
+              <q>| Maximum uniformly distributed roof load | 6 kN/m² | Static load, dry conditions | Approved in this synthetic example |</q>
+              <div class="cite">specifications/roof-load.md · line 9 · sha256 09f6a3fd…</div></div>
+           ${T("search_evidence · Kamal")}<div class="answer alt"><span class="pill ok">found</span> <b>5 kN/m²</b>
+              <q>Maximum uniformly distributed roof load: 5 kN/m². …</q>
+              <div class="cite">project-cedar/03-roof-load.md · line 3 · the specification is still invisible</div></div>`
+    }
+  ];
+
+  const $ = id => document.getElementById(id);
+  const map = $("map"), token = $("token"), qtoken = $("qtoken");
+  let i = 0, playing = false, timer = null, startedAt = 0, duration = 0, elapsed = 0, raf = 0;
+
+  // Reading time: about 3.3 words a second, plus time to look at the map and the exhibit.
+  function dwell(step) {
+    const words = (step.body + step.ex).replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+    return Math.min(32, Math.max(14, 6 + words / 3.3)) * 1000 * Number($("pace").value);
+  }
+  function place(el, key) {
+    const [x, y] = P[key]; el.setAttribute("transform", `translate(${x},${y})`);
+  }
+  function render() {
+    const s = STEPS[i];
+    $("stepno").textContent = `Step ${i} of ${STEPS.length - 1}`;
+    $("title").textContent = s.title;
+    $("body").innerHTML = s.body;
+    $("ids").textContent = s.ids ? `Traces to: ${s.ids}` : "";
+    $("exhibit").innerHTML = s.ex;
+    map.classList.toggle("focus", s.on.length > 0);
+    map.querySelectorAll(".node").forEach(n => n.classList.toggle("on", s.on.includes(n.id)));
+    map.querySelectorAll(".edge").forEach(e => e.classList.toggle("on", s.edges.includes(e.id)));
+    map.querySelectorAll(".stamp").forEach(e => e.classList.toggle("on", (s.stamps || []).includes(e.id)));
+    token.style.opacity = s.token === "hidden" ? 0 : 1;
+    if (s.token !== "hidden") place(token, s.token);
+    if (s.q) { qtoken.style.opacity = 1; place(qtoken, s.q[0]); $("qlabel").textContent = s.q[1]; }
+    else qtoken.style.opacity = 0;
+    document.querySelectorAll("#chapters button").forEach((b, k) => b.classList.toggle("on", k === i));
+    duration = dwell(s); elapsed = 0; startedAt = performance.now(); $("bar").style.width = "0%";
+  }
+  function tick(now) {
+    if (!playing) return;
+    const t = elapsed + (now - startedAt);
+    $("bar").style.width = `${Math.min(100, (t / duration) * 100)}%`;
+    if (t >= duration) {
+      if (i < STEPS.length - 1) { i++; render(); }
+      else { stop(); return; }
+    }
+    raf = requestAnimationFrame(tick);
+  }
+  function play() {
+    if (i === STEPS.length - 1 && elapsed === 0) { i = 0; render(); }
+    playing = true; startedAt = performance.now(); $("play").textContent = "❚❚ Pause";
+    raf = requestAnimationFrame(tick);
+  }
+  function stop() {
+    if (playing) elapsed += performance.now() - startedAt;
+    playing = false; cancelAnimationFrame(raf); $("play").textContent = "▶ Play";
+  }
+  function go(k) {
+    i = Math.max(0, Math.min(STEPS.length - 1, k)); render();
+    if (playing) { startedAt = performance.now(); }
+  }
+  STEPS.forEach((s, k) => {
+    const b = document.createElement("button"); b.type = "button";
+    b.textContent = k === 0 ? "Overview" : `${k}. ${s.title.replace(/^[①②③④⑤] /, "").split(":")[0]}`;
+    b.addEventListener("click", () => go(k));
+    $("chapters").appendChild(b);
+  });
+  $("play").addEventListener("click", () => (playing ? stop() : play()));
+  $("next").addEventListener("click", () => go(i + 1));
+  $("prev").addEventListener("click", () => go(i - 1));
+  $("pace").addEventListener("change", () => { const keep = playing; stop(); elapsed = 0; duration = dwell(STEPS[i]); if (keep) play(); });
+  document.addEventListener("keydown", e => {
+    if (e.target.closest("select")) return;
+    if (e.key === "ArrowRight") go(i + 1);
+    else if (e.key === "ArrowLeft") go(i - 1);
+    else if (e.key === " ") { e.preventDefault(); playing ? stop() : play(); }
+  });
+  $("theme").addEventListener("click", () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+  });
+  render();
+})();
+</script>
+</body>
+</html>

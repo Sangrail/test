@@ -2,6 +2,32 @@
 
 This is a local evidence-search prototype, built to prove one use case from [the brief](docs/Starting_document.md): a selected engineering manager or lead finds a critical engineering parameter across 100+ project documents in under 10 seconds, with 100% confidence in the source, without opening a CAD file or a PDF viewer. It answers questions about engineering values from a document repository, and cites the exact source of each value. It selects answers with fixed rules, not with a language model, and it was measured only on a curated test repository. Read [Known limits](#known-limits) before you rely on a result. It is an MVP built in about four to five hours to answer one question under a set of constraints, not a platform: [docs/README.md](docs/README.md) says what it proves, what it does not, and why making it available to a whole organisation is its own engineering challenge.
 
+**On one page:** open [ONE-PAGER.html](ONE-PAGER.html) in a browser. It shows the brief, the system, and the journey of one file through it: indexed and hashed, read into passages and a table, found by one user, invisible to another, edited, and indexed again. The values in it are what the code returned.
+
+## What it looks like
+
+The screenshots are of the web search page, the test harness that stands in for a chat-agent shell. The same search service sits behind the MCP server.
+
+**Sign-in.** Anyone can pick a demo user. Each card names only the folders that user may read.
+
+![Sign-in screen with three demo users](docs/screenshots/01-sign-in.png)
+
+**JP, an engineering lead, asks "What is the roof load limit at Northgate?"** The panel shows the documents JP may search. The answer is the exact sentence from the Northgate PDF, with the file, the page, the lines and the content fingerprint. Other documents that state a value are listed under it.
+
+![JP's answer: 0.6 kN/m² from the Northgate PDF, page 2](docs/screenshots/02-jp-answer.png)
+
+**Kamal, a structural engineer, asks the same question.** Kamal may not read `project-northgate/`, so the PDF is not searched and not counted. The best permitted passage does not mention Northgate, so it is shown as the closest match, not as an answer.
+
+![Kamal's result: closest match from Project Cedar, not an answer](docs/screenshots/03-kamal-answer.png)
+
+**Maya, the index team, sees index operations:** the files with a reader, the indexed documents, pending changes, the passages, and the latest index run.
+
+![Index operations page](docs/screenshots/04-index-operations.png)
+
+**How one file is indexed.** Prose becomes passages in a full-text index; tables become rows and typed facts. [design/INDEXING.md](design/INDEXING.md) explains it step by step.
+
+![How one file is indexed: structured and unstructured data](design/indexing.svg)
+
 ## The premise: know the questions and the data first
 
 To build an indexer, you need an idea of the questions that people will ask. To answer those questions, you need to know what data you have and what you can extract from it. That leads to two broad kinds of extracted data, and this service keeps both:
@@ -59,6 +85,8 @@ Other documents:
 - [RUNNING.md](RUNNING.md): how to install and run the service.
 - [docs/MCP.md](docs/MCP.md): how to connect Claude Code, Codex and Pi, and what to ask.
 - [ARCHITECTURE.md](ARCHITECTURE.md): how the code works.
+- [ONE-PAGER.html](ONE-PAGER.html): the brief, the system and the journey of one file, on one page.
+- [design/INDEXING.md](design/INDEXING.md): exactly how structured and unstructured data are indexed, with an infographic.
 - [design/EXTRACTION.md](design/EXTRACTION.md): which questions need which extracted data, and how it is extracted.
 - [design/SYSTEM-DESIGN.md](design/SYSTEM-DESIGN.md): the proposed design. It separates what is built from what is proposed.
 - [design/DATA-PROFILE.md](design/DATA-PROFILE.md): why the profile of the real repository must come first.
@@ -67,7 +95,7 @@ Other documents:
 - [GLOSSARY.md](GLOSSARY.md): the terms these documents use.
 - [The brief, item by item](docs/constraints/README.md): background, constraints, use case, task and scope, the clarifications, and the [gaps and challenges](docs/constraints/gaps.md).
 - The [decision records](docs/adr/README.md). [ADR 0001](docs/adr/0001-prove-the-use-case-with-stand-in-readers.md) records why the readers are stand-ins; [ADR 0006](docs/adr/0006-the-user-never-writes-sql.md) why the user never writes SQL and the chat agent may.
-- Design inputs, dated 29 October 2026 and kept unchanged: [the handoff](docs/CODEX_ENGINEERING_SEARCH_HANDOFF.md) and [the design notes](docs/engineering_knowledge_search_design_notes.html).
+- A design input, dated 29 October 2026 and kept unchanged: [the design notes](docs/engineering_knowledge_search_design_notes.html).
 
 ## Quick start
 
@@ -96,7 +124,7 @@ Indexing and searching are two lines that meet only at the store. The indexing l
 1. **Scan.** List every file in the document folder. Skip symbolic links and hidden files.
 2. **Detect the type from the content.** The extension is a hint. Formats with a signature are checked against the first bytes: `%PDF-1.7` gives PDF version 1.7, a ZIP with `xl/workbook.xml` is XLSX, and a JT file's 80-character header gives its version (for example JT 10.0). If the content contradicts the extension, the status is `FORMAT_MISMATCH`, and the file is not given to a reader. The JT probe reads the version string only. It is not a JT reader.
 3. **Choose a reader.** Each reader declares a manifest: the file types and format versions it is tested with, what it can extract (text, tables), and the Python packages it needs. The registry (`default_registry()` in [`readers/registry.py`](engineering_search/indexing/readers/registry.py)) is the one list of readers. It tells apart "no reader for this type" (`NO_READER`), "no reader for this version" (`UNSUPPORTED_VERSION`) and "the reader's package is not installed" (`DEPENDENCY_MISSING`).
-4. **Read.** The readers are sample stand-ins for the connectors that the brief says already exist ([ADR 0001](docs/adr/0001-prove-the-use-case-with-stand-in-readers.md)): Markdown (text and pipe tables), PDF (text layer, with `pypdf`), CSV, XLSX (with `openpyxl`), and DXF drawings (the notes and the title-block attributes, never the geometry). A reader returns passages, tables and a status: `INDEXED_FULL`, `INDEXED_PARTIAL` (for example, PDF pages without text, or a formula without a cached value), `NO_TEXT_LAYER` (a scan) or `NO_EXTRACTABLE_CONTENT`. A file the reader rejects is `MALFORMED` or `ENCRYPTED`. One bad file never stops the others.
+4. **Read.** The readers are sample stand-ins for the connectors that the brief says already exist ([ADR 0001](docs/adr/0001-prove-the-use-case-with-stand-in-readers.md)): Markdown (text and pipe tables), PDF (text layer, with `pypdf`), CSV, XLSX (with `openpyxl`), and DXF drawings (the notes and the title-block attributes, never the geometry). A reader returns passages, tables and a status: `INDEXED_FULL`, `INDEXED_PARTIAL` (for example, PDF pages without text, or a formula without a cached value), `NO_TEXT_LAYER` (a scan) or `NO_EXTRACTABLE_CONTENT`. A file the reader rejects is `MALFORMED`, `ENCRYPTED` or `UNSUPPORTED_VERSION` (for example a binary DXF); any other reader error is `READER_CRASH`. One bad file never stops the others.
 5. **Extract facts.** Fixed rules turn table cells into typed facts. See [Structured data](#structured-data-tables-and-facts).
 6. **Publish.** Every file is hashed (SHA-256, its content fingerprint); only new and changed files are read, and files whose reader changed; files deleted from the repository are removed. The refresh runs when the service starts and when the index team asks; there are no uploads, because the files live in the existing repository. The service publishes the passages, tables, facts and the inventory in one transaction, under a lock that other processes on the same index also respect.
 

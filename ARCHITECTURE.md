@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the code as it runs now. [design/SYSTEM-DESIGN.md](design/SYSTEM-DESIGN.md) describes the wider design and the phases. [design/EXTRACTION.md](design/EXTRACTION.md) describes how extraction and the stores must grow.
+This document describes the code as it runs now. [design/SYSTEM-DESIGN.md](design/SYSTEM-DESIGN.md) describes the wider design and the phases. [design/EXTRACTION.md](design/EXTRACTION.md) describes how extraction and the stores must grow. [design/INDEXING.md](design/INDEXING.md) follows one file through indexing, structured and unstructured.
 
 ## Overview
 
@@ -47,21 +47,24 @@ The index ([`store.py`](engineering_search/store.py)) is shared: indexing writes
 4. **Check permissions.** [`MockPermissionStore.evaluate`](engineering_search/access.py) decides which of these files the user may read. Everything after this step uses only permitted files.
 5. **Look up.** [`SQLiteSearchIndex.candidates`](engineering_search/store.py) runs the FTS5 query over the permitted files only, and returns up to 1,000 passages (`CANDIDATE_LIMIT`), best first. The file filter is inside the index query, before the limit. Thus a forbidden file cannot push a permitted passage out of the result.
 6. **Answer.** For one value, [`answer.answer`](engineering_search/answer.py) reads the 8 best permitted passages and selects one sentence or table row. It then reads all passages of that document to set the status (see [Answers and sources](#answers-and-sources)). For a list, [`answer.list_documents`](engineering_search/answer.py) reads every passage of each permitted document that contains every query word, and applies the number comparison.
-7. **Page.** The supporting passages are paged with `limit` and `page`. The document list of a list answer is paged too, at 200 documents a page, with the same `page` value. `answer.count` is the total number of documents, `answer.document_pages` the number of pages, and `answer.truncated` is true when later pages exist.
-8. **Audit.** The audit event is written. It holds the permission decision for each matched file and the source of the answer and of each passage. If the write fails, the user gets no evidence.
-9. **Return.** The response holds `answer`, `evidence`, `searched_for`, counts and paging fields.
+7. **Check the source.** [`SearchService.changed_on_disc`](engineering_search/service.py) hashes the files of the answer and of the passages on the requested page, and compares each with its content fingerprint in the index. A file that changed or was deleted since it was indexed is taken out of the permitted files, named in `changed_files`, and steps 5 and 6 run again without it, until no cited file has changed.
+8. **Page.** The supporting passages are paged with `limit` and `page`. The document list of a list answer is paged too, at 200 documents a page, with the same `page` value. `answer.count` is the total number of documents, `answer.document_pages` the number of pages, and `answer.truncated` is true when later pages exist.
+9. **Audit.** The audit event is written. It holds the permission decision for each matched file and the source of the answer and of each passage. If the write fails, the user gets no evidence.
+10. **Return.** The response holds `answer`, `evidence`, `searched_for`, `changed_files`, counts and paging fields.
 
 ## The path of one SQL query (structured)
 
 [`SearchService.query_sql`](engineering_search/service.py) does these steps. `POST /sql` and the MCP tool `query_sql` call it.
 
 1. **Check permissions.** The service evaluates the permissions of the user on every indexed file.
-2. **Build the projection.** [`SQLiteSearchIndex.structured`](engineering_search/store.py) returns the tables, rows and facts of the permitted files only. [`sql.Projection`](engineering_search/sql.py) loads them into a new SQLite database in memory. Forbidden rows are never in it, so no `WHERE`, `JOIN`, `COUNT`, aggregate or `LIMIT` can see them.
-3. **Run the statement.** The projection accepts one statement that starts with `SELECT` or `WITH`, of at most 4,000 characters. An authoriser allows reads of the five projection tables and a list of plain functions, and denies everything else. `PRAGMA query_only` stops writes. A step budget stops a query that runs too long. At most 500 rows are returned (100 by default), with `truncated` when there are more.
-4. **Audit.** The event holds the SHA-256 of the statement, its length, the number of files in scope and excluded by policy, the number of rows, and the files named in the result. It never holds the rows. A refused statement is audited too, with the error.
-5. **Return.** The response holds `columns`, `rows`, `row_count`, `truncated` and the number of readable files.
+2. **Read the permitted rows.** [`SQLiteSearchIndex.structured`](engineering_search/store.py) returns the tables, rows and facts of the permitted files only.
+3. **Leave out changed files.** The service hashes every permitted file that has tables (`changed_on_disc`). The rows of a file that changed or was deleted since it was indexed are dropped, and the file is named in `changed_files`. This costs more as the user may read more tables.
+4. **Build the projection.** [`sql.Projection`](engineering_search/sql.py) loads them into a new SQLite database in memory. Forbidden rows are never in it, so no `WHERE`, `JOIN`, `COUNT`, aggregate or `LIMIT` can see them.
+5. **Run the statement.** The projection accepts one statement that starts with `SELECT` or `WITH`, of at most 4,000 characters. An authoriser allows reads of the five projection tables and a list of plain functions, and denies everything else. `PRAGMA query_only` stops writes. A step budget stops a query that runs too long. At most 500 rows are returned (100 by default), with `truncated` when there are more.
+6. **Audit.** The event holds the SHA-256 of the statement, its length, the number of files in scope and excluded by policy, the number of rows, the files named in the result and the changed files left out. It never holds the rows or the statement's text. A refused statement is audited too (`sql_query_refused`), with a fixed error category (`empty`, `too_long`, `not_select`, `too_slow`, `not_allowed` or `invalid`), never SQLite's message.
+7. **Return.** The response holds `request_id`, `columns`, `rows`, `row_count`, `truncated`, `changed_files` and the number of readable files.
 
-The projection is closed after the request. The service lock is held only while the projection is built, not while the statement runs.
+The projection is closed after the request. The service lock is held while the permissions are evaluated and the permitted rows are read from the index (steps 1 and 2). The changed-file check, the projection and the statement run outside it.
 
 The projection has these tables ([`sql.SCHEMA`](engineering_search/sql.py) describes every column, and `describe_schema` returns it to the client):
 
@@ -157,7 +160,7 @@ Each reader has a manifest ([`readers/base.py`](engineering_search/indexing/read
 | `pdf-text-pypdf@1` | `pdf` 1.x and 2.x | The text layer of each page, with pypdf, split at numbered headings and blank lines, at most 15 lines a passage. No tables. No OCR | `NO_TEXT_LAYER` if no page has text. `INDEXED_PARTIAL` if some pages have no text. `ENCRYPTED`, `MALFORMED` |
 | `csv-table@2` | `csv` | One logical table (rows in the shared `table_rows` store, never a database table per file). Each data row is also a passage, with the header as its heading. A quoted cell with a line break keeps its row whole: the row cites all its lines | `INDEXED_PARTIAL` if rows have a different number of cells than the header |
 | `xlsx-openpyxl@1` | `excel` | One table per sheet, and one passage per data row. The page of a passage is the sheet number, and its lines are sheet rows. Cell values are the values that Excel cached | `INDEXED_PARTIAL` if a formula has no cached value: the cell is left empty, and the warning names it. Hidden sheets are read, with a warning. `ENCRYPTED`, `MALFORMED` |
-| `dxf-text@1` | `dxf` (ASCII, AC1009 and later) | The TEXT and MTEXT notes of the ENTITIES section, each a passage headed by its layer, and the attributes of each block reference: a Property/Value table named after the drawing number and revision, and one passage `TAG \| value` per attribute citing the value's line. Geometry and block definitions are not read | `MALFORMED` for binary DXF or a broken pair. `NO_EXTRACTABLE_CONTENT` if there is no text |
+| `dxf-text@1` | `dxf` (ASCII: any `AC…` version) | The TEXT and MTEXT notes of the ENTITIES section, each a passage headed by its layer, and the attributes of each block reference: a Property/Value table named after the drawing number and revision, whose rows cite the value's line, and one passage `TAG \| value` per attribute, citing the lines from the value to the tag. Geometry and block definitions are not read | `UNSUPPORTED_VERSION` for binary DXF (the manifest reads `AC…` versions only). `MALFORMED` for a broken group-code pair. `NO_EXTRACTABLE_CONTENT` if there is no text |
 
 The registry tells three cases apart when no reader fits:
 

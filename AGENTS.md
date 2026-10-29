@@ -32,4 +32,4 @@
 
 ## Docs
 
-`docs/CODEX_ENGINEERING_SEARCH_HANDOFF.md` and `docs/engineering_knowledge_search_design_notes.html` are dated design inputs (29 October 2026). Do not edit them; record decisions in the ADRs and the main docs.
+`docs/engineering_knowledge_search_design_notes.html` is a dated design input (29 October 2026). Do not edit it; record decisions in the ADRs and the main docs.

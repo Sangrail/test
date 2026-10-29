@@ -2,7 +2,7 @@
 
 This is the initial phase that the task asks for ([T3](../docs/constraints/task.md#t3)): a potential solution, given the [background](../docs/constraints/background.md), the [use case](../docs/constraints/use-case.md) and the [constraints](../docs/constraints/constraints.md) of [the brief](../docs/Starting_document.md) ([K11](../docs/constraints/clarifications.md#k11)). The [system design diagram](system-design.svg) is drawn from it ([T4](../docs/constraints/task.md#t4)). The MVP is the working prototype of it ([T5](../docs/constraints/task.md#t5)).
 
-The IDs (B, C, U, T, S, K, G, O) are the items of [the brief analysis](../docs/constraints/README.md). The [decision records](../docs/adr/README.md) (ADR 0001–0010) record the choices. [ARCHITECTURE.md](../ARCHITECTURE.md) describes the code in full; where it and this page differ, it is correct.
+The IDs (B, C, U, T, S, K, G, O) are the items of [the brief analysis](../docs/constraints/README.md). The [decision records](../docs/adr/README.md) (ADR 0001–0011) record the choices. [ARCHITECTURE.md](../ARCHITECTURE.md) describes the code in full; where it and this page differ, it is correct.
 
 ![System design](system-design.png)
 

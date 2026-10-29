@@ -54,4 +54,4 @@ The MVP has features that the brief does not ask for by name. Each is labelled w
 
 ## Inputs that are not requirements
 
-[`docs/CODEX_ENGINEERING_SEARCH_HANDOFF.md`](../CODEX_ENGINEERING_SEARCH_HANDOFF.md) and [`docs/engineering_knowledge_search_design_notes.html`](../engineering_knowledge_search_design_notes.html) are dated design inputs (29 October 2026). They informed the work; they do not add to the brief, and they are not edited.
+[`docs/engineering_knowledge_search_design_notes.html`](../engineering_knowledge_search_design_notes.html) is a dated design input (29 October 2026). It informed the work; it does not add to the brief, and it is not edited. A dated Codex handoff was also an input; it was removed from the repository on 29 October 2026.

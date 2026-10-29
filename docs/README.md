@@ -89,6 +89,6 @@ None of this changes what the MVP proved: the questions, the extraction, the two
 | [MCP.md](MCP.md) | How to connect a chat client to the MCP server, the tools, example SQL and what was verified |
 | [METRICS.md](METRICS.md) | What is measured, how, and why the scores are optimistic |
 | [Starting_document.md](Starting_document.md) | The original brief |
-| [CODEX_ENGINEERING_SEARCH_HANDOFF.md](CODEX_ENGINEERING_SEARCH_HANDOFF.md), [engineering_knowledge_search_design_notes.html](engineering_knowledge_search_design_notes.html) | Dated design inputs (29 October 2026). Kept as received; decisions are recorded in the ADRs |
+| [engineering_knowledge_search_design_notes.html](engineering_knowledge_search_design_notes.html) | A dated design input (29 October 2026). Kept as received; decisions are recorded in the ADRs |
 
 Outside this folder: [README.md](../README.md) (quick start), [ARCHITECTURE.md](../ARCHITECTURE.md) (the code as it runs), [TODO.md](../TODO.md) (milestones and gaps), [GLOSSARY.md](../GLOSSARY.md) (terms) and [design/](../design/SYSTEM-DESIGN.md) (proposals, not shipped features).

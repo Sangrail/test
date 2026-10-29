@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1010" width="1200" height="1010" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+    <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="8" height="8" fill="#fffbeb"/>
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#fde68a" stroke-width="3"/>
+    </pattern>
+    <style>
+      .t { font-size: 13.5px; font-weight: 700; fill: #0f172a; }
+      .s { font-size: 11.5px; fill: #334155; }
+      .k { font-size: 11px; font-weight: 700; letter-spacing: .06em; fill: #475569; }
+      .m { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; fill: #0f172a; }
+      .h { font-size: 22px; font-weight: 800; fill: #0f172a; }
+      .sub { font-size: 13px; fill: #475569; }
+      .u { fill: #6d28d9; } .st { fill: #0f766e; }
+      .line { stroke: #334155; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1200" height="1010" fill="#ffffff"/>
+
+  <text x="20" y="36" class="h">How one file is indexed: structured and unstructured data</text>
+  <text x="20" y="58" class="sub">Every file takes the same line. The reader returns prose as passages and tables as rows; fact rules type the cells. One transaction publishes it all.</text>
+
+  <!-- legend -->
+  <g transform="translate(905,14)">
+    <rect width="14" height="14" fill="url(#hatch)" stroke="#d97706"/><text x="20" y="11" class="s">stand-in for a connector (C3)</text>
+    <rect y="20" width="14" height="14" fill="#f5f3ff" stroke="#6d28d9"/><text x="20" y="31" class="s">unstructured (prose)</text>
+    <rect y="40" width="14" height="14" fill="#f0fdfa" stroke="#0f766e"/><text x="20" y="51" class="s">structured (tables, facts)</text>
+  </g>
+
+  <!-- Row A: the common line -->
+  <g>
+    <rect x="20" y="80" width="208" height="122" rx="8" fill="#f1f5f9" stroke="#64748b"/>
+    <text x="32" y="102" class="t">The file in the repository</text>
+    <text x="32" y="124" class="m">specifications/roof-load.md</text>
+    <text x="32" y="144" class="s">Read in place, never uploaded.</text>
+    <text x="32" y="162" class="s">Its path gives the file ID and,</text>
+    <text x="32" y="180" class="s">for project-&lt;name&gt; folders,</text>
+    <text x="32" y="198" class="s">the project.</text>
+
+    <rect x="258" y="80" width="208" height="122" rx="8" fill="#ffffff" stroke="#334155"/>
+    <text x="270" y="102" class="t">① Scan and detect</text>
+    <text x="270" y="120" class="k">FILE METADATA EXTRACTOR</text>
+    <text x="270" y="142" class="s">Type and format version from</text>
+    <text x="270" y="160" class="s">the extension and the first</text>
+    <text x="270" y="178" class="s">512 bytes (%PDF-1.7, ZIP parts,</text>
+    <text x="270" y="196" class="s">JT header, $ACADVER). Size.</text>
+
+    <rect x="496" y="80" width="208" height="122" rx="8" fill="#ffffff" stroke="#334155"/>
+    <text x="508" y="102" class="t">② Choose a reader</text>
+    <text x="508" y="120" class="k">READER REGISTRY</text>
+    <text x="508" y="142" class="s">First reader whose manifest</text>
+    <text x="508" y="160" class="s">reads this type and version and</text>
+    <text x="508" y="178" class="s">whose packages are installed.</text>
+    <text x="508" y="196" class="s">None fits: listed, not indexed.</text>
+
+    <rect x="734" y="80" width="208" height="122" rx="8" fill="#ffffff" stroke="#334155"/>
+    <text x="746" y="102" class="t">③ Hash</text>
+    <text x="746" y="120" class="k">CONTENT FINGERPRINT</text>
+    <text x="746" y="142" class="s">SHA-256 of the file's bytes.</text>
+    <text x="746" y="160" class="s">Same fingerprint and reader</text>
+    <text x="746" y="178" class="s">version as the index: skip.</text>
+    <text x="746" y="196" class="s">Otherwise read it again.</text>
+
+    <rect x="972" y="80" width="208" height="122" rx="8" fill="url(#hatch)" stroke="#d97706"/>
+    <text x="984" y="102" class="t">④ Read</text>
+    <text x="984" y="120" class="k">FILE-SPECIFIC EXTRACTOR</text>
+    <text x="984" y="142" class="s">One reader per format and</text>
+    <text x="984" y="160" class="s">version: Markdown, PDF text,</text>
+    <text x="984" y="178" class="s">CSV, XLSX, DXF. A connector</text>
+    <text x="984" y="196" class="s">plugs in here as a reader.</text>
+
+    <path d="M228,141 H254" class="line"/>
+    <path d="M466,141 H492" class="line"/>
+    <path d="M704,141 H730" class="line"/>
+    <path d="M942,141 H968" class="line"/>
+  </g>
+
+  <!-- Extraction bar -->
+  <path d="M1076,202 V226 H600 V240" class="line"/>
+  <rect x="20" y="244" width="1160" height="52" rx="8" fill="#f8fafc" stroke="#334155"/>
+  <text x="34" y="266" class="t">The reader returns one Extraction</text>
+  <text x="34" y="286" class="s">passages (prose, with heading, line range and page) + tables (rows and columns, each row with its line) + a status (INDEXED_FULL, INDEXED_PARTIAL, …) + warnings.</text>
+  <text x="1166" y="266" class="s" text-anchor="end" font-weight="700">A mixed document returns both.</text>
+
+  <path d="M300,296 V326" class="line"/>
+  <path d="M900,296 V326" class="line"/>
+
+  <!-- Unstructured lane -->
+  <rect x="20" y="330" width="570" height="262" rx="10" fill="#f5f3ff" stroke="#6d28d9"/>
+  <text x="36" y="354" class="k u">UNSTRUCTURED: PROSE BECOMES PASSAGES</text>
+  <rect x="36" y="366" width="250" height="110" rx="6" fill="#ffffff" stroke="#6d28d9"/>
+  <text x="48" y="386" class="t">Passages</text>
+  <text x="48" y="406" class="s">Split at headings and blank lines.</text>
+  <text x="48" y="424" class="s">Each keeps: file, fingerprint,</text>
+  <text x="48" y="442" class="s">heading, start and end line,</text>
+  <text x="48" y="460" class="s">page, and the exact text.</text>
+  <path d="M286,421 H318" class="line"/>
+  <rect x="322" y="366" width="252" height="110" rx="6" fill="#ffffff" stroke="#6d28d9"/>
+  <text x="334" y="386" class="t">Stored</text>
+  <text x="334" y="406" class="m">passages</text><text x="400" y="406" class="s">(the verbatim text)</text>
+  <text x="334" y="424" class="m">passages_fts</text><text x="425" y="424" class="s">FTS5 inverted index</text>
+  <text x="334" y="442" class="s">over heading, text and path</text>
+  <text x="334" y="460" class="s">words; porter stemming.</text>
+  <text x="36" y="500" class="t">Used at query time</text>
+  <text x="36" y="520" class="s">search_evidence finds passages by their words (BM25 over permitted files only). Fixed pattern</text>
+  <text x="36" y="538" class="s">rules then pick the sentence or table row that states a value and quote it. No facts are</text>
+  <text x="36" y="556" class="s">made from prose: "Roof support beams: S355 structural steel." is found by words, not by SQL.</text>
+  <text x="36" y="578" class="s" font-style="italic">Not built: OCR for scans, a semantic (embedding) store (O1).</text>
+
+  <!-- Structured lane -->
+  <rect x="610" y="330" width="570" height="262" rx="10" fill="#f0fdfa" stroke="#0f766e"/>
+  <text x="626" y="354" class="k st">STRUCTURED: TABLES BECOME ROWS AND FACTS</text>
+  <rect x="626" y="366" width="160" height="110" rx="6" fill="#ffffff" stroke="#0f766e"/>
+  <text x="638" y="386" class="t">Tables</text>
+  <text x="638" y="406" class="s">Name, column</text>
+  <text x="638" y="424" class="s">headers, and rows;</text>
+  <text x="638" y="442" class="s">each row cites its</text>
+  <text x="638" y="460" class="s">line (and page).</text>
+  <path d="M786,421 H806" class="line"/>
+  <rect x="810" y="366" width="170" height="110" rx="6" fill="url(#hatch)" stroke="#d97706"/>
+  <text x="822" y="386" class="t">Fact rules</text>
+  <text x="822" y="406" class="s">At index time: header</text>
+  <text x="822" y="424" class="s">+ cell → parameter,</text>
+  <text x="822" y="442" class="s">role, value as written,</text>
+  <text x="822" y="460" class="s">number, unit, SI value.</text>
+  <path d="M980,421 H1000" class="line"/>
+  <rect x="1004" y="366" width="160" height="110" rx="6" fill="#ffffff" stroke="#0f766e"/>
+  <text x="1016" y="386" class="t">Stored</text>
+  <text x="1016" y="406" class="m">source_tables</text>
+  <text x="1016" y="424" class="m">table_rows</text>
+  <text x="1016" y="442" class="m">facts</text>
+  <text x="1016" y="460" class="s">one fixed schema</text>
+  <text x="626" y="500" class="t">Used at query time</text>
+  <text x="626" y="520" class="s">query_sql: the chat agent writes one SELECT. It runs over a projection built for the</text>
+  <text x="626" y="538" class="s">request from the permitted files only: documents, facts, components, table_rows,</text>
+  <text x="626" y="556" class="s">source_tables. Every result row names its file, table, row and line.</text>
+  <text x="626" y="578" class="s" font-style="italic">No file ever creates a database table (ADR 0011).</text>
+
+  <!-- Bridge -->
+  <rect x="452" y="482" width="296" height="0" fill="none"/>
+  <g>
+    <rect x="404" y="596" width="392" height="40" rx="20" fill="#ffffff" stroke="#334155" stroke-dasharray="5 4"/>
+    <text x="600" y="613" class="s" text-anchor="middle" font-weight="700">Every table row is also a passage,</text>
+    <text x="600" y="629" class="s" text-anchor="middle">so a row is found by its words and by SQL.</text>
+  </g>
+
+  <!-- Publish bar -->
+  <path d="M300,592 V652" class="line"/>
+  <path d="M900,592 V652" class="line"/>
+  <rect x="20" y="656" width="1160" height="70" rx="8" fill="#1e293b"/>
+  <text x="36" y="680" font-size="14" font-weight="700" fill="#ffffff">⑤ Publish: one transaction, all or nothing</text>
+  <text x="36" y="700" font-size="11.5" fill="#e2e8f0">documents (file ID, fingerprint, passage count) · passages · passages_fts · source_tables · table_rows · facts · files (the inventory: type, format version,</text>
+  <text x="36" y="717" font-size="11.5" fill="#e2e8f0">status, reader and version, warnings). The old rows of a changed file are deleted in the same transaction. If it fails, the old index stays.</text>
+
+  <!-- Format matrix -->
+  <text x="20" y="760" class="t">What each reader returns</text>
+  <g font-size="11.5">
+    <rect x="20" y="770" width="1160" height="26" fill="#e2e8f0"/>
+    <text x="30" y="788" class="s" font-weight="700">Format</text>
+    <text x="170" y="788" class="s" font-weight="700">Reader</text>
+    <text x="330" y="788" class="u" font-weight="700">Unstructured: passages</text>
+    <text x="760" y="788" class="st" font-weight="700">Structured: tables</text>
+
+    <rect x="20" y="796" width="1160" height="26" fill="#ffffff"/>
+    <text x="30" y="814" class="s" font-weight="700">Markdown (mixed)</text><text x="170" y="814" class="m">markdown-text@2</text>
+    <text x="330" y="814" class="s">Sections split at headings; table lines stay in the text</text>
+    <text x="760" y="814" class="s">Each pipe table, named after the heading above it</text>
+
+    <rect x="20" y="822" width="1160" height="26" fill="#f8fafc"/>
+    <text x="30" y="840" class="s" font-weight="700">DXF drawing (mixed)</text><text x="170" y="840" class="m">dxf-text@1</text>
+    <text x="330" y="840" class="s">Each TEXT/MTEXT note; each title-block attribute "TAG | value"</text>
+    <text x="760" y="840" class="s">Each title block as a Property/Value table. No geometry</text>
+
+    <rect x="20" y="848" width="1160" height="26" fill="#ffffff"/>
+    <text x="30" y="866" class="s" font-weight="700">CSV</text><text x="170" y="866" class="m">csv-table@2</text>
+    <text x="330" y="866" class="s">Each data row as written, headed by the header row</text>
+    <text x="760" y="866" class="s">The file as one table</text>
+
+    <rect x="20" y="874" width="1160" height="26" fill="#f8fafc"/>
+    <text x="30" y="892" class="s" font-weight="700">XLSX workbook</text><text x="170" y="892" class="m">xlsx-openpyxl@1</text>
+    <text x="330" y="892" class="s">Each data row, "cell | cell | cell", page = sheet number</text>
+    <text x="760" y="892" class="s">One table per sheet; cached formula values only</text>
+
+    <rect x="20" y="900" width="1160" height="26" fill="#ffffff"/>
+    <text x="30" y="918" class="s" font-weight="700">PDF (text layer)</text><text x="170" y="918" class="m">pdf-text-pypdf@1</text>
+    <text x="330" y="918" class="s">Each page split at numbered headings, at most 15 lines</text>
+    <text x="760" y="918" class="s">None: a PDF table is read as lines of text (not built)</text>
+
+    <rect x="20" y="926" width="1160" height="26" fill="#f8fafc"/>
+    <text x="30" y="944" class="s" font-weight="700">JT, DWG, TXT, Word</text><text x="170" y="944" class="m">none</text>
+    <text x="330" y="944" class="s" font-style="italic">Detected and listed as NO_READER in the coverage report; not indexed</text>
+  </g>
+
+  <text x="20" y="980" class="s"><tspan font-weight="700">Not in the index: permissions.</tspan> Every file is indexed; each request applies the user's permissions before ranking, limits and counts (ADR 0004).</text>
+  <text x="20" y="998" class="s"><tspan font-weight="700">Changed on disc:</tspan> a cited file whose bytes no longer match its fingerprint is left out until the index is refreshed (ADR 0007).</text>
+</svg>

@@ -21,14 +21,12 @@ ITEM = r"[BCUTSKGO]\d{1,2}"
 BARE = re.compile(r"(?<![\[\w/#-])(" + ITEM + r")(?![\w\]])")
 LINK = re.compile(r"\[([^\]]*)\]\(([^)\s]+)\)")
 ITEM_LINK = re.compile(r"\[(" + ITEM + r")\]\(([^)\s]+)\)")
-DATED_INPUTS = {"CODEX_ENGINEERING_SEARCH_HANDOFF.md"}
 SPEC = sorted(ADR.glob("*.md")) + sorted(CONSTRAINTS.glob("*.md"))
 
 
 def documents() -> list[Path]:
     found = [p for p in ROOT.rglob("*.md")
-             if not {".venv", "test-repository", ".git", "node_modules"} & set(p.relative_to(ROOT).parts)
-             and p.name not in DATED_INPUTS]
+             if not {".venv", "test-repository", ".git", "node_modules"} & set(p.relative_to(ROOT).parts)]
     return sorted(found)
 
 
